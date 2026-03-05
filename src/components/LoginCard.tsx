@@ -1,79 +1,53 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-interface CreateAccountCardProps {
+interface LoginCardProps {
   onNavigate: (page: 'login' | 'create' | 'reset') => void;
 }
-export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
-  const [username, setUsername] = useState('');
+export function LoginCard({ onNavigate }: LoginCardProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', {
-      username,
+    console.log('Login submitted:', {
       email,
-      password,
-      confirmPassword
+      password
     });
   };
   const handleSocialLogin = (provider: string) => {
-    console.log(`Continue with ${provider}`);
+    console.log(`Login with ${provider}`);
   };
   return (
     <section
-      aria-labelledby="create-account-title"
+      aria-labelledby="login-title"
       className="w-full max-w-[448px] bg-white rounded-xl border border-[#E5E7EB] p-8 flex flex-col gap-8 shadow-sm">
 
       {/* Header */}
       <div className="text-center flex flex-col gap-1">
         <h1
-          id="create-account-title"
+          id="login-title"
           className="text-[20.4px] font-bold text-[#111827] leading-8">
 
-          Create Account
+          Welcome Back
         </h1>
         <p className="text-[13.6px] text-[#6B7280] leading-6">
-          Start learning Spanish today
+          Log in to continue learning Spanish
         </p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Username Field */}
-        <div>
-          <label
-            htmlFor="username"
-            className="block text-[11.9px] font-medium text-[#374151] leading-5 mb-2">
-
-            Username
-          </label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            autoComplete="username"
-            required
-            aria-required="true"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full h-[42px] px-3 rounded-lg border border-[#D1D5DB] bg-white text-[13.6px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#FF4D01] focus:border-transparent transition-shadow" />
-
-        </div>
-
         {/* Email Field */}
         <div>
           <label
-            htmlFor="email"
+            htmlFor="login-email"
             className="block text-[11.9px] font-medium text-[#374151] leading-5 mb-2">
 
             Email
           </label>
           <input
             type="email"
-            id="email"
+            id="login-email"
             name="email"
             autoComplete="email"
             required
@@ -86,18 +60,27 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
 
         {/* Password Field */}
         <div>
-          <label
-            htmlFor="password"
-            className="block text-[11.9px] font-medium text-[#374151] leading-5 mb-2">
+          <div className="flex justify-between items-center mb-2">
+            <label
+              htmlFor="login-password"
+              className="block text-[11.9px] font-medium text-[#374151] leading-5">
 
-            Password
-          </label>
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={() => onNavigate('reset')}
+              className="text-[11.9px] font-medium text-[#FF4D01] hover:text-[#E64500] focus:outline-none focus:underline rounded-sm focus:ring-2 focus:ring-[#FF4D01] focus:ring-offset-2">
+
+              Forgot password?
+            </button>
+          </div>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
-              id="password"
+              id="login-password"
               name="password"
-              autoComplete="new-password"
+              autoComplete="current-password"
               required
               aria-required="true"
               value={password}
@@ -115,47 +98,12 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
           </div>
         </div>
 
-        {/* Confirm Password Field */}
-        <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block text-[11.9px] font-medium text-[#374151] leading-5 mb-2">
-
-            Confirm Password
-          </label>
-          <div className="relative">
-            <input
-              type={showConfirmPassword ? 'text' : 'password'}
-              id="confirmPassword"
-              name="confirmPassword"
-              autoComplete="new-password"
-              required
-              aria-required="true"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full h-[42px] pl-3 pr-10 rounded-lg border border-[#D1D5DB] bg-white text-[13.6px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#FF4D01] focus:border-transparent transition-shadow" />
-
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#374151] focus:outline-none focus:text-[#FF4D01]"
-              aria-label={
-              showConfirmPassword ?
-              'Hide confirm password' :
-              'Show confirm password'
-              }>
-
-              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-        </div>
-
         {/* Submit Button */}
         <button
           type="submit"
           className="w-full h-[44px] mt-2 bg-[#FF4D01] hover:bg-[#E64500] text-white font-semibold text-[13.6px] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF4D01] focus:ring-offset-2">
 
-          Sign Up
+          Log In
         </button>
       </form>
 
@@ -164,14 +112,14 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
         {/* Social Login */}
         <div className="flex flex-row items-center justify-center gap-4">
           <span className="text-[13.6px] text-[#374151] leading-6">
-            Or continue with:
+            Or log in with:
           </span>
           <div className="flex flex-row items-center gap-3">
             <button
               type="button"
               onClick={() => handleSocialLogin('Google')}
               className="hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#FF4D01] focus:ring-offset-2 rounded-full flex items-center justify-center"
-              aria-label="Continue with Google">
+              aria-label="Log in with Google">
 
               <img
                 src="/313-292.svg"
@@ -184,7 +132,7 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
               type="button"
               onClick={() => handleSocialLogin('Apple')}
               className="hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#FF4D01] focus:ring-offset-2 rounded-full flex items-center justify-center"
-              aria-label="Continue with Apple">
+              aria-label="Log in with Apple">
 
               <img
                 src="/313-298.svg"
@@ -197,7 +145,7 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
               type="button"
               onClick={() => handleSocialLogin('Facebook')}
               className="hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#FF4D01] focus:ring-offset-2 rounded-full flex items-center justify-center"
-              aria-label="Continue with Facebook">
+              aria-label="Log in with Facebook">
 
               <img
                 src="/313-301.svg"
@@ -209,17 +157,17 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
           </div>
         </div>
 
-        {/* Login Link */}
+        {/* Create Account Link */}
         <div className="text-center">
           <span className="text-[11.9px] text-[#4B5563] leading-5">
-            Already have an account?
+            Don't have an account?
           </span>
           <button
             type="button"
-            onClick={() => onNavigate('login')}
+            onClick={() => onNavigate('create')}
             className="ml-1 text-[11.9px] font-semibold text-[#FF4D01] hover:text-[#E64500] leading-5 transition-colors focus:outline-none focus:underline rounded-sm focus:ring-2 focus:ring-[#FF4D01] focus:ring-offset-2">
 
-            Log in
+            Sign up
           </button>
         </div>
       </div>
