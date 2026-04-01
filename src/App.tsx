@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CreateAccountCard } from './components/CreateAccountCard';
 import { LoginCard } from './components/LoginCard';
@@ -77,7 +77,10 @@ function SpeakAndWritePage() {
   return (
     <SpeakAndWrite
       onNavigateBack={() => navigate('/dashboard')}
-      onScenarioClick={() => navigate('/speaking-practice')}
+      onScenarioClick={(title) => {
+        const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        navigate(`/speak-and-write/${slug}`);
+      }}
       onCultureClick={() => navigate('/culture')}
       onGrammarClick={() => navigate('/grammar')}
       onCommunityClick={() => navigate('/community')}
@@ -112,7 +115,7 @@ function GrammarPage() {
       onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
       onCultureClick={() => navigate('/culture')}
       onNavigateToERVerbs={() => navigate('/grammar/er-verbs')}
-      onNavigateToSer={() => navigate('/grammar/ser-conjugation')}
+      onNavigateToSer={() => navigate('/grammar/er-verbs/ser-conjugation')}
       onCommunityClick={() => navigate('/community')}
     />
   );
@@ -124,7 +127,7 @@ function ERVerbsPage() {
   return (
     <ERVerbs
       onBack={() => navigate('/grammar')}
-      onNavigateToSer={() => navigate('/grammar/ser-conjugation')}
+      onNavigateToSer={() => navigate('/grammar/er-verbs/ser-conjugation')}
       onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
       onCultureClick={() => navigate('/culture')}
       onGrammarClick={() => navigate('/grammar')}
@@ -138,7 +141,7 @@ function SerConjugationPage() {
 
   return (
     <SerConjugation
-      onBack={() => navigate('/grammar')}
+      onBack={() => navigate('/grammar/er-verbs')}
       onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
       onCultureClick={() => navigate('/culture')}
       onGrammarClick={() => navigate('/grammar')}
@@ -162,11 +165,12 @@ function CommunityPage() {
 
 function SpeakingPracticePage() {
   const navigate = useNavigate();
+  const { scenarioSlug } = useParams();
 
   return (
     <SpeakingPractice
       onBack={() => navigate('/speak-and-write')}
-      onRoleplayComplete={() => navigate('/roleplay-complete')}
+      onRoleplayComplete={() => navigate(`/speak-and-write/${scenarioSlug}/complete`)}
     />
   );
 }
@@ -306,11 +310,11 @@ export function App() {
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/lesson" element={<ProtectedRoute><LessonFlowPage /></ProtectedRoute>} />
           <Route path="/speak-and-write" element={<ProtectedRoute><SpeakAndWritePage /></ProtectedRoute>} />
-          <Route path="/speaking-practice" element={<ProtectedRoute><SpeakingPracticePage /></ProtectedRoute>} />
-          <Route path="/roleplay-complete" element={<ProtectedRoute><RoleplayCompletePage /></ProtectedRoute>} />
+          <Route path="/speak-and-write/:scenarioSlug" element={<ProtectedRoute><SpeakingPracticePage /></ProtectedRoute>} />
+          <Route path="/speak-and-write/:scenarioSlug/complete" element={<ProtectedRoute><RoleplayCompletePage /></ProtectedRoute>} />
           <Route path="/grammar" element={<ProtectedRoute><GrammarPage /></ProtectedRoute>} />
           <Route path="/grammar/er-verbs" element={<ProtectedRoute><ERVerbsPage /></ProtectedRoute>} />
-          <Route path="/grammar/ser-conjugation" element={<ProtectedRoute><SerConjugationPage /></ProtectedRoute>} />
+          <Route path="/grammar/er-verbs/ser-conjugation" element={<ProtectedRoute><SerConjugationPage /></ProtectedRoute>} />
           <Route path="/culture" element={<ProtectedRoute><CulturePage /></ProtectedRoute>} />
           <Route path="/culture/music-dance" element={<ProtectedRoute><MusicDancePage /></ProtectedRoute>} />
           <Route path="/culture/regions-landmarks" element={<ProtectedRoute><RegionsLandmarksPage /></ProtectedRoute>} />

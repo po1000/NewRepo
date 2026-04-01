@@ -50,7 +50,7 @@ const scenarios: PracticeScenario[] = [
 
 interface SpeakAndWriteProps {
   onNavigateBack?: () => void;
-  onScenarioClick?: () => void;
+  onScenarioClick?: (scenarioTitle: string) => void;
   onCultureClick?: () => void;
   onGrammarClick?: () => void;
   onCommunityClick?: () => void;
@@ -112,7 +112,7 @@ export function SpeakAndWrite({
           <div
             key={scenario.id}
             className="bg-white rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={onScenarioClick}>
+            onClick={() => onScenarioClick?.(scenario.title)}>
             
               {/* Image Section */}
               <div
