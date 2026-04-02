@@ -12,10 +12,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (
   user_id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  username          VARCHAR(50) UNIQUE NOT NULL,
-  email             VARCHAR(255) UNIQUE NOT NULL,
+  username          VARCHAR UNIQUE NOT NULL,
+  email             VARCHAR UNIQUE NOT NULL,
   password_hash     TEXT,
-  display_name      VARCHAR(100),
+  display_name      VARCHAR,
   profile_image_url TEXT,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at        TIMESTAMPTZ,
@@ -31,10 +31,10 @@ CREATE TABLE user_settings (
 );
 
 CREATE TABLE user_auth_providers (
-  auth_provider_id  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  auth_provider_id  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id           UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  provider_name     VARCHAR(50) NOT NULL,
-  provider_user_key VARCHAR(255) NOT NULL,
+  provider_name     VARCHAR NOT NULL,
+  provider_user_key VARCHAR NOT NULL,
   linked_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (user_id, provider_name)
 );
@@ -48,7 +48,7 @@ CREATE TABLE user_stats (
 );
 
 CREATE TABLE user_activity_days (
-  activity_day_id     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  activity_day_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id             UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   activity_date       DATE NOT NULL,
   did_complete_lesson BOOLEAN NOT NULL DEFAULT FALSE,
@@ -61,18 +61,18 @@ CREATE TABLE user_activity_days (
 -- ============================================================================
 
 CREATE TABLE badges (
-  badge_id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  label          VARCHAR(100) NOT NULL,
+  badge_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  label          VARCHAR NOT NULL,
   description    TEXT,
   icon_url       TEXT,
-  criteria_type  VARCHAR(50),
+  criteria_type  VARCHAR,
   criteria_value INTEGER
 );
 
 CREATE TABLE user_badges (
-  user_badge_id  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_badge_id  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id        UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  badge_id       UUID NOT NULL REFERENCES badges(badge_id) ON DELETE CASCADE,
+  badge_id       INT NOT NULL REFERENCES badges(badge_id) ON DELETE CASCADE,
   progress_value INTEGER NOT NULL DEFAULT 0,
   is_completed   BOOLEAN NOT NULL DEFAULT FALSE,
   completed_at   TIMESTAMPTZ,
@@ -80,10 +80,10 @@ CREATE TABLE user_badges (
 );
 
 CREATE TABLE xp_events (
-  xp_event_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  xp_event_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id     UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  source_type VARCHAR(50) NOT NULL,
-  source_id   UUID,
+  source_type VARCHAR NOT NULL,
+  source_id   INT,
   xp_amount   INTEGER NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -94,28 +94,28 @@ CREATE TABLE xp_events (
 -- ============================================================================
 
 CREATE TABLE cefr_levels (
-  cefr_level_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  code          VARCHAR(10) NOT NULL UNIQUE,
-  title         VARCHAR(100) NOT NULL,
+  cefr_level_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  code          VARCHAR NOT NULL UNIQUE,
+  title         VARCHAR NOT NULL,
   description   TEXT,
   sort_order    INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE units (
-  unit_id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  cefr_level_id UUID NOT NULL REFERENCES cefr_levels(cefr_level_id) ON DELETE CASCADE,
+  unit_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  cefr_level_id INT NOT NULL REFERENCES cefr_levels(cefr_level_id) ON DELETE CASCADE,
   unit_number   INTEGER NOT NULL,
-  title         VARCHAR(150) NOT NULL,
+  title         VARCHAR NOT NULL,
   description   TEXT,
   sort_order    INTEGER NOT NULL DEFAULT 0,
   UNIQUE (cefr_level_id, unit_number)
 );
 
 CREATE TABLE subunits (
-  subunit_id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  unit_id       UUID NOT NULL REFERENCES units(unit_id) ON DELETE CASCADE,
-  subunit_code  VARCHAR(20) NOT NULL,
-  title         VARCHAR(150) NOT NULL,
+  subunit_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  unit_id       INT NOT NULL REFERENCES units(unit_id) ON DELETE CASCADE,
+  subunit_code  VARCHAR NOT NULL,
+  title         VARCHAR NOT NULL,
   goal_text     TEXT,
   description   TEXT,
   thumbnail_url TEXT,
@@ -124,11 +124,11 @@ CREATE TABLE subunits (
 );
 
 CREATE TABLE subunit_sessions (
-  subunit_session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  subunit_id         UUID NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
+  subunit_session_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  subunit_id         INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
   session_number     INTEGER NOT NULL,
-  title              VARCHAR(150),
-  session_type       VARCHAR(50) NOT NULL,
+  title              VARCHAR,
+  session_type       VARCHAR NOT NULL,
   unlock_rule        TEXT,
   sort_order         INTEGER NOT NULL DEFAULT 0
 );
@@ -139,12 +139,12 @@ CREATE TABLE subunit_sessions (
 -- ============================================================================
 
 CREATE TABLE terms (
-  term_id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  spanish_text        VARCHAR(255) NOT NULL,
-  english_text        VARCHAR(255) NOT NULL,
-  term_type           VARCHAR(20),
-  part_of_speech      VARCHAR(50),
-  gender              VARCHAR(20),
+  term_id             INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  spanish_text        VARCHAR NOT NULL,
+  english_text        VARCHAR NOT NULL,
+  term_type           VARCHAR,
+  part_of_speech      VARCHAR,
+  gender              VARCHAR,
   audio_url           TEXT,
   image_url           TEXT,
   example_sentence_es TEXT,
@@ -155,9 +155,9 @@ CREATE TABLE terms (
 );
 
 CREATE TABLE subunit_terms (
-  subunit_term_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  subunit_id      UUID NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
-  term_id         UUID NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  subunit_term_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  subunit_id      INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
+  term_id         INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
   sort_order      INTEGER NOT NULL DEFAULT 0,
   is_core_term    BOOLEAN NOT NULL DEFAULT FALSE,
   UNIQUE (subunit_id, term_id)
@@ -169,48 +169,48 @@ CREATE TABLE subunit_terms (
 -- ============================================================================
 
 CREATE TABLE grammar_topics (
-  grammar_topic_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title            VARCHAR(150) NOT NULL,
-  slug             VARCHAR(150) NOT NULL UNIQUE,
+  grammar_topic_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title            VARCHAR NOT NULL,
+  slug             VARCHAR NOT NULL UNIQUE,
   description      TEXT,
   content_html     TEXT,
   sort_order       INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE grammar_verb_categories (
-  verb_category_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name             VARCHAR(50) NOT NULL,
+  verb_category_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name             VARCHAR NOT NULL,
   sort_order       INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE verbs (
-  verb_id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  verb_category_id UUID NOT NULL REFERENCES grammar_verb_categories(verb_category_id) ON DELETE CASCADE,
-  infinitive       VARCHAR(100) NOT NULL,
-  english_meaning  VARCHAR(150) NOT NULL,
+  verb_id          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  verb_category_id INT NOT NULL REFERENCES grammar_verb_categories(verb_category_id) ON DELETE CASCADE,
+  infinitive       VARCHAR NOT NULL,
+  english_meaning  VARCHAR NOT NULL,
   is_irregular     BOOLEAN NOT NULL DEFAULT FALSE,
   notes            TEXT
 );
 
 CREATE TABLE pronouns (
-  pronoun_id   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  pronoun_text VARCHAR(100) NOT NULL,
-  person_group VARCHAR(50),
+  pronoun_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  pronoun_text VARCHAR NOT NULL,
+  person_group VARCHAR,
   sort_order   INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE tenses (
-  tense_id   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name       VARCHAR(100) NOT NULL,
+  tense_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name       VARCHAR NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE verb_conjugations (
-  verb_conjugation_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  verb_id             UUID NOT NULL REFERENCES verbs(verb_id) ON DELETE CASCADE,
-  pronoun_id          UUID NOT NULL REFERENCES pronouns(pronoun_id) ON DELETE CASCADE,
-  tense_id            UUID NOT NULL REFERENCES tenses(tense_id) ON DELETE CASCADE,
-  conjugated_form     VARCHAR(100) NOT NULL,
+  verb_conjugation_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  verb_id             INT NOT NULL REFERENCES verbs(verb_id) ON DELETE CASCADE,
+  pronoun_id          INT NOT NULL REFERENCES pronouns(pronoun_id) ON DELETE CASCADE,
+  tense_id            INT NOT NULL REFERENCES tenses(tense_id) ON DELETE CASCADE,
+  conjugated_form     VARCHAR NOT NULL,
   UNIQUE (verb_id, pronoun_id, tense_id)
 );
 
@@ -220,46 +220,46 @@ CREATE TABLE verb_conjugations (
 -- ============================================================================
 
 CREATE TABLE grammar_hints (
-  grammar_hint_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  hint_title      VARCHAR(150) NOT NULL,
+  grammar_hint_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  hint_title      VARCHAR NOT NULL,
   hint_text       TEXT NOT NULL,
-  hint_type       VARCHAR(50),
+  hint_type       VARCHAR,
   sort_order      INTEGER NOT NULL DEFAULT 0,
   is_active       BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE term_grammar_hints (
-  term_grammar_hint_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  term_id              UUID NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
-  grammar_hint_id      UUID NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
+  term_grammar_hint_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  term_id              INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  grammar_hint_id      INT NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
   sort_order           INTEGER NOT NULL DEFAULT 0,
   UNIQUE (term_id, grammar_hint_id)
 );
 
 CREATE TABLE grammar_hint_topic_links (
-  grammar_hint_topic_link_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  grammar_hint_id            UUID NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
-  grammar_topic_id           UUID NOT NULL REFERENCES grammar_topics(grammar_topic_id) ON DELETE CASCADE,
+  grammar_hint_topic_link_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  grammar_hint_id            INT NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
+  grammar_topic_id           INT NOT NULL REFERENCES grammar_topics(grammar_topic_id) ON DELETE CASCADE,
   UNIQUE (grammar_hint_id, grammar_topic_id)
 );
 
 CREATE TABLE grammar_hint_verb_links (
-  grammar_hint_verb_link_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  grammar_hint_id           UUID NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
-  verb_id                   UUID NOT NULL REFERENCES verbs(verb_id) ON DELETE CASCADE,
+  grammar_hint_verb_link_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  grammar_hint_id           INT NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
+  verb_id                   INT NOT NULL REFERENCES verbs(verb_id) ON DELETE CASCADE,
   UNIQUE (grammar_hint_id, verb_id)
 );
 
 CREATE TABLE grammar_hint_conjugation_links (
-  grammar_hint_conjugation_link_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  grammar_hint_id                  UUID NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
-  verb_conjugation_id              UUID NOT NULL REFERENCES verb_conjugations(verb_conjugation_id) ON DELETE CASCADE,
+  grammar_hint_conjugation_link_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  grammar_hint_id                  INT NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
+  verb_conjugation_id              INT NOT NULL REFERENCES verb_conjugations(verb_conjugation_id) ON DELETE CASCADE,
   UNIQUE (grammar_hint_id, verb_conjugation_id)
 );
 
 CREATE TABLE term_pronunciation_hints (
-  pronunciation_hint_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  term_id               UUID NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  pronunciation_hint_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  term_id               INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
   hint_text             TEXT NOT NULL,
   sort_order            INTEGER NOT NULL DEFAULT 0
 );
@@ -270,27 +270,27 @@ CREATE TABLE term_pronunciation_hints (
 -- ============================================================================
 
 CREATE TABLE user_term_progress (
-  user_term_progress_id  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id                UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  term_id                UUID NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
-  learning_status        VARCHAR(20) NOT NULL DEFAULT 'not_seen',
-  correct_in_session     INTEGER NOT NULL DEFAULT 0,
-  times_seen             INTEGER NOT NULL DEFAULT 0,
-  times_correct          INTEGER NOT NULL DEFAULT 0,
-  times_incorrect        INTEGER NOT NULL DEFAULT 0,
-  times_skipped          INTEGER NOT NULL DEFAULT 0,
-  times_marked_known     INTEGER NOT NULL DEFAULT 0,
+  user_term_progress_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id               UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  term_id               INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  learning_status       VARCHAR NOT NULL DEFAULT 'not_seen',
+  correct_in_session    INTEGER NOT NULL DEFAULT 0,
+  times_seen            INTEGER NOT NULL DEFAULT 0,
+  times_correct         INTEGER NOT NULL DEFAULT 0,
+  times_incorrect       INTEGER NOT NULL DEFAULT 0,
+  times_skipped         INTEGER NOT NULL DEFAULT 0,
+  times_marked_known    INTEGER NOT NULL DEFAULT 0,
   current_strength_level INTEGER NOT NULL DEFAULT 0,
-  is_marked_known        BOOLEAN NOT NULL DEFAULT FALSE,
-  is_due_for_review      BOOLEAN NOT NULL DEFAULT FALSE,
-  last_answered_at       TIMESTAMPTZ,
-  last_reviewed_at       TIMESTAMPTZ,
-  next_review_at         TIMESTAMPTZ,
+  is_marked_known       BOOLEAN NOT NULL DEFAULT FALSE,
+  is_due_for_review     BOOLEAN NOT NULL DEFAULT FALSE,
+  last_answered_at      TIMESTAMPTZ,
+  last_reviewed_at      TIMESTAMPTZ,
+  next_review_at        TIMESTAMPTZ,
   UNIQUE (user_id, term_id)
 );
 
 CREATE TABLE user_term_sm2 (
-  user_term_progress_id UUID PRIMARY KEY REFERENCES user_term_progress(user_term_progress_id) ON DELETE CASCADE,
+  user_term_progress_id INT PRIMARY KEY REFERENCES user_term_progress(user_term_progress_id) ON DELETE CASCADE,
   ef                    DECIMAL(4,2) NOT NULL DEFAULT 2.50,
   repetition            INTEGER NOT NULL DEFAULT 0,
   interval_days         INTEGER NOT NULL DEFAULT 0,
@@ -299,12 +299,12 @@ CREATE TABLE user_term_sm2 (
 );
 
 CREATE TABLE user_term_status_history (
-  status_history_id     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_term_progress_id UUID NOT NULL REFERENCES user_term_progress(user_term_progress_id) ON DELETE CASCADE,
-  old_status            VARCHAR(20),
-  new_status            VARCHAR(20) NOT NULL,
+  status_history_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_term_progress_id INT NOT NULL REFERENCES user_term_progress(user_term_progress_id) ON DELETE CASCADE,
+  old_status            VARCHAR,
+  new_status            VARCHAR NOT NULL,
   changed_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  change_reason         VARCHAR(100)
+  change_reason         VARCHAR
 );
 
 
@@ -313,9 +313,9 @@ CREATE TABLE user_term_status_history (
 -- ============================================================================
 
 CREATE TABLE user_subunit_progress (
-  user_subunit_progress_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_subunit_progress_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id                  UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  subunit_id               UUID NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
+  subunit_id               INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
   progress_percent         DECIMAL(5,2) NOT NULL DEFAULT 0,
   total_terms              INTEGER NOT NULL DEFAULT 0,
   terms_learnt_count       INTEGER NOT NULL DEFAULT 0,
@@ -328,10 +328,10 @@ CREATE TABLE user_subunit_progress (
 );
 
 CREATE TABLE user_subunit_session_progress (
-  user_subunit_session_progress_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_subunit_session_progress_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id                          UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  subunit_session_id               UUID NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
-  status                           VARCHAR(20) NOT NULL DEFAULT 'not_started',
+  subunit_session_id               INT NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
+  status                           VARCHAR NOT NULL DEFAULT 'not_started',
   started_at                       TIMESTAMPTZ,
   completed_at                     TIMESTAMPTZ,
   last_activity_at                 TIMESTAMPTZ,
@@ -339,14 +339,14 @@ CREATE TABLE user_subunit_session_progress (
 );
 
 CREATE TABLE session_attempts (
-  session_attempt_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  session_attempt_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id            UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  subunit_id         UUID NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
-  subunit_session_id UUID NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
+  subunit_id         INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
+  subunit_session_id INT NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
   attempt_number     INTEGER NOT NULL DEFAULT 1,
   started_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   ended_at           TIMESTAMPTZ,
-  status             VARCHAR(20) NOT NULL DEFAULT 'in_progress',
+  status             VARCHAR NOT NULL DEFAULT 'in_progress',
   questions_answered INTEGER NOT NULL DEFAULT 0,
   score_percent      DECIMAL(5,2)
 );
@@ -357,17 +357,17 @@ CREATE TABLE session_attempts (
 -- ============================================================================
 
 CREATE TABLE question_types (
-  question_type_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  code             VARCHAR(50) NOT NULL UNIQUE,
-  name             VARCHAR(100) NOT NULL
+  question_type_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  code             VARCHAR NOT NULL UNIQUE,
+  name             VARCHAR NOT NULL
 );
 
 CREATE TABLE session_questions (
-  session_question_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  session_attempt_id  UUID NOT NULL REFERENCES session_attempts(session_attempt_id) ON DELETE CASCADE,
-  subunit_session_id  UUID NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
-  question_type_id    UUID NOT NULL REFERENCES question_types(question_type_id) ON DELETE CASCADE,
-  term_id             UUID REFERENCES terms(term_id) ON DELETE SET NULL,
+  session_question_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  session_attempt_id  INT NOT NULL REFERENCES session_attempts(session_attempt_id) ON DELETE CASCADE,
+  subunit_session_id  INT NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
+  question_type_id    INT NOT NULL REFERENCES question_types(question_type_id) ON DELETE CASCADE,
+  term_id             INT REFERENCES terms(term_id) ON DELETE SET NULL,
   prompt_text         TEXT,
   audio_url           TEXT,
   image_url           TEXT,
@@ -376,18 +376,18 @@ CREATE TABLE session_questions (
 );
 
 CREATE TABLE session_question_options (
-  session_question_option_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  session_question_id        UUID NOT NULL REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
+  session_question_option_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  session_question_id        INT NOT NULL REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
   option_text                TEXT NOT NULL,
   is_correct                 BOOLEAN NOT NULL DEFAULT FALSE,
   sort_order                 INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE session_question_attempts (
-  session_question_attempt_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  session_question_id         UUID NOT NULL REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
+  session_question_attempt_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  session_question_id         INT NOT NULL REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
   user_id                     UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  selected_option_id          UUID REFERENCES session_question_options(session_question_option_id) ON DELETE SET NULL,
+  selected_option_id          INT REFERENCES session_question_options(session_question_option_id) ON DELETE SET NULL,
   typed_answer                TEXT,
   speech_transcript           TEXT,
   pronunciation_score         DECIMAL(5,2),
@@ -404,9 +404,9 @@ CREATE TABLE session_question_attempts (
 -- ============================================================================
 
 CREATE TABLE comprehension_conversations (
-  comprehension_conversation_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  cefr_level_id                 UUID NOT NULL REFERENCES cefr_levels(cefr_level_id) ON DELETE CASCADE,
-  title                         VARCHAR(150) NOT NULL,
+  comprehension_conversation_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  cefr_level_id                 INT NOT NULL REFERENCES cefr_levels(cefr_level_id) ON DELETE CASCADE,
+  title                         VARCHAR NOT NULL,
   audio_url                     TEXT,
   written_spanish_text          TEXT,
   english_summary               TEXT,
@@ -415,24 +415,24 @@ CREATE TABLE comprehension_conversations (
 );
 
 CREATE TABLE comprehension_questions (
-  comprehension_question_id     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  comprehension_conversation_id UUID NOT NULL REFERENCES comprehension_conversations(comprehension_conversation_id) ON DELETE CASCADE,
-  question_type                 VARCHAR(20) NOT NULL,
+  comprehension_question_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  comprehension_conversation_id INT NOT NULL REFERENCES comprehension_conversations(comprehension_conversation_id) ON DELETE CASCADE,
+  question_type                 VARCHAR NOT NULL,
   question_text                 TEXT NOT NULL,
   sort_order                    INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE comprehension_question_options (
-  comprehension_question_option_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  comprehension_question_id        UUID NOT NULL REFERENCES comprehension_questions(comprehension_question_id) ON DELETE CASCADE,
+  comprehension_question_option_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  comprehension_question_id        INT NOT NULL REFERENCES comprehension_questions(comprehension_question_id) ON DELETE CASCADE,
   option_text                      TEXT NOT NULL,
   is_correct                       BOOLEAN NOT NULL DEFAULT FALSE,
   sort_order                       INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE session_question_comprehension_links (
-  session_question_id       UUID PRIMARY KEY REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
-  comprehension_question_id UUID NOT NULL REFERENCES comprehension_questions(comprehension_question_id) ON DELETE CASCADE
+  session_question_id       INT PRIMARY KEY REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
+  comprehension_question_id INT NOT NULL REFERENCES comprehension_questions(comprehension_question_id) ON DELETE CASCADE
 );
 
 
@@ -441,33 +441,33 @@ CREATE TABLE session_question_comprehension_links (
 -- ============================================================================
 
 CREATE TABLE roleplay_topics (
-  roleplay_topic_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title             VARCHAR(150) NOT NULL,
+  roleplay_topic_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title             VARCHAR NOT NULL,
   brief_text        TEXT,
   context_text      TEXT,
-  difficulty_level  VARCHAR(50),
+  difficulty_level  VARCHAR,
   sort_order        INTEGER NOT NULL DEFAULT 0,
   is_active         BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE roleplay_required_criteria (
-  roleplay_criteria_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  roleplay_topic_id    UUID NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
+  roleplay_criteria_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  roleplay_topic_id    INT NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
   criteria_text        TEXT NOT NULL,
   sort_order           INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE roleplay_topic_subunit_links (
-  roleplay_topic_subunit_link_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  roleplay_topic_id              UUID NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
-  subunit_id                     UUID NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
+  roleplay_topic_subunit_link_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  roleplay_topic_id              INT NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
+  subunit_id                     INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
   UNIQUE (roleplay_topic_id, subunit_id)
 );
 
 CREATE TABLE roleplay_attempts (
-  roleplay_attempt_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  roleplay_attempt_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id             UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  roleplay_topic_id   UUID NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
+  roleplay_topic_id   INT NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
   started_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   ended_at            TIMESTAMPTZ,
   duration_seconds    INTEGER,
@@ -476,26 +476,26 @@ CREATE TABLE roleplay_attempts (
 );
 
 CREATE TABLE roleplay_messages (
-  roleplay_message_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  roleplay_attempt_id UUID NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
-  sender_type         VARCHAR(20) NOT NULL,
-  message_mode        VARCHAR(20),
+  roleplay_message_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  roleplay_attempt_id INT NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
+  sender_type         VARCHAR NOT NULL,
+  message_mode        VARCHAR,
   message_text        TEXT,
   audio_url           TEXT,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE roleplay_criteria_results (
-  roleplay_criteria_result_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  roleplay_attempt_id         UUID NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
-  roleplay_criteria_id        UUID NOT NULL REFERENCES roleplay_required_criteria(roleplay_criteria_id) ON DELETE CASCADE,
+  roleplay_criteria_result_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  roleplay_attempt_id         INT NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
+  roleplay_criteria_id        INT NOT NULL REFERENCES roleplay_required_criteria(roleplay_criteria_id) ON DELETE CASCADE,
   is_met                      BOOLEAN NOT NULL DEFAULT FALSE,
   evidence_text               TEXT,
   UNIQUE (roleplay_attempt_id, roleplay_criteria_id)
 );
 
 CREATE TABLE roleplay_feedback (
-  roleplay_attempt_id             UUID PRIMARY KEY REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
+  roleplay_attempt_id             INT PRIMARY KEY REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
   writing_spelling_score          DECIMAL(5,2),
   writing_punctuation_score       DECIMAL(5,2),
   writing_accent_characters_score DECIMAL(5,2),
@@ -507,10 +507,10 @@ CREATE TABLE roleplay_feedback (
 );
 
 CREATE TABLE roleplay_difficult_terms (
-  roleplay_difficult_term_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  roleplay_attempt_id        UUID NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
-  term_id                    UUID NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
-  difficulty_area            VARCHAR(20),
+  roleplay_difficult_term_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  roleplay_attempt_id        INT NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
+  term_id                    INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  difficulty_area            VARCHAR,
   UNIQUE (roleplay_attempt_id, term_id)
 );
 
@@ -520,13 +520,13 @@ CREATE TABLE roleplay_difficult_terms (
 -- ============================================================================
 
 CREATE TABLE issue_reports (
-  issue_report_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  issue_report_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id         UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  target_type     VARCHAR(30) NOT NULL,
-  target_id       UUID NOT NULL,
-  issue_category  VARCHAR(50),
+  target_type     VARCHAR NOT NULL,
+  target_id       INT NOT NULL,
+  issue_category  VARCHAR,
   description     TEXT,
-  status          VARCHAR(20) NOT NULL DEFAULT 'open',
+  status          VARCHAR NOT NULL DEFAULT 'open',
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   resolved_at     TIMESTAMPTZ
 );
@@ -698,45 +698,36 @@ ALTER TABLE roleplay_feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE roleplay_difficult_terms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE issue_reports ENABLE ROW LEVEL SECURITY;
 
--- Users: own profile
 CREATE POLICY users_select ON users FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY users_insert ON users FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY users_update ON users FOR UPDATE USING (auth.uid() = user_id);
 
--- User settings
 CREATE POLICY user_settings_select ON user_settings FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY user_settings_insert ON user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY user_settings_update ON user_settings FOR UPDATE USING (auth.uid() = user_id);
 
--- User auth providers
 CREATE POLICY user_auth_providers_select ON user_auth_providers FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY user_auth_providers_insert ON user_auth_providers FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- User stats
 CREATE POLICY user_stats_select ON user_stats FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY user_stats_insert ON user_stats FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY user_stats_update ON user_stats FOR UPDATE USING (auth.uid() = user_id);
 
--- User activity days
 CREATE POLICY user_activity_days_select ON user_activity_days FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY user_activity_days_insert ON user_activity_days FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY user_activity_days_update ON user_activity_days FOR UPDATE USING (auth.uid() = user_id);
 
--- User badges
 CREATE POLICY user_badges_select ON user_badges FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY user_badges_insert ON user_badges FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY user_badges_update ON user_badges FOR UPDATE USING (auth.uid() = user_id);
 
--- XP events
 CREATE POLICY xp_events_select ON xp_events FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY xp_events_insert ON xp_events FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- User term progress
 CREATE POLICY user_term_progress_select ON user_term_progress FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY user_term_progress_insert ON user_term_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY user_term_progress_update ON user_term_progress FOR UPDATE USING (auth.uid() = user_id);
 
--- User term SM2
 CREATE POLICY user_term_sm2_select ON user_term_sm2 FOR SELECT
   USING (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_sm2.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
 CREATE POLICY user_term_sm2_insert ON user_term_sm2 FOR INSERT
@@ -744,34 +735,28 @@ CREATE POLICY user_term_sm2_insert ON user_term_sm2 FOR INSERT
 CREATE POLICY user_term_sm2_update ON user_term_sm2 FOR UPDATE
   USING (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_sm2.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
 
--- User term status history
 CREATE POLICY user_term_status_history_select ON user_term_status_history FOR SELECT
   USING (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_status_history.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
 CREATE POLICY user_term_status_history_insert ON user_term_status_history FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_status_history.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
 
--- User subunit progress
 CREATE POLICY user_subunit_progress_select ON user_subunit_progress FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY user_subunit_progress_insert ON user_subunit_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY user_subunit_progress_update ON user_subunit_progress FOR UPDATE USING (auth.uid() = user_id);
 
--- User subunit session progress
 CREATE POLICY user_subunit_session_progress_select ON user_subunit_session_progress FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY user_subunit_session_progress_insert ON user_subunit_session_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY user_subunit_session_progress_update ON user_subunit_session_progress FOR UPDATE USING (auth.uid() = user_id);
 
--- Session attempts
 CREATE POLICY session_attempts_select ON session_attempts FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY session_attempts_insert ON session_attempts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY session_attempts_update ON session_attempts FOR UPDATE USING (auth.uid() = user_id);
 
--- Session questions
 CREATE POLICY session_questions_select ON session_questions FOR SELECT
   USING (EXISTS (SELECT 1 FROM session_attempts WHERE session_attempts.session_attempt_id = session_questions.session_attempt_id AND session_attempts.user_id = auth.uid()));
 CREATE POLICY session_questions_insert ON session_questions FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM session_attempts WHERE session_attempts.session_attempt_id = session_questions.session_attempt_id AND session_attempts.user_id = auth.uid()));
 
--- Session question options
 CREATE POLICY session_question_options_select ON session_question_options FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM session_questions
@@ -787,11 +772,9 @@ CREATE POLICY session_question_options_insert ON session_question_options FOR IN
     AND session_attempts.user_id = auth.uid()
   ));
 
--- Session question attempts
 CREATE POLICY session_question_attempts_select ON session_question_attempts FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY session_question_attempts_insert ON session_question_attempts FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Session question comprehension links
 CREATE POLICY session_question_comprehension_links_select ON session_question_comprehension_links FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM session_questions
@@ -807,36 +790,30 @@ CREATE POLICY session_question_comprehension_links_insert ON session_question_co
     AND session_attempts.user_id = auth.uid()
   ));
 
--- Roleplay attempts
 CREATE POLICY roleplay_attempts_select ON roleplay_attempts FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY roleplay_attempts_insert ON roleplay_attempts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY roleplay_attempts_update ON roleplay_attempts FOR UPDATE USING (auth.uid() = user_id);
 
--- Roleplay messages
 CREATE POLICY roleplay_messages_select ON roleplay_messages FOR SELECT
   USING (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_messages.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
 CREATE POLICY roleplay_messages_insert ON roleplay_messages FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_messages.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
 
--- Roleplay criteria results
 CREATE POLICY roleplay_criteria_results_select ON roleplay_criteria_results FOR SELECT
   USING (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_criteria_results.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
 CREATE POLICY roleplay_criteria_results_insert ON roleplay_criteria_results FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_criteria_results.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
 
--- Roleplay feedback
 CREATE POLICY roleplay_feedback_select ON roleplay_feedback FOR SELECT
   USING (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_feedback.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
 CREATE POLICY roleplay_feedback_insert ON roleplay_feedback FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_feedback.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
 
--- Roleplay difficult terms
 CREATE POLICY roleplay_difficult_terms_select ON roleplay_difficult_terms FOR SELECT
   USING (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_difficult_terms.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
 CREATE POLICY roleplay_difficult_terms_insert ON roleplay_difficult_terms FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_difficult_terms.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
 
--- Issue reports
 CREATE POLICY issue_reports_select ON issue_reports FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY issue_reports_insert ON issue_reports FOR INSERT WITH CHECK (auth.uid() = user_id);
 
