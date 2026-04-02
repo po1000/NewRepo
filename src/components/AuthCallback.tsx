@@ -6,13 +6,35 @@ export function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
-        navigate('/dashboard', { replace: true });
-      } else if (event === 'PASSWORD_RECOVERY') {
-        navigate('/set-new-password', { replace: true });
+    // Handle the auth callback - Supabase puts tokens in the URL hash
+    // when user clicks email confirmation or OAuth redirect
+    const handleCallback = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error('Auth callback error:', error);
+        navigate('/', { replace: true });
+        return;
       }
-    });
+
+      if (session) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
+      // If no session yet, listen for auth state changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN') {
+          navigate('/dashboard', { replace: true });
+        } else if (event === 'PASSWORD_RECOVERY') {
+          navigate('/set-new-password', { replace: true });
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    };
+
+    handleCallback();
   }, [navigate]);
 
   return (

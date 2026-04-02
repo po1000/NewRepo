@@ -32,11 +32,16 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
     }
 
     setLoading(true);
-    const { error: authError } = await signUp(email, password, username);
-    if (authError) {
-      setError(authError.message);
-    } else {
-      setSuccess(true);
+    try {
+      const { error: authError } = await signUp(email, password, username);
+      if (authError) {
+        setError(authError.message);
+      } else {
+        setSuccess(true);
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError('Something went wrong. Please try again.');
     }
     setLoading(false);
   };
