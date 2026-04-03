@@ -141,13 +141,6 @@ export function LoginCard({ onNavigate }: LoginCardProps) {
             </button>
             <button
               type="button"
-              onClick={() => handleSocialLogin('apple')}
-              className="hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#FF4D01] focus:ring-offset-2 rounded-full flex items-center justify-center"
-              aria-label="Log in with Apple">
-              <img src="/313-298.svg" alt="" aria-hidden="true" className="w-[30px] h-[30px]" />
-            </button>
-            <button
-              type="button"
               onClick={() => handleSocialLogin('facebook')}
               className="hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#FF4D01] focus:ring-offset-2 rounded-full flex items-center justify-center"
               aria-label="Log in with Facebook">
