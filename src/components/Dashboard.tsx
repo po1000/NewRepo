@@ -12,7 +12,7 @@ export function Dashboard() {
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
   return (
-    <div className="min-h-screen bg-[#FFF8F0]">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #FFE484 0%, #FFF8F0 40%)' }}>
       {/* Top Bar */}
       <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between max-w-[900px] mx-auto">
         <UserProfile username={username} />

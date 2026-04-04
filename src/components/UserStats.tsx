@@ -28,7 +28,7 @@ export function UserStats({ xp, hearts, streak }: UserStatsProps) {
         className="flex flex-row items-center gap-1.5 px-3 py-2 bg-white rounded-xl shadow-[2px_2px_4px_rgba(0,0,0,0.06)]">
         
         <img
-          src="/Frame.svg"
+          src="/badges-icon.svg"
           alt="Hearts"
           className="w-5 h-5"
           aria-hidden="true" />

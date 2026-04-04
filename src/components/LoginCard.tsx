@@ -20,7 +20,11 @@ export function LoginCard({ onNavigate }: LoginCardProps) {
     setLoading(true);
     const { error: authError } = await signIn(email, password);
     if (authError) {
-      setError(authError.message);
+      if (authError.message.includes('Email not confirmed')) {
+        setError('Please confirm your email before logging in. Check your inbox for the confirmation link.');
+      } else {
+        setError(authError.message);
+      }
     }
     setLoading(false);
   };
