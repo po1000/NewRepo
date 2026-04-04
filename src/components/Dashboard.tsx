@@ -4,60 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { Navigation } from './Navigation';
 import { UserProfile } from './UserProfile';
 import { UserStats } from './UserStats';
-import { UnitSection, UnitData } from './UnitSection';
-import { LessonCard } from './LessonCard';
-
-// Placeholder lesson data — will be replaced with real data from Supabase
-const beginnerUnits: UnitData[] = [
-  {
-    id: 'unit-1',
-    title: 'Unit 1 — Greetings & Introductions',
-    lessons: [
-      {
-        unitNumber: '1.1',
-        title: 'Hello & Goodbye',
-        color: '#FFE4CC',
-        imageUrl: '',
-        status: 'in-progress',
-        progressPercent: 50,
-      },
-      {
-        unitNumber: '1.2',
-        title: 'My Name Is...',
-        color: '#CCE4FF',
-        imageUrl: '',
-        status: 'locked',
-      },
-      {
-        unitNumber: '1.3',
-        title: 'Nice to Meet You',
-        color: '#D4FFCC',
-        imageUrl: '',
-        status: 'locked',
-      },
-    ],
-  },
-  {
-    id: 'unit-2',
-    title: 'Unit 2 — Numbers & Colors',
-    lessons: [
-      {
-        unitNumber: '2.1',
-        title: 'Numbers 1-20',
-        color: '#FFF3CC',
-        imageUrl: '',
-        status: 'locked',
-      },
-      {
-        unitNumber: '2.2',
-        title: 'Colors',
-        color: '#FFCCCC',
-        imageUrl: '',
-        status: 'locked',
-      },
-    ],
-  },
-];
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -84,22 +30,15 @@ export function Dashboard() {
 
       {/* Main Content */}
       <main className="flex flex-col items-center gap-6 px-4 pb-12">
-        {/* Current Lesson Card */}
-        <LessonCard
-          title="Lesson 1.1 — Hello & Goodbye"
-          subtitle="Learn basic Spanish greetings"
-          xpReward={25}
-          goalText="Master 10 greeting phrases"
-          progressPercent={0}
-        />
-
-        {/* Unit Sections */}
-        <UnitSection
-          level="A1 — Beginner"
-          currentUnit="Unit 1"
-          units={beginnerUnits}
-          defaultExpanded={true}
-        />
+        {/* Empty state — lessons will be fetched from Supabase */}
+        <div className="w-full max-w-[632px] mx-auto bg-white rounded-[16px] p-8 text-center shadow-sm">
+          <h2 className="font-inter font-bold text-[20.4px] leading-[32px] text-[#372213] mb-2">
+            Welcome, {username}!
+          </h2>
+          <p className="font-inter text-[13.6px] leading-[24px] text-[#6B7280]">
+            Your lessons will appear here once content is added to the database.
+          </p>
+        </div>
 
         {/* Sign Out */}
         <div className="w-full max-w-[632px] mx-auto flex justify-center pt-4">
