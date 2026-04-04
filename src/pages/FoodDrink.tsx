@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, PlayCircle } from 'lucide-react';
 import { Navigation } from '../components/Navigation';
 import { UserProfile } from '../components/UserProfile';
+import { STORAGE_URL } from '../lib/storage';
 interface FoodDrinkProps {
   onNavigateBack?: () => void;
   onLearnSpeakWriteClick?: () => void;
@@ -34,7 +35,7 @@ const MENU_DATA: MenuSection[] = [
     name: 'TORTILLA ESPAÑOLA',
     description:
     'Thick omelette made with eggs, sliced potatoes, and onions. Served warm in slices. Popular nationwide.',
-    imageUrl: "/__opt__aboutcom__coeus__resources__content_migration__serious_eats__seriouseats.com__recipes__images__2016__06__20160603-tortilla-espanola-vicky-wasik-16-08693f341420437d9ed0229f2bcfa251.jpg",
+    imageUrl: `${STORAGE_URL}/culture/food/__opt__aboutcom__coeus__resources__content_migration__serious_eats__seriouseats.com__recipes__images__2016__06__20160603-tortilla-espanola-vicky-wasik-16-08693f341420437d9ed0229f2bcfa251.jpg`,
 
     videoUrl: 'https://www.youtube.com/embed/5mKyaTcf9FA',
     ingredients: [
@@ -52,7 +53,7 @@ const MENU_DATA: MenuSection[] = [
     'Crispy fried potato chunks topped with spicy tomato-paprika sauce, often with garlic aioli.',
     origin: 'Madrid',
     originRegion: 'madrid',
-    imageUrl: "/patatas-bravas.jpg"
+    imageUrl: `${STORAGE_URL}/culture/food/patatas-bravas.jpg`
 
   },
   {
@@ -62,7 +63,7 @@ const MENU_DATA: MenuSection[] = [
     'Shrimp sautéed in olive oil with sliced garlic, chili, and parsley. Served sizzling hot.',
     origin: 'Andalusia',
     originRegion: 'andalucia',
-    imageUrl: "/GambasPilPil-0a9531b.jpg"
+    imageUrl: `${STORAGE_URL}/culture/food/GambasPilPil-0a9531b.jpg`
 
   }]
 
@@ -76,7 +77,7 @@ const MENU_DATA: MenuSection[] = [
     description:
     'Saffron rice with chicken, rabbit, green beans, and vegetables cooked in a wide pan.',
     origin: 'Valencia',
-    imageUrl: "/Paella-7.jpg",
+    imageUrl: `${STORAGE_URL}/culture/food/Paella-7.jpg`,
 
     videoUrl: 'https://www.youtube.com/embed/08W7LZDtnEI',
     ingredients: [
@@ -99,7 +100,7 @@ const MENU_DATA: MenuSection[] = [
     description:
     'Hearty white bean stew with chorizo, morcilla blood sausage, and bacon. Slow-cooked.',
     origin: 'Asturias',
-    imageUrl: "/fabada-spanish-bean-stew-with-chorizo-and-blood-sausage-XL-RECIPE0917-3055f2562ce042dd80ab7531fe89698b.jpg"
+    imageUrl: `${STORAGE_URL}/culture/food/fabada-spanish-bean-stew-with-chorizo-and-blood-sausage-XL-RECIPE0917-3055f2562ce042dd80ab7531fe89698b.jpg`
 
   }]
 
@@ -114,7 +115,7 @@ const MENU_DATA: MenuSection[] = [
     'Red wine punch mixed with chopped fruit, brandy, and orange juice. Served chilled.',
     origin: 'Andalucía',
     originRegion: 'andalucia',
-    imageUrl: "/istockphoto-500005177-612x612.jpg"
+    imageUrl: `${STORAGE_URL}/culture/food/istockphoto-500005177-612x612.jpg`
 
   },
   {
@@ -123,7 +124,7 @@ const MENU_DATA: MenuSection[] = [
     description:
     'Sweet creamy drink made from tiger nuts, water, and sugar. Served cold.',
     origin: 'Valencia',
-    imageUrl: "/Horchata-2-of-3-1-683x1024.jpg",
+    imageUrl: `${STORAGE_URL}/culture/food/Horchata-2-of-3-1-683x1024.jpg`,
 
     videoUrl: 'https://www.youtube.com/embed/sL5ccEwLXaU',
     ingredients: [
@@ -159,7 +160,7 @@ const MENU_DATA: MenuSection[] = [
     description:
     'Moist almond cake with eggs, sugar, and lemon zest. Marked with powdered sugar cross.',
     origin: 'Galicia',
-    imageUrl: "/2025D048_REGIONAL_CLASSIC_TORTA_DE_SANTIAGO_1-768x960.jpg",
+    imageUrl: `${STORAGE_URL}/culture/food/2025D048_REGIONAL_CLASSIC_TORTA_DE_SANTIAGO_1-768x960.jpg`,
 
     videoUrl: 'https://www.youtube.com/embed/JesYuzdlu_s',
     ingredients: [

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigation } from '../components/Navigation';
 import { UserProfile } from '../components/UserProfile';
+import { STORAGE_URL } from '../lib/storage';
 interface CultureCategory {
   id: string;
   title: string;
@@ -12,37 +13,29 @@ const categories: CultureCategory[] = [
 {
   id: '1',
   title: 'Music and Dance',
-  imageUrl: "/454-353.png",
-
-  iconUrl: "/215-2302.svg",
-
+  imageUrl: `${STORAGE_URL}/culture/music%20+%20icon/image%2017.png`,
+  iconUrl: `${STORAGE_URL}/culture/music%20+%20icon/Frame.svg`,
   color: '#528AFF'
 },
 {
   id: '3',
   title: 'Food & Drink',
-  imageUrl: "/468-107.png",
-
-  iconUrl: "/468-108.svg",
-
+  imageUrl: `${STORAGE_URL}/culture/food/image%2018.png`,
+  iconUrl: `${STORAGE_URL}/culture/food/Vector.svg`,
   color: '#FF5900'
 },
 {
   id: '4',
   title: 'Regions & Landmarks',
-  imageUrl: "/468-114.png",
-
-  iconUrl: "/468-115.svg",
-
+  imageUrl: `${STORAGE_URL}/culture/regions/image%2018-1.png`,
+  iconUrl: `${STORAGE_URL}/culture/regions/Vector-1.svg`,
   color: '#1B9F00'
 },
 {
   id: '5',
   title: 'History',
-  imageUrl: "/468-121.png",
-
-  iconUrl: "/468-122.svg",
-
+  imageUrl: `${STORAGE_URL}/culture/history/image%2018-2.png`,
+  iconUrl: `${STORAGE_URL}/culture/history/Vector-2.svg`,
   color: '#EDA200'
 }];
 

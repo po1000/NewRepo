@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { UserProfile } from '../components/UserProfile';
 import { Navigation } from '../components/Navigation';
+import { STORAGE_URL } from '../lib/storage';
 interface PracticeScenario {
   id: string;
   level: string;
@@ -16,8 +17,7 @@ const scenarios: PracticeScenario[] = [
   level: 'Beginner',
   title: 'Ordering at a Café',
   description: 'Order food and drinks from a Madrid café',
-  imageUrl: "/image.png",
-
+  imageUrl: `${STORAGE_URL}/roleplay/image%2024-2.png`,
   color: '#FFA600'
 },
 {
@@ -25,8 +25,7 @@ const scenarios: PracticeScenario[] = [
   level: 'Beginner',
   title: 'Presentation Time',
   description: 'Introduce yourself then informally present your interests.',
-  imageUrl: "/image-1.png",
-
+  imageUrl: `${STORAGE_URL}/roleplay/image%2024-3.png`,
   color: '#39AFE6'
 },
 {
@@ -34,8 +33,7 @@ const scenarios: PracticeScenario[] = [
   level: 'Beginner',
   title: 'Asking for Directions',
   description: 'Navigate Madrid by asking locals for help',
-  imageUrl: "/image-2.png",
-
+  imageUrl: `${STORAGE_URL}/roleplay/image%2024.png`,
   color: '#0135D4'
 },
 {
@@ -43,8 +41,7 @@ const scenarios: PracticeScenario[] = [
   level: 'Beginner',
   title: 'Shopping at a Market',
   description: 'Buy fresh produce and practice bargaining in Spanish.',
-  imageUrl: "/image-3.png",
-
+  imageUrl: `${STORAGE_URL}/roleplay/image%2024-1.png`,
   color: '#27A700'
 }];
 

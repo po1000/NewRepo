@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Navigation } from '../components/Navigation';
 import { UserProfile } from '../components/UserProfile';
+import { STORAGE_URL } from '../lib/storage';
 interface RegionsLandmarksProps {
   onNavigateBack?: () => void;
   onLearnSpeakWriteClick?: () => void;
@@ -34,8 +35,7 @@ const CLICKABLE_ITEMS: ClickableItem[] = [
   top: '16.8%',
   width: '15.6%',
   height: '11.9%',
-  circleImage: "/567-130.png"
-
+  circleImage: `${STORAGE_URL}/culture/regions/sagrada%20circle.svg`
 },
 {
   id: 'palacio-real',
@@ -44,8 +44,7 @@ const CLICKABLE_ITEMS: ClickableItem[] = [
   top: '32.2%',
   width: '12.4%',
   height: '9.4%',
-  circleImage: "/567-133.png"
-
+  circleImage: `${STORAGE_URL}/culture/regions/palacio%20real%20%20circle.svg`
 },
 {
   id: 'madrid',
@@ -54,8 +53,7 @@ const CLICKABLE_ITEMS: ClickableItem[] = [
   top: '37%',
   width: '10.7%',
   height: '8.1%',
-  circleImage: "/567-132.png"
-
+  circleImage: `${STORAGE_URL}/culture/regions/madrid%20cricle.svg`
 },
 {
   id: 'andalucia',
@@ -64,8 +62,7 @@ const CLICKABLE_ITEMS: ClickableItem[] = [
   top: '66.4%',
   width: '21.5%',
   height: '16.3%',
-  circleImage: "/567-131.png"
-
+  circleImage: `${STORAGE_URL}/culture/regions/andalucia%20circle.svg`
 },
 {
   id: 'barcelona',
@@ -74,8 +71,7 @@ const CLICKABLE_ITEMS: ClickableItem[] = [
   top: '24.9%',
   width: '14.3%',
   height: '10.8%',
-  circleImage: "/567-129.png"
-
+  circleImage: `${STORAGE_URL}/culture/regions/barcelona%20circle.svg`
 }];
 
 interface DetailData {
@@ -209,7 +205,7 @@ export function RegionsLandmarks({
               }}>
               
               <img
-                src="/566-128.png"
+                src={`${STORAGE_URL}/culture/regions/566-128566-128.png`}
                 alt="Illustrated map of Spain showing regions, cities, and landmarks"
                 className="absolute inset-0 w-full h-full object-cover" />
               

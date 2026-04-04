@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ChevronRightIcon, ChevronLeftIcon, InfoIcon } from 'lucide-react';
 import { Navigation } from '../components/Navigation';
 import { UserProfile } from '../components/UserProfile';
+import { STORAGE_URL } from '../lib/storage';
 interface HistoryProps {
   onNavigateBack?: () => void;
   onLearnSpeakWriteClick?: () => void;
@@ -28,7 +29,7 @@ const TIMELINE_DATA: TimelineItem[] = [
   color: '#1D4ED8',
   bgColor: '#EFF6FF',
   borderColor: '#93C5FD',
-  imageUrl: "/before_spain.svg",
+  imageUrl: `${STORAGE_URL}/culture/history/before%20spain.svg`,
 
   content:
   <div className="space-y-3 font-inter">
@@ -69,7 +70,7 @@ const TIMELINE_DATA: TimelineItem[] = [
   color: '#059669',
   bgColor: '#ECFDF5',
   borderColor: '#6EE7B7',
-  imageUrl: "/orgin_of_castiliain.svg",
+  imageUrl: `${STORAGE_URL}/culture/history/orgin%20of%20castiliain.svg`,
 
   content:
   <p className="font-inter">
@@ -87,7 +88,7 @@ const TIMELINE_DATA: TimelineItem[] = [
   color: '#DC2626',
   bgColor: '#FEF2F2',
   borderColor: '#FCA5A5',
-  imageUrl: "/arab_influence.svg",
+  imageUrl: `${STORAGE_URL}/culture/history/arab%20influence.svg`,
 
   content:
   <div className="space-y-3 font-inter">
@@ -128,7 +129,7 @@ const TIMELINE_DATA: TimelineItem[] = [
   color: '#7C3AED',
   bgColor: '#F5F3FF',
   borderColor: '#C4B5FD',
-  imageUrl: "/monarchs.svg",
+  imageUrl: `${STORAGE_URL}/culture/history/monarchs.svg`,
 
   content:
   <div className="space-y-3 font-inter">
