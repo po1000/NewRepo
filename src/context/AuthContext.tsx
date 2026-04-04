@@ -1,38 +1,37 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User, Session, AuthError } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-interface AuthState {
+interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-}
-
-interface AuthContextValue extends AuthState {
   signUp: (email: string, password: string, username: string) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signInWithProvider: (provider: 'google' | 'apple' | 'facebook') => Promise<{ error: AuthError | null }>;
+  signInWithProvider: (provider: 'google') => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
-  updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
+  updatePassword: (password: string) => Promise<{ error: AuthError | null }>;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    session: null,
-    loading: true,
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setState({ user: session?.user ?? null, session, loading: false });
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ user: session?.user ?? null, session, loading: false });
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -50,8 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       return { error };
     } catch (err) {
-      console.error('Signup error:', err);
-      return { error: { message: 'An unexpected error occurred. Please try again.' } as any };
+      return { error: err as AuthError };
     }
   };
 
@@ -60,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signInWithProvider = async (provider: 'google' | 'apple' | 'facebook') => {
+  const signInWithProvider = async (provider: 'google') => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -81,13 +79,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const updatePassword = async (newPassword: string) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
     return { error };
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, signUp, signIn, signInWithProvider, signOut, resetPassword, updatePassword }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithProvider, signOut, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );
@@ -95,8 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 }

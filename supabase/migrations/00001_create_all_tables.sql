@@ -1,624 +1,645 @@
--- ============================================================================
--- Spanish Learning Platform — Full Database Schema (Final)
--- Supabase PostgreSQL Migration
--- ============================================================================
+-- ============================================================
+-- Spanish Learning Platform — Full Database Schema
+-- 49 tables, INT GENERATED ALWAYS AS IDENTITY PKs
+-- (except users.user_id = UUID to match Supabase auth.users)
+-- image_url columns on content tables for Supabase Storage
+-- ============================================================
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-
--- ============================================================================
+-- ============================================================
 -- 1. USERS & SETTINGS
--- ============================================================================
+-- ============================================================
 
 CREATE TABLE users (
-  user_id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  username          VARCHAR UNIQUE NOT NULL,
-  email             VARCHAR UNIQUE NOT NULL,
-  password_hash     TEXT,
-  display_name      VARCHAR,
-  profile_image_url TEXT,
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at        TIMESTAMPTZ,
-  last_login_at     TIMESTAMPTZ,
-  is_active         BOOLEAN NOT NULL DEFAULT TRUE
+  user_id       UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username      TEXT NOT NULL UNIQUE,
+  email         TEXT NOT NULL UNIQUE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE user_settings (
-  user_id               UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-  listening_enabled     BOOLEAN NOT NULL DEFAULT TRUE,
-  speaking_enabled      BOOLEAN NOT NULL DEFAULT TRUE,
-  notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE TABLE user_auth_providers (
-  auth_provider_id  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id           UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  provider_name     VARCHAR NOT NULL,
-  provider_user_key VARCHAR NOT NULL,
-  linked_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, provider_name)
+  setting_id        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id           UUID NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+  daily_goal_xp     INT NOT NULL DEFAULT 20,
+  sound_enabled     BOOLEAN NOT NULL DEFAULT true,
+  notifications     BOOLEAN NOT NULL DEFAULT true,
+  preferred_voice   TEXT NOT NULL DEFAULT 'default',
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE user_stats (
-  user_id                  UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-  total_xp                 INTEGER NOT NULL DEFAULT 0,
-  current_streak           INTEGER NOT NULL DEFAULT 0,
-  streak_record            INTEGER NOT NULL DEFAULT 0,
-  last_lesson_completed_on DATE
+  stat_id           INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id           UUID NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+  total_xp          INT NOT NULL DEFAULT 0,
+  current_streak    INT NOT NULL DEFAULT 0,
+  longest_streak    INT NOT NULL DEFAULT 0,
+  hearts            INT NOT NULL DEFAULT 5,
+  lessons_completed INT NOT NULL DEFAULT 0,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE user_activity_days (
-  activity_day_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id             UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  activity_date       DATE NOT NULL,
-  did_complete_lesson BOOLEAN NOT NULL DEFAULT FALSE,
-  UNIQUE (user_id, activity_date)
+CREATE TABLE user_auth_providers (
+  provider_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  provider_name TEXT NOT NULL,
+  provider_uid  TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, provider_name)
 );
 
-
--- ============================================================================
+-- ============================================================
 -- 2. BADGES & XP
--- ============================================================================
+-- ============================================================
 
 CREATE TABLE badges (
-  badge_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  label          VARCHAR NOT NULL,
-  description    TEXT,
-  icon_url       TEXT,
-  criteria_type  VARCHAR,
-  criteria_value INTEGER
+  badge_id      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name          TEXT NOT NULL UNIQUE,
+  description   TEXT,
+  image_url     TEXT,
+  xp_required   INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE user_badges (
-  user_badge_id  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id        UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  badge_id       INT NOT NULL REFERENCES badges(badge_id) ON DELETE CASCADE,
-  progress_value INTEGER NOT NULL DEFAULT 0,
-  is_completed   BOOLEAN NOT NULL DEFAULT FALSE,
-  completed_at   TIMESTAMPTZ,
-  UNIQUE (user_id, badge_id)
+  user_badge_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  badge_id      INT NOT NULL REFERENCES badges(badge_id) ON DELETE CASCADE,
+  earned_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, badge_id)
 );
 
 CREATE TABLE xp_events (
-  xp_event_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id     UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  source_type VARCHAR NOT NULL,
-  source_id   INT,
-  xp_amount   INTEGER NOT NULL,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  xp_event_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id        UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  xp_amount      INT NOT NULL,
+  source_type    TEXT NOT NULL,
+  source_id      INT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-
--- ============================================================================
+-- ============================================================
 -- 3. CONTENT HIERARCHY
--- ============================================================================
+-- ============================================================
 
 CREATE TABLE cefr_levels (
   cefr_level_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  code          VARCHAR NOT NULL UNIQUE,
-  title         VARCHAR NOT NULL,
+  code          TEXT NOT NULL UNIQUE,
+  name          TEXT NOT NULL,
   description   TEXT,
-  sort_order    INTEGER NOT NULL DEFAULT 0
+  sort_order    INT NOT NULL DEFAULT 0,
+  image_url     TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE units (
   unit_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   cefr_level_id INT NOT NULL REFERENCES cefr_levels(cefr_level_id) ON DELETE CASCADE,
-  unit_number   INTEGER NOT NULL,
-  title         VARCHAR NOT NULL,
+  unit_number   INT NOT NULL,
+  title         TEXT NOT NULL,
   description   TEXT,
-  sort_order    INTEGER NOT NULL DEFAULT 0,
-  UNIQUE (cefr_level_id, unit_number)
+  image_url     TEXT,
+  sort_order    INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(cefr_level_id, unit_number)
 );
 
 CREATE TABLE subunits (
   subunit_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   unit_id       INT NOT NULL REFERENCES units(unit_id) ON DELETE CASCADE,
-  subunit_code  VARCHAR NOT NULL,
-  title         VARCHAR NOT NULL,
-  goal_text     TEXT,
+  subunit_number INT NOT NULL,
+  title         TEXT NOT NULL,
   description   TEXT,
-  thumbnail_url TEXT,
-  sort_order    INTEGER NOT NULL DEFAULT 0,
-  is_active     BOOLEAN NOT NULL DEFAULT TRUE
+  sort_order    INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(unit_id, subunit_number)
 );
 
 CREATE TABLE subunit_sessions (
-  subunit_session_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  subunit_id         INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
-  session_number     INTEGER NOT NULL,
-  title              VARCHAR,
-  session_type       VARCHAR NOT NULL,
-  unlock_rule        TEXT,
-  sort_order         INTEGER NOT NULL DEFAULT 0
+  session_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  subunit_id    INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
+  session_number INT NOT NULL,
+  title         TEXT NOT NULL,
+  description   TEXT,
+  image_url     TEXT,
+  color         TEXT,
+  sort_order    INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(subunit_id, session_number)
 );
 
-
--- ============================================================================
--- 4. TERMS / VOCAB / PHRASES
--- ============================================================================
+-- ============================================================
+-- 4. TERMS
+-- ============================================================
 
 CREATE TABLE terms (
-  term_id             INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  spanish_text        VARCHAR NOT NULL,
-  english_text        VARCHAR NOT NULL,
-  term_type           VARCHAR,
-  part_of_speech      VARCHAR,
-  gender              VARCHAR,
-  audio_url           TEXT,
-  image_url           TEXT,
-  example_sentence_es TEXT,
-  example_sentence_en TEXT,
-  example_audio_url   TEXT,
-  notes               TEXT,
-  is_active           BOOLEAN NOT NULL DEFAULT TRUE
+  term_id           INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  spanish           TEXT NOT NULL,
+  english           TEXT NOT NULL,
+  part_of_speech    TEXT,
+  ipa_spanish       TEXT,
+  ipa_english       TEXT,
+  audio_url         TEXT,
+  image_url         TEXT,
+  difficulty_rating INT NOT NULL DEFAULT 1,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE subunit_terms (
   subunit_term_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   subunit_id      INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
   term_id         INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
-  sort_order      INTEGER NOT NULL DEFAULT 0,
-  is_core_term    BOOLEAN NOT NULL DEFAULT FALSE,
-  UNIQUE (subunit_id, term_id)
+  sort_order      INT NOT NULL DEFAULT 0,
+  UNIQUE(subunit_id, term_id)
 );
 
-
--- ============================================================================
--- 5. GRAMMAR SECTION
--- ============================================================================
+-- ============================================================
+-- 5. GRAMMAR
+-- ============================================================
 
 CREATE TABLE grammar_topics (
-  grammar_topic_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  title            VARCHAR NOT NULL,
-  slug             VARCHAR NOT NULL UNIQUE,
-  description      TEXT,
-  content_html     TEXT,
-  sort_order       INTEGER NOT NULL DEFAULT 0
+  topic_id      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title         TEXT NOT NULL,
+  description   TEXT,
+  cefr_level_id INT REFERENCES cefr_levels(cefr_level_id),
+  sort_order    INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE grammar_verb_categories (
-  verb_category_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name             VARCHAR NOT NULL,
-  sort_order       INTEGER NOT NULL DEFAULT 0
+  category_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name          TEXT NOT NULL UNIQUE,
+  description   TEXT,
+  sort_order    INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE verbs (
-  verb_id          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  verb_category_id INT NOT NULL REFERENCES grammar_verb_categories(verb_category_id) ON DELETE CASCADE,
-  infinitive       VARCHAR NOT NULL,
-  english_meaning  VARCHAR NOT NULL,
-  is_irregular     BOOLEAN NOT NULL DEFAULT FALSE,
-  notes            TEXT
+  verb_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  infinitive    TEXT NOT NULL,
+  english       TEXT NOT NULL,
+  category_id   INT REFERENCES grammar_verb_categories(category_id),
+  is_irregular  BOOLEAN NOT NULL DEFAULT false,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE pronouns (
-  pronoun_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  pronoun_text VARCHAR NOT NULL,
-  person_group VARCHAR,
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  pronoun_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  spanish       TEXT NOT NULL,
+  english       TEXT NOT NULL,
+  person        TEXT NOT NULL,
+  sort_order    INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE tenses (
-  tense_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name       VARCHAR NOT NULL,
-  sort_order INTEGER NOT NULL DEFAULT 0
+  tense_id      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name          TEXT NOT NULL UNIQUE,
+  english_name  TEXT NOT NULL,
+  description   TEXT,
+  sort_order    INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE verb_conjugations (
-  verb_conjugation_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  verb_id             INT NOT NULL REFERENCES verbs(verb_id) ON DELETE CASCADE,
-  pronoun_id          INT NOT NULL REFERENCES pronouns(pronoun_id) ON DELETE CASCADE,
-  tense_id            INT NOT NULL REFERENCES tenses(tense_id) ON DELETE CASCADE,
-  conjugated_form     VARCHAR NOT NULL,
-  UNIQUE (verb_id, pronoun_id, tense_id)
+  conjugation_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  verb_id        INT NOT NULL REFERENCES verbs(verb_id) ON DELETE CASCADE,
+  tense_id       INT NOT NULL REFERENCES tenses(tense_id) ON DELETE CASCADE,
+  pronoun_id     INT NOT NULL REFERENCES pronouns(pronoun_id) ON DELETE CASCADE,
+  conjugated     TEXT NOT NULL,
+  is_irregular   BOOLEAN NOT NULL DEFAULT false,
+  audio_url      TEXT,
+  UNIQUE(verb_id, tense_id, pronoun_id)
 );
 
-
--- ============================================================================
+-- ============================================================
 -- 6. GRAMMAR HINT SYSTEM
--- ============================================================================
+-- ============================================================
 
 CREATE TABLE grammar_hints (
-  grammar_hint_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  hint_title      VARCHAR NOT NULL,
-  hint_text       TEXT NOT NULL,
-  hint_type       VARCHAR,
-  sort_order      INTEGER NOT NULL DEFAULT 0,
-  is_active       BOOLEAN NOT NULL DEFAULT TRUE
+  hint_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  hint_text     TEXT NOT NULL,
+  hint_type     TEXT NOT NULL DEFAULT 'general',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE term_grammar_hints (
-  term_grammar_hint_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  term_id              INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
-  grammar_hint_id      INT NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
-  sort_order           INTEGER NOT NULL DEFAULT 0,
-  UNIQUE (term_id, grammar_hint_id)
+  id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  term_id       INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  hint_id       INT NOT NULL REFERENCES grammar_hints(hint_id) ON DELETE CASCADE,
+  UNIQUE(term_id, hint_id)
 );
 
 CREATE TABLE grammar_hint_topic_links (
-  grammar_hint_topic_link_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  grammar_hint_id            INT NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
-  grammar_topic_id           INT NOT NULL REFERENCES grammar_topics(grammar_topic_id) ON DELETE CASCADE,
-  UNIQUE (grammar_hint_id, grammar_topic_id)
+  id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  hint_id       INT NOT NULL REFERENCES grammar_hints(hint_id) ON DELETE CASCADE,
+  topic_id      INT NOT NULL REFERENCES grammar_topics(topic_id) ON DELETE CASCADE,
+  UNIQUE(hint_id, topic_id)
 );
 
 CREATE TABLE grammar_hint_verb_links (
-  grammar_hint_verb_link_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  grammar_hint_id           INT NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
-  verb_id                   INT NOT NULL REFERENCES verbs(verb_id) ON DELETE CASCADE,
-  UNIQUE (grammar_hint_id, verb_id)
+  id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  hint_id       INT NOT NULL REFERENCES grammar_hints(hint_id) ON DELETE CASCADE,
+  verb_id       INT NOT NULL REFERENCES verbs(verb_id) ON DELETE CASCADE,
+  UNIQUE(hint_id, verb_id)
 );
 
 CREATE TABLE grammar_hint_conjugation_links (
-  grammar_hint_conjugation_link_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  grammar_hint_id                  INT NOT NULL REFERENCES grammar_hints(grammar_hint_id) ON DELETE CASCADE,
-  verb_conjugation_id              INT NOT NULL REFERENCES verb_conjugations(verb_conjugation_id) ON DELETE CASCADE,
-  UNIQUE (grammar_hint_id, verb_conjugation_id)
+  id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  hint_id       INT NOT NULL REFERENCES grammar_hints(hint_id) ON DELETE CASCADE,
+  conjugation_id INT NOT NULL REFERENCES verb_conjugations(conjugation_id) ON DELETE CASCADE,
+  UNIQUE(hint_id, conjugation_id)
 );
 
 CREATE TABLE term_pronunciation_hints (
-  pronunciation_hint_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  term_id               INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
-  hint_text             TEXT NOT NULL,
-  sort_order            INTEGER NOT NULL DEFAULT 0
+  id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  term_id       INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  hint_text     TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-
--- ============================================================================
+-- ============================================================
 -- 7. USER TERM LEARNING & SM-2
--- ============================================================================
+-- ============================================================
 
 CREATE TABLE user_term_progress (
-  user_term_progress_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id               UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  term_id               INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
-  learning_status       VARCHAR NOT NULL DEFAULT 'not_seen',
-  correct_in_session    INTEGER NOT NULL DEFAULT 0,
-  times_seen            INTEGER NOT NULL DEFAULT 0,
-  times_correct         INTEGER NOT NULL DEFAULT 0,
-  times_incorrect       INTEGER NOT NULL DEFAULT 0,
-  times_skipped         INTEGER NOT NULL DEFAULT 0,
-  times_marked_known    INTEGER NOT NULL DEFAULT 0,
-  current_strength_level INTEGER NOT NULL DEFAULT 0,
-  is_marked_known       BOOLEAN NOT NULL DEFAULT FALSE,
-  is_due_for_review     BOOLEAN NOT NULL DEFAULT FALSE,
-  last_answered_at      TIMESTAMPTZ,
-  last_reviewed_at      TIMESTAMPTZ,
-  next_review_at        TIMESTAMPTZ,
-  UNIQUE (user_id, term_id)
+  progress_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id           UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  term_id           INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  status            TEXT NOT NULL DEFAULT 'new',
+  correct_count     INT NOT NULL DEFAULT 0,
+  incorrect_count   INT NOT NULL DEFAULT 0,
+  last_reviewed_at  TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, term_id)
 );
 
 CREATE TABLE user_term_sm2 (
-  user_term_progress_id INT PRIMARY KEY REFERENCES user_term_progress(user_term_progress_id) ON DELETE CASCADE,
-  ef                    DECIMAL(4,2) NOT NULL DEFAULT 2.50,
-  repetition            INTEGER NOT NULL DEFAULT 0,
-  interval_days         INTEGER NOT NULL DEFAULT 0,
-  last_q_score          INTEGER DEFAULT 0,
-  review_due_at         TIMESTAMPTZ
+  sm2_id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id           UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  term_id           INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  easiness_factor   REAL NOT NULL DEFAULT 2.5,
+  interval_days     INT NOT NULL DEFAULT 0,
+  repetitions       INT NOT NULL DEFAULT 0,
+  next_review_date  DATE,
+  last_quality      INT,
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, term_id)
 );
 
 CREATE TABLE user_term_status_history (
-  status_history_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_term_progress_id INT NOT NULL REFERENCES user_term_progress(user_term_progress_id) ON DELETE CASCADE,
-  old_status            VARCHAR,
-  new_status            VARCHAR NOT NULL,
-  changed_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  change_reason         VARCHAR
+  history_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  term_id       INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  old_status    TEXT,
+  new_status    TEXT NOT NULL,
+  changed_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-
--- ============================================================================
--- 8. USER PROGRESS THROUGH SUBUNITS & SESSIONS
--- ============================================================================
+-- ============================================================
+-- 8. USER PROGRESS
+-- ============================================================
 
 CREATE TABLE user_subunit_progress (
-  user_subunit_progress_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id                  UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  subunit_id               INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
-  progress_percent         DECIMAL(5,2) NOT NULL DEFAULT 0,
-  total_terms              INTEGER NOT NULL DEFAULT 0,
-  terms_learnt_count       INTEGER NOT NULL DEFAULT 0,
-  terms_marked_known_count INTEGER NOT NULL DEFAULT 0,
-  is_completed             BOOLEAN NOT NULL DEFAULT FALSE,
-  started_at               TIMESTAMPTZ,
-  completed_at             TIMESTAMPTZ,
-  last_activity_at         TIMESTAMPTZ,
-  UNIQUE (user_id, subunit_id)
+  id                INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id           UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  subunit_id        INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
+  status            TEXT NOT NULL DEFAULT 'locked',
+  progress_percent  INT NOT NULL DEFAULT 0,
+  started_at        TIMESTAMPTZ,
+  completed_at      TIMESTAMPTZ,
+  UNIQUE(user_id, subunit_id)
 );
 
 CREATE TABLE user_subunit_session_progress (
-  user_subunit_session_progress_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id                          UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  subunit_session_id               INT NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
-  status                           VARCHAR NOT NULL DEFAULT 'not_started',
-  started_at                       TIMESTAMPTZ,
-  completed_at                     TIMESTAMPTZ,
-  last_activity_at                 TIMESTAMPTZ,
-  UNIQUE (user_id, subunit_session_id)
+  id                INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id           UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  session_id        INT NOT NULL REFERENCES subunit_sessions(session_id) ON DELETE CASCADE,
+  status            TEXT NOT NULL DEFAULT 'locked',
+  score             INT,
+  started_at        TIMESTAMPTZ,
+  completed_at      TIMESTAMPTZ,
+  UNIQUE(user_id, session_id)
 );
 
 CREATE TABLE session_attempts (
-  session_attempt_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id            UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  subunit_id         INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
-  subunit_session_id INT NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
-  attempt_number     INTEGER NOT NULL DEFAULT 1,
-  started_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  ended_at           TIMESTAMPTZ,
-  status             VARCHAR NOT NULL DEFAULT 'in_progress',
-  questions_answered INTEGER NOT NULL DEFAULT 0,
-  score_percent      DECIMAL(5,2)
+  attempt_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  session_id    INT NOT NULL REFERENCES subunit_sessions(session_id) ON DELETE CASCADE,
+  score         INT,
+  xp_earned     INT NOT NULL DEFAULT 0,
+  started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at  TIMESTAMPTZ
 );
 
-
--- ============================================================================
--- 9. QUESTION TYPES FOR NORMAL SESSIONS
--- ============================================================================
+-- ============================================================
+-- 9. QUESTION TYPES
+-- ============================================================
 
 CREATE TABLE question_types (
-  question_type_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  code             VARCHAR NOT NULL UNIQUE,
-  name             VARCHAR NOT NULL
+  type_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name          TEXT NOT NULL UNIQUE,
+  description   TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE session_questions (
-  session_question_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  session_attempt_id  INT NOT NULL REFERENCES session_attempts(session_attempt_id) ON DELETE CASCADE,
-  subunit_session_id  INT NOT NULL REFERENCES subunit_sessions(subunit_session_id) ON DELETE CASCADE,
-  question_type_id    INT NOT NULL REFERENCES question_types(question_type_id) ON DELETE CASCADE,
-  term_id             INT REFERENCES terms(term_id) ON DELETE SET NULL,
-  prompt_text         TEXT,
-  audio_url           TEXT,
-  image_url           TEXT,
-  display_order       INTEGER NOT NULL DEFAULT 0,
-  is_review_question  BOOLEAN NOT NULL DEFAULT FALSE
+  question_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  session_id    INT NOT NULL REFERENCES subunit_sessions(session_id) ON DELETE CASCADE,
+  type_id       INT NOT NULL REFERENCES question_types(type_id),
+  term_id       INT REFERENCES terms(term_id),
+  prompt_text   TEXT NOT NULL,
+  correct_answer TEXT NOT NULL,
+  audio_url     TEXT,
+  image_url     TEXT,
+  sort_order    INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE session_question_options (
-  session_question_option_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  session_question_id        INT NOT NULL REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
-  option_text                TEXT NOT NULL,
-  is_correct                 BOOLEAN NOT NULL DEFAULT FALSE,
-  sort_order                 INTEGER NOT NULL DEFAULT 0
+  option_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  question_id   INT NOT NULL REFERENCES session_questions(question_id) ON DELETE CASCADE,
+  option_text   TEXT NOT NULL,
+  is_correct    BOOLEAN NOT NULL DEFAULT false,
+  sort_order    INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE session_question_attempts (
-  session_question_attempt_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  session_question_id         INT NOT NULL REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
-  user_id                     UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  selected_option_id          INT REFERENCES session_question_options(session_question_option_id) ON DELETE SET NULL,
-  typed_answer                TEXT,
-  speech_transcript           TEXT,
-  pronunciation_score         DECIMAL(5,2),
-  q_score                     INTEGER,
-  is_correct                  BOOLEAN,
-  feedback_text               TEXT,
-  skipped                     BOOLEAN NOT NULL DEFAULT FALSE,
-  answered_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  attempt_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  question_id   INT NOT NULL REFERENCES session_questions(question_id) ON DELETE CASCADE,
+  session_attempt_id INT NOT NULL REFERENCES session_attempts(attempt_id) ON DELETE CASCADE,
+  user_answer   TEXT NOT NULL,
+  is_correct    BOOLEAN NOT NULL,
+  time_spent_ms INT,
+  answered_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-
--- ============================================================================
--- 10. COMPREHENSION CONTENT
--- ============================================================================
+-- ============================================================
+-- 10. COMPREHENSION
+-- ============================================================
 
 CREATE TABLE comprehension_conversations (
-  comprehension_conversation_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  cefr_level_id                 INT NOT NULL REFERENCES cefr_levels(cefr_level_id) ON DELETE CASCADE,
-  title                         VARCHAR NOT NULL,
-  audio_url                     TEXT,
-  written_spanish_text          TEXT,
-  english_summary               TEXT,
-  is_final_level_review         BOOLEAN NOT NULL DEFAULT FALSE,
-  is_active                     BOOLEAN NOT NULL DEFAULT TRUE
+  conversation_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title           TEXT NOT NULL,
+  description     TEXT,
+  context_text    TEXT,
+  audio_url       TEXT,
+  image_url       TEXT,
+  cefr_level_id   INT REFERENCES cefr_levels(cefr_level_id),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE comprehension_questions (
-  comprehension_question_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  comprehension_conversation_id INT NOT NULL REFERENCES comprehension_conversations(comprehension_conversation_id) ON DELETE CASCADE,
-  question_type                 VARCHAR NOT NULL,
-  question_text                 TEXT NOT NULL,
-  sort_order                    INTEGER NOT NULL DEFAULT 0
+  question_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  conversation_id INT NOT NULL REFERENCES comprehension_conversations(conversation_id) ON DELETE CASCADE,
+  question_text   TEXT NOT NULL,
+  correct_answer  TEXT NOT NULL,
+  sort_order      INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE comprehension_question_options (
-  comprehension_question_option_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  comprehension_question_id        INT NOT NULL REFERENCES comprehension_questions(comprehension_question_id) ON DELETE CASCADE,
-  option_text                      TEXT NOT NULL,
-  is_correct                       BOOLEAN NOT NULL DEFAULT FALSE,
-  sort_order                       INTEGER NOT NULL DEFAULT 0
+  option_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  question_id   INT NOT NULL REFERENCES comprehension_questions(question_id) ON DELETE CASCADE,
+  option_text   TEXT NOT NULL,
+  is_correct    BOOLEAN NOT NULL DEFAULT false,
+  sort_order    INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE session_question_comprehension_links (
-  session_question_id       INT PRIMARY KEY REFERENCES session_questions(session_question_id) ON DELETE CASCADE,
-  comprehension_question_id INT NOT NULL REFERENCES comprehension_questions(comprehension_question_id) ON DELETE CASCADE
+  id                INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  question_id       INT NOT NULL REFERENCES session_questions(question_id) ON DELETE CASCADE,
+  conversation_id   INT NOT NULL REFERENCES comprehension_conversations(conversation_id) ON DELETE CASCADE,
+  UNIQUE(question_id, conversation_id)
 );
 
-
--- ============================================================================
--- 11. ROLEPLAY PRACTICE
--- ============================================================================
+-- ============================================================
+-- 11. ROLEPLAY
+-- ============================================================
 
 CREATE TABLE roleplay_topics (
-  roleplay_topic_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  title             VARCHAR NOT NULL,
-  brief_text        TEXT,
-  context_text      TEXT,
-  difficulty_level  VARCHAR,
-  sort_order        INTEGER NOT NULL DEFAULT 0,
-  is_active         BOOLEAN NOT NULL DEFAULT TRUE
+  topic_id      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title         TEXT NOT NULL,
+  description   TEXT,
+  scenario_slug TEXT NOT NULL UNIQUE,
+  cefr_level_id INT REFERENCES cefr_levels(cefr_level_id),
+  image_url     TEXT,
+  color         TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE roleplay_required_criteria (
-  roleplay_criteria_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  roleplay_topic_id    INT NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
-  criteria_text        TEXT NOT NULL,
-  sort_order           INTEGER NOT NULL DEFAULT 0
+  criteria_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  topic_id      INT NOT NULL REFERENCES roleplay_topics(topic_id) ON DELETE CASCADE,
+  criteria_text TEXT NOT NULL,
+  sort_order    INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE roleplay_topic_subunit_links (
-  roleplay_topic_subunit_link_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  roleplay_topic_id              INT NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
-  subunit_id                     INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
-  UNIQUE (roleplay_topic_id, subunit_id)
+  id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  topic_id      INT NOT NULL REFERENCES roleplay_topics(topic_id) ON DELETE CASCADE,
+  subunit_id    INT NOT NULL REFERENCES subunits(subunit_id) ON DELETE CASCADE,
+  UNIQUE(topic_id, subunit_id)
 );
 
 CREATE TABLE roleplay_attempts (
-  roleplay_attempt_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id             UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  roleplay_topic_id   INT NOT NULL REFERENCES roleplay_topics(roleplay_topic_id) ON DELETE CASCADE,
-  started_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  ended_at            TIMESTAMPTZ,
-  duration_seconds    INTEGER,
-  accuracy_score      DECIMAL(5,2),
-  xp_awarded          INTEGER NOT NULL DEFAULT 0
+  attempt_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  topic_id      INT NOT NULL REFERENCES roleplay_topics(topic_id) ON DELETE CASCADE,
+  score         INT,
+  xp_earned     INT NOT NULL DEFAULT 0,
+  started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at  TIMESTAMPTZ
 );
 
 CREATE TABLE roleplay_messages (
-  roleplay_message_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  roleplay_attempt_id INT NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
-  sender_type         VARCHAR NOT NULL,
-  message_mode        VARCHAR,
-  message_text        TEXT,
-  audio_url           TEXT,
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  message_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  attempt_id    INT NOT NULL REFERENCES roleplay_attempts(attempt_id) ON DELETE CASCADE,
+  role          TEXT NOT NULL,
+  content       TEXT NOT NULL,
+  audio_url     TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE roleplay_criteria_results (
-  roleplay_criteria_result_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  roleplay_attempt_id         INT NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
-  roleplay_criteria_id        INT NOT NULL REFERENCES roleplay_required_criteria(roleplay_criteria_id) ON DELETE CASCADE,
-  is_met                      BOOLEAN NOT NULL DEFAULT FALSE,
-  evidence_text               TEXT,
-  UNIQUE (roleplay_attempt_id, roleplay_criteria_id)
+  result_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  attempt_id    INT NOT NULL REFERENCES roleplay_attempts(attempt_id) ON DELETE CASCADE,
+  criteria_id   INT NOT NULL REFERENCES roleplay_required_criteria(criteria_id) ON DELETE CASCADE,
+  met           BOOLEAN NOT NULL DEFAULT false,
+  UNIQUE(attempt_id, criteria_id)
 );
 
 CREATE TABLE roleplay_feedback (
-  roleplay_attempt_id             INT PRIMARY KEY REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
-  writing_spelling_score          DECIMAL(5,2),
-  writing_punctuation_score       DECIMAL(5,2),
-  writing_accent_characters_score DECIMAL(5,2),
-  writing_grammar_score           DECIMAL(5,2),
-  speaking_pronunciation_score    DECIMAL(5,2),
-  speaking_accent_score           DECIMAL(5,2),
-  speaking_grammar_score          DECIMAL(5,2),
-  summary_text                    TEXT
+  feedback_id   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  attempt_id    INT NOT NULL REFERENCES roleplay_attempts(attempt_id) ON DELETE CASCADE,
+  feedback_text TEXT NOT NULL,
+  score         INT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE roleplay_difficult_terms (
-  roleplay_difficult_term_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  roleplay_attempt_id        INT NOT NULL REFERENCES roleplay_attempts(roleplay_attempt_id) ON DELETE CASCADE,
-  term_id                    INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
-  difficulty_area            VARCHAR,
-  UNIQUE (roleplay_attempt_id, term_id)
+  id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  attempt_id    INT NOT NULL REFERENCES roleplay_attempts(attempt_id) ON DELETE CASCADE,
+  term_id       INT NOT NULL REFERENCES terms(term_id) ON DELETE CASCADE,
+  UNIQUE(attempt_id, term_id)
 );
 
-
--- ============================================================================
--- 12. ISSUE REPORTING
--- ============================================================================
+-- ============================================================
+-- 12. ISSUE REPORTS
+-- ============================================================
 
 CREATE TABLE issue_reports (
-  issue_report_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id         UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  target_type     VARCHAR NOT NULL,
-  target_id       INT NOT NULL,
-  issue_category  VARCHAR,
-  description     TEXT,
-  status          VARCHAR NOT NULL DEFAULT 'open',
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  resolved_at     TIMESTAMPTZ
+  report_id     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  issue_type    TEXT NOT NULL,
+  description   TEXT NOT NULL,
+  context_data  JSONB,
+  status        TEXT NOT NULL DEFAULT 'open',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolved_at   TIMESTAMPTZ
 );
 
+-- ============================================================
+-- 13. ACTIVITY & STREAK TRACKING
+-- ============================================================
 
--- ============================================================================
+CREATE TABLE user_activity_days (
+  id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  activity_date DATE NOT NULL,
+  xp_earned     INT NOT NULL DEFAULT 0,
+  UNIQUE(user_id, activity_date)
+);
+
+-- ============================================================
 -- INDEXES
--- ============================================================================
+-- ============================================================
 
--- Users
-CREATE INDEX idx_user_auth_providers_user ON user_auth_providers(user_id);
-CREATE INDEX idx_user_activity_days_user ON user_activity_days(user_id);
-CREATE INDEX idx_user_activity_days_date ON user_activity_days(user_id, activity_date);
-
--- Badges & XP
+CREATE INDEX idx_user_stats_user ON user_stats(user_id);
 CREATE INDEX idx_user_badges_user ON user_badges(user_id);
-CREATE INDEX idx_user_badges_badge ON user_badges(badge_id);
 CREATE INDEX idx_xp_events_user ON xp_events(user_id);
-
--- Content hierarchy
-CREATE INDEX idx_units_cefr_level ON units(cefr_level_id);
+CREATE INDEX idx_xp_events_created ON xp_events(created_at);
+CREATE INDEX idx_units_cefr ON units(cefr_level_id);
 CREATE INDEX idx_subunits_unit ON subunits(unit_id);
 CREATE INDEX idx_subunit_sessions_subunit ON subunit_sessions(subunit_id);
-
--- Terms
 CREATE INDEX idx_subunit_terms_subunit ON subunit_terms(subunit_id);
 CREATE INDEX idx_subunit_terms_term ON subunit_terms(term_id);
-
--- Grammar
-CREATE INDEX idx_verbs_category ON verbs(verb_category_id);
+CREATE INDEX idx_terms_spanish ON terms(spanish);
 CREATE INDEX idx_verb_conjugations_verb ON verb_conjugations(verb_id);
 CREATE INDEX idx_verb_conjugations_tense ON verb_conjugations(tense_id);
-CREATE INDEX idx_verb_conjugations_pronoun ON verb_conjugations(pronoun_id);
-
--- Grammar hints
-CREATE INDEX idx_term_grammar_hints_term ON term_grammar_hints(term_id);
-CREATE INDEX idx_term_grammar_hints_hint ON term_grammar_hints(grammar_hint_id);
-CREATE INDEX idx_grammar_hint_topic_links_hint ON grammar_hint_topic_links(grammar_hint_id);
-CREATE INDEX idx_grammar_hint_topic_links_topic ON grammar_hint_topic_links(grammar_topic_id);
-CREATE INDEX idx_grammar_hint_verb_links_hint ON grammar_hint_verb_links(grammar_hint_id);
-CREATE INDEX idx_grammar_hint_verb_links_verb ON grammar_hint_verb_links(verb_id);
-CREATE INDEX idx_grammar_hint_conjugation_links_hint ON grammar_hint_conjugation_links(grammar_hint_id);
-CREATE INDEX idx_grammar_hint_conjugation_links_conj ON grammar_hint_conjugation_links(verb_conjugation_id);
-CREATE INDEX idx_term_pronunciation_hints_term ON term_pronunciation_hints(term_id);
-
--- User term learning
 CREATE INDEX idx_user_term_progress_user ON user_term_progress(user_id);
 CREATE INDEX idx_user_term_progress_term ON user_term_progress(term_id);
-CREATE INDEX idx_user_term_progress_review ON user_term_progress(user_id, next_review_at);
-CREATE INDEX idx_user_term_status_history_progress ON user_term_status_history(user_term_progress_id);
-
--- User subunit/session progress
+CREATE INDEX idx_user_term_sm2_next_review ON user_term_sm2(user_id, next_review_date);
 CREATE INDEX idx_user_subunit_progress_user ON user_subunit_progress(user_id);
-CREATE INDEX idx_user_subunit_progress_subunit ON user_subunit_progress(subunit_id);
-CREATE INDEX idx_user_subunit_session_progress_user ON user_subunit_session_progress(user_id);
-CREATE INDEX idx_user_subunit_session_progress_session ON user_subunit_session_progress(subunit_session_id);
-
--- Session attempts & questions
 CREATE INDEX idx_session_attempts_user ON session_attempts(user_id);
-CREATE INDEX idx_session_attempts_subunit ON session_attempts(subunit_id);
-CREATE INDEX idx_session_attempts_session ON session_attempts(subunit_session_id);
-CREATE INDEX idx_session_questions_attempt ON session_questions(session_attempt_id);
-CREATE INDEX idx_session_questions_term ON session_questions(term_id);
-CREATE INDEX idx_session_question_options_question ON session_question_options(session_question_id);
-CREATE INDEX idx_session_question_attempts_question ON session_question_attempts(session_question_id);
-CREATE INDEX idx_session_question_attempts_user ON session_question_attempts(user_id);
-
--- Comprehension
-CREATE INDEX idx_comprehension_conversations_cefr ON comprehension_conversations(cefr_level_id);
-CREATE INDEX idx_comprehension_questions_conversation ON comprehension_questions(comprehension_conversation_id);
-CREATE INDEX idx_comprehension_question_options_question ON comprehension_question_options(comprehension_question_id);
-
--- Roleplay
-CREATE INDEX idx_roleplay_required_criteria_topic ON roleplay_required_criteria(roleplay_topic_id);
-CREATE INDEX idx_roleplay_topic_subunit_links_topic ON roleplay_topic_subunit_links(roleplay_topic_id);
-CREATE INDEX idx_roleplay_topic_subunit_links_subunit ON roleplay_topic_subunit_links(subunit_id);
+CREATE INDEX idx_session_questions_session ON session_questions(session_id);
 CREATE INDEX idx_roleplay_attempts_user ON roleplay_attempts(user_id);
-CREATE INDEX idx_roleplay_attempts_topic ON roleplay_attempts(roleplay_topic_id);
-CREATE INDEX idx_roleplay_messages_attempt ON roleplay_messages(roleplay_attempt_id);
-CREATE INDEX idx_roleplay_criteria_results_attempt ON roleplay_criteria_results(roleplay_attempt_id);
-CREATE INDEX idx_roleplay_difficult_terms_attempt ON roleplay_difficult_terms(roleplay_attempt_id);
-CREATE INDEX idx_roleplay_difficult_terms_term ON roleplay_difficult_terms(term_id);
+CREATE INDEX idx_roleplay_messages_attempt ON roleplay_messages(attempt_id);
+CREATE INDEX idx_user_activity_days_user ON user_activity_days(user_id, activity_date);
 
--- Issue reports
-CREATE INDEX idx_issue_reports_user ON issue_reports(user_id);
+-- ============================================================
+-- TRIGGER: auto-create user rows on signup
+-- ============================================================
 
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (user_id, username, email)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
+    NEW.email
+  );
 
--- ============================================================================
+  INSERT INTO public.user_settings (user_id) VALUES (NEW.id);
+  INSERT INTO public.user_stats (user_id) VALUES (NEW.id);
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================================
 -- ROW LEVEL SECURITY
--- ============================================================================
+-- ============================================================
 
--- Public content: readable by everyone
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_auth_providers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE xp_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_term_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_term_sm2 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_term_status_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_subunit_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_subunit_session_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_question_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roleplay_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roleplay_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roleplay_criteria_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roleplay_feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roleplay_difficult_terms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE issue_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_activity_days ENABLE ROW LEVEL SECURITY;
+
+-- Users can read/update their own data
+CREATE POLICY "Users read own data" ON users FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users update own data" ON users FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users read own settings" ON user_settings FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users update own settings" ON user_settings FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users read own stats" ON user_stats FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users update own stats" ON user_stats FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users read own auth providers" ON user_auth_providers FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users read own badges" ON user_badges FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own badges" ON user_badges FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users read own xp" ON xp_events FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own xp" ON xp_events FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users read own term progress" ON user_term_progress FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own term progress" ON user_term_progress FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users manage own sm2" ON user_term_sm2 FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users read own status history" ON user_term_status_history FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own status history" ON user_term_status_history FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users manage own subunit progress" ON user_subunit_progress FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own session progress" ON user_subunit_session_progress FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users manage own session attempts" ON session_attempts FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own question attempts" ON session_question_attempts FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users manage own roleplay attempts" ON roleplay_attempts FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users read own roleplay messages" ON roleplay_messages FOR SELECT USING (
+  attempt_id IN (SELECT attempt_id FROM roleplay_attempts WHERE user_id = auth.uid())
+);
+CREATE POLICY "Users insert own roleplay messages" ON roleplay_messages FOR INSERT WITH CHECK (
+  attempt_id IN (SELECT attempt_id FROM roleplay_attempts WHERE user_id = auth.uid())
+);
+CREATE POLICY "Users read own criteria results" ON roleplay_criteria_results FOR SELECT USING (
+  attempt_id IN (SELECT attempt_id FROM roleplay_attempts WHERE user_id = auth.uid())
+);
+CREATE POLICY "Users read own roleplay feedback" ON roleplay_feedback FOR SELECT USING (
+  attempt_id IN (SELECT attempt_id FROM roleplay_attempts WHERE user_id = auth.uid())
+);
+CREATE POLICY "Users read own difficult terms" ON roleplay_difficult_terms FOR SELECT USING (
+  attempt_id IN (SELECT attempt_id FROM roleplay_attempts WHERE user_id = auth.uid())
+);
+
+CREATE POLICY "Users manage own issues" ON issue_reports FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own activity" ON user_activity_days FOR ALL USING (auth.uid() = user_id);
+
+-- Public read access for content tables (no RLS needed, but enable for consistency)
 ALTER TABLE cefr_levels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subunits ENABLE ROW LEVEL SECURITY;
@@ -638,250 +659,103 @@ ALTER TABLE grammar_hint_verb_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE grammar_hint_conjugation_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE term_pronunciation_hints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE question_types ENABLE ROW LEVEL SECURITY;
-ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_question_options ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comprehension_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comprehension_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comprehension_question_options ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_question_comprehension_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE roleplay_topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE roleplay_required_criteria ENABLE ROW LEVEL SECURITY;
 ALTER TABLE roleplay_topic_subunit_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY cefr_levels_public ON cefr_levels FOR SELECT USING (TRUE);
-CREATE POLICY units_public ON units FOR SELECT USING (TRUE);
-CREATE POLICY subunits_public ON subunits FOR SELECT USING (TRUE);
-CREATE POLICY subunit_sessions_public ON subunit_sessions FOR SELECT USING (TRUE);
-CREATE POLICY terms_public ON terms FOR SELECT USING (TRUE);
-CREATE POLICY subunit_terms_public ON subunit_terms FOR SELECT USING (TRUE);
-CREATE POLICY grammar_topics_public ON grammar_topics FOR SELECT USING (TRUE);
-CREATE POLICY grammar_verb_categories_public ON grammar_verb_categories FOR SELECT USING (TRUE);
-CREATE POLICY verbs_public ON verbs FOR SELECT USING (TRUE);
-CREATE POLICY pronouns_public ON pronouns FOR SELECT USING (TRUE);
-CREATE POLICY tenses_public ON tenses FOR SELECT USING (TRUE);
-CREATE POLICY verb_conjugations_public ON verb_conjugations FOR SELECT USING (TRUE);
-CREATE POLICY grammar_hints_public ON grammar_hints FOR SELECT USING (TRUE);
-CREATE POLICY term_grammar_hints_public ON term_grammar_hints FOR SELECT USING (TRUE);
-CREATE POLICY grammar_hint_topic_links_public ON grammar_hint_topic_links FOR SELECT USING (TRUE);
-CREATE POLICY grammar_hint_verb_links_public ON grammar_hint_verb_links FOR SELECT USING (TRUE);
-CREATE POLICY grammar_hint_conjugation_links_public ON grammar_hint_conjugation_links FOR SELECT USING (TRUE);
-CREATE POLICY term_pronunciation_hints_public ON term_pronunciation_hints FOR SELECT USING (TRUE);
-CREATE POLICY question_types_public ON question_types FOR SELECT USING (TRUE);
-CREATE POLICY badges_public ON badges FOR SELECT USING (TRUE);
-CREATE POLICY comprehension_conversations_public ON comprehension_conversations FOR SELECT USING (TRUE);
-CREATE POLICY comprehension_questions_public ON comprehension_questions FOR SELECT USING (TRUE);
-CREATE POLICY comprehension_question_options_public ON comprehension_question_options FOR SELECT USING (TRUE);
-CREATE POLICY roleplay_topics_public ON roleplay_topics FOR SELECT USING (TRUE);
-CREATE POLICY roleplay_required_criteria_public ON roleplay_required_criteria FOR SELECT USING (TRUE);
-CREATE POLICY roleplay_topic_subunit_links_public ON roleplay_topic_subunit_links FOR SELECT USING (TRUE);
+-- All authenticated users can read content
+CREATE POLICY "Authenticated read cefr_levels" ON cefr_levels FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read units" ON units FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read subunits" ON subunits FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read subunit_sessions" ON subunit_sessions FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read terms" ON terms FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read subunit_terms" ON subunit_terms FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read grammar_topics" ON grammar_topics FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read grammar_verb_categories" ON grammar_verb_categories FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read verbs" ON verbs FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read pronouns" ON pronouns FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read tenses" ON tenses FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read verb_conjugations" ON verb_conjugations FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read grammar_hints" ON grammar_hints FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read term_grammar_hints" ON term_grammar_hints FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read grammar_hint_topic_links" ON grammar_hint_topic_links FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read grammar_hint_verb_links" ON grammar_hint_verb_links FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read grammar_hint_conjugation_links" ON grammar_hint_conjugation_links FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read term_pronunciation_hints" ON term_pronunciation_hints FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read question_types" ON question_types FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read session_questions" ON session_questions FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read session_question_options" ON session_question_options FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read comprehension_conversations" ON comprehension_conversations FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read comprehension_questions" ON comprehension_questions FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read comprehension_question_options" ON comprehension_question_options FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read session_question_comprehension_links" ON session_question_comprehension_links FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read roleplay_topics" ON roleplay_topics FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read roleplay_required_criteria" ON roleplay_required_criteria FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read roleplay_topic_subunit_links" ON roleplay_topic_subunit_links FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated read badges" ON badges FOR SELECT TO authenticated USING (true);
 
--- User-data tables: users can only access their own data
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_auth_providers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_stats ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_activity_days ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
-ALTER TABLE xp_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_term_progress ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_term_sm2 ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_term_status_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_subunit_progress ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_subunit_session_progress ENABLE ROW LEVEL SECURITY;
-ALTER TABLE session_attempts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE session_questions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE session_question_options ENABLE ROW LEVEL SECURITY;
-ALTER TABLE session_question_attempts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE session_question_comprehension_links ENABLE ROW LEVEL SECURITY;
-ALTER TABLE roleplay_attempts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE roleplay_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE roleplay_criteria_results ENABLE ROW LEVEL SECURITY;
-ALTER TABLE roleplay_feedback ENABLE ROW LEVEL SECURITY;
-ALTER TABLE roleplay_difficult_terms ENABLE ROW LEVEL SECURITY;
-ALTER TABLE issue_reports ENABLE ROW LEVEL SECURITY;
+-- ============================================================
+-- SUPABASE STORAGE BUCKETS
+-- ============================================================
 
-CREATE POLICY users_select ON users FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY users_insert ON users FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY users_update ON users FOR UPDATE USING (auth.uid() = user_id);
+-- Create storage buckets for content images
+INSERT INTO storage.buckets (id, name, public) VALUES ('content-images', 'content-images', true);
 
-CREATE POLICY user_settings_select ON user_settings FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY user_settings_insert ON user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY user_settings_update ON user_settings FOR UPDATE USING (auth.uid() = user_id);
+-- Policy: anyone can read content images (public bucket)
+CREATE POLICY "Public read content images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'content-images');
 
-CREATE POLICY user_auth_providers_select ON user_auth_providers FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY user_auth_providers_insert ON user_auth_providers FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Policy: only service role can upload (managed via Supabase dashboard or admin API)
+CREATE POLICY "Service role upload content images"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'content-images');
 
-CREATE POLICY user_stats_select ON user_stats FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY user_stats_insert ON user_stats FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY user_stats_update ON user_stats FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY user_activity_days_select ON user_activity_days FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY user_activity_days_insert ON user_activity_days FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY user_activity_days_update ON user_activity_days FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY user_badges_select ON user_badges FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY user_badges_insert ON user_badges FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY user_badges_update ON user_badges FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY xp_events_select ON xp_events FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY xp_events_insert ON xp_events FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY user_term_progress_select ON user_term_progress FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY user_term_progress_insert ON user_term_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY user_term_progress_update ON user_term_progress FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY user_term_sm2_select ON user_term_sm2 FOR SELECT
-  USING (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_sm2.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
-CREATE POLICY user_term_sm2_insert ON user_term_sm2 FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_sm2.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
-CREATE POLICY user_term_sm2_update ON user_term_sm2 FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_sm2.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
-
-CREATE POLICY user_term_status_history_select ON user_term_status_history FOR SELECT
-  USING (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_status_history.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
-CREATE POLICY user_term_status_history_insert ON user_term_status_history FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM user_term_progress WHERE user_term_progress.user_term_progress_id = user_term_status_history.user_term_progress_id AND user_term_progress.user_id = auth.uid()));
-
-CREATE POLICY user_subunit_progress_select ON user_subunit_progress FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY user_subunit_progress_insert ON user_subunit_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY user_subunit_progress_update ON user_subunit_progress FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY user_subunit_session_progress_select ON user_subunit_session_progress FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY user_subunit_session_progress_insert ON user_subunit_session_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY user_subunit_session_progress_update ON user_subunit_session_progress FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY session_attempts_select ON session_attempts FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY session_attempts_insert ON session_attempts FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY session_attempts_update ON session_attempts FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY session_questions_select ON session_questions FOR SELECT
-  USING (EXISTS (SELECT 1 FROM session_attempts WHERE session_attempts.session_attempt_id = session_questions.session_attempt_id AND session_attempts.user_id = auth.uid()));
-CREATE POLICY session_questions_insert ON session_questions FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM session_attempts WHERE session_attempts.session_attempt_id = session_questions.session_attempt_id AND session_attempts.user_id = auth.uid()));
-
-CREATE POLICY session_question_options_select ON session_question_options FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM session_questions
-    JOIN session_attempts ON session_attempts.session_attempt_id = session_questions.session_attempt_id
-    WHERE session_questions.session_question_id = session_question_options.session_question_id
-    AND session_attempts.user_id = auth.uid()
-  ));
-CREATE POLICY session_question_options_insert ON session_question_options FOR INSERT
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM session_questions
-    JOIN session_attempts ON session_attempts.session_attempt_id = session_questions.session_attempt_id
-    WHERE session_questions.session_question_id = session_question_options.session_question_id
-    AND session_attempts.user_id = auth.uid()
-  ));
-
-CREATE POLICY session_question_attempts_select ON session_question_attempts FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY session_question_attempts_insert ON session_question_attempts FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY session_question_comprehension_links_select ON session_question_comprehension_links FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM session_questions
-    JOIN session_attempts ON session_attempts.session_attempt_id = session_questions.session_attempt_id
-    WHERE session_questions.session_question_id = session_question_comprehension_links.session_question_id
-    AND session_attempts.user_id = auth.uid()
-  ));
-CREATE POLICY session_question_comprehension_links_insert ON session_question_comprehension_links FOR INSERT
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM session_questions
-    JOIN session_attempts ON session_attempts.session_attempt_id = session_questions.session_attempt_id
-    WHERE session_questions.session_question_id = session_question_comprehension_links.session_question_id
-    AND session_attempts.user_id = auth.uid()
-  ));
-
-CREATE POLICY roleplay_attempts_select ON roleplay_attempts FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY roleplay_attempts_insert ON roleplay_attempts FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY roleplay_attempts_update ON roleplay_attempts FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY roleplay_messages_select ON roleplay_messages FOR SELECT
-  USING (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_messages.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
-CREATE POLICY roleplay_messages_insert ON roleplay_messages FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_messages.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
-
-CREATE POLICY roleplay_criteria_results_select ON roleplay_criteria_results FOR SELECT
-  USING (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_criteria_results.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
-CREATE POLICY roleplay_criteria_results_insert ON roleplay_criteria_results FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_criteria_results.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
-
-CREATE POLICY roleplay_feedback_select ON roleplay_feedback FOR SELECT
-  USING (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_feedback.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
-CREATE POLICY roleplay_feedback_insert ON roleplay_feedback FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_feedback.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
-
-CREATE POLICY roleplay_difficult_terms_select ON roleplay_difficult_terms FOR SELECT
-  USING (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_difficult_terms.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
-CREATE POLICY roleplay_difficult_terms_insert ON roleplay_difficult_terms FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM roleplay_attempts WHERE roleplay_attempts.roleplay_attempt_id = roleplay_difficult_terms.roleplay_attempt_id AND roleplay_attempts.user_id = auth.uid()));
-
-CREATE POLICY issue_reports_select ON issue_reports FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY issue_reports_insert ON issue_reports FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-
--- ============================================================================
+-- ============================================================
 -- SEED DATA
--- ============================================================================
+-- ============================================================
 
-INSERT INTO cefr_levels (code, title, description, sort_order) VALUES
-  ('A1', 'Beginner',            'Can understand and use familiar everyday expressions and very basic phrases.', 1),
-  ('A2', 'Pre-Intermediate',    'Can understand sentences and frequently used expressions related to areas of most immediate relevance.', 2),
-  ('B1', 'Intermediate',        'Can understand the main points of clear standard input on familiar matters.', 3),
-  ('B2', 'Upper Intermediate',  'Can understand the main ideas of complex text on both concrete and abstract topics.', 4),
-  ('C1', 'Advanced',            'Can understand a wide range of demanding, longer clauses, and recognize implicit meaning.', 5),
-  ('C2', 'Mastery',             'Can understand with ease virtually everything heard or read.', 6);
+-- CEFR Levels
+INSERT INTO cefr_levels (code, name, description, sort_order) VALUES
+  ('A1', 'Beginner', 'Basic phrases and everyday expressions', 1),
+  ('A2', 'Elementary', 'Frequently used expressions and simple matters', 2),
+  ('B1', 'Intermediate', 'Main points on familiar matters', 3),
+  ('B2', 'Upper Intermediate', 'Complex text on both concrete and abstract topics', 4),
+  ('C1', 'Advanced', 'Wide range of demanding, longer texts', 5),
+  ('C2', 'Mastery', 'Virtually everything heard or read', 6);
 
-INSERT INTO question_types (code, name) VALUES
-  ('flashcard',              'Flashcard'),
-  ('mcq_match_en_to_es',    'Match English to Spanish'),
-  ('audio_es_to_typed_en',  'Audio Spanish - Type English'),
-  ('speak_spanish_term',    'Speak Spanish Term'),
-  ('comprehension_mcq',     'Comprehension MCQ'),
-  ('comprehension_typed',   'Comprehension Typed');
+-- Question Types
+INSERT INTO question_types (name, description) VALUES
+  ('multiple_choice', 'Select the correct answer from options'),
+  ('fill_in_blank', 'Type the missing word or phrase'),
+  ('listening', 'Listen and answer'),
+  ('speaking', 'Speak the answer aloud'),
+  ('matching', 'Match items from two columns'),
+  ('translation', 'Translate between Spanish and English'),
+  ('word_order', 'Arrange words in the correct order');
 
-INSERT INTO grammar_verb_categories (name, sort_order) VALUES
-  ('-ar verbs', 1),
-  ('-er verbs', 2),
-  ('-ir verbs', 3);
+-- Pronouns
+INSERT INTO pronouns (spanish, english, person, sort_order) VALUES
+  ('yo', 'I', '1st singular', 1),
+  ('tú', 'you (informal)', '2nd singular', 2),
+  ('él/ella/usted', 'he/she/you (formal)', '3rd singular', 3),
+  ('nosotros/nosotras', 'we', '1st plural', 4),
+  ('vosotros/vosotras', 'you all (Spain)', '2nd plural', 5),
+  ('ellos/ellas/ustedes', 'they/you all', '3rd plural', 6);
 
-INSERT INTO pronouns (pronoun_text, person_group, sort_order) VALUES
-  ('yo',                    '1st singular', 1),
-  ('tú',                    '2nd singular', 2),
-  ('él/ella/usted',         '3rd singular', 3),
-  ('nosotros/as',           '1st plural',   4),
-  ('vosotros/as',           '2nd plural',   5),
-  ('ellos/ellas/ustedes',   '3rd plural',   6);
-
-INSERT INTO tenses (name, sort_order) VALUES
-  ('Present',             1),
-  ('Preterite',           2),
-  ('Imperfect',           3),
-  ('Future',              4),
-  ('Conditional',         5),
-  ('Subjunctive Present', 6);
-
-
--- ============================================================================
--- FUNCTION: Auto-create user profile + related rows on signup
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.users (user_id, email, username)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1))
-  );
-
-  INSERT INTO public.user_settings (user_id) VALUES (NEW.id);
-  INSERT INTO public.user_stats (user_id) VALUES (NEW.id);
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_new_user();
+-- Tenses
+INSERT INTO tenses (name, english_name, description, sort_order) VALUES
+  ('presente', 'Present', 'Actions happening now or habitually', 1),
+  ('pretérito indefinido', 'Preterite', 'Completed past actions', 2),
+  ('pretérito imperfecto', 'Imperfect', 'Ongoing or habitual past actions', 3),
+  ('futuro simple', 'Simple Future', 'Actions that will happen', 4),
+  ('condicional', 'Conditional', 'Hypothetical actions', 5),
+  ('subjuntivo presente', 'Present Subjunctive', 'Wishes, doubts, emotions', 6);

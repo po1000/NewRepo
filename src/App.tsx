@@ -1,35 +1,32 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { PublicRoute } from './components/PublicRoute';
+import { AuthCallback } from './components/AuthCallback';
+import { SetNewPasswordCard } from './components/SetNewPasswordCard';
 import { CreateAccountCard } from './components/CreateAccountCard';
 import { LoginCard } from './components/LoginCard';
 import { ResetPasswordCard } from './components/ResetPasswordCard';
-import { SetNewPasswordCard } from './components/SetNewPasswordCard';
-import { AuthCallback } from './components/AuthCallback';
 import { Dashboard } from './components/Dashboard';
-
-// New Magic Patterns page imports
-import { UnitSection } from './components/UnitSection';
-import { LessonModal } from './components/LessonModal';
-import { SpeakAndWrite } from './pages/SpeakAndWrite';
-import { Culture } from './pages/Culture';
-import { SpeakingPractice } from './pages/SpeakingPractice';
 import { LessonFlow } from './pages/LessonFlow';
+import { SpeakAndWrite } from './pages/SpeakAndWrite';
+import { SpeakingPractice } from './pages/SpeakingPractice';
+import { RoleplayComplete } from './pages/RoleplayComplete';
 import { Grammar } from './pages/Grammar';
 import { ERVerbs } from './pages/ERVerbs';
 import { SerConjugation } from './pages/SerConjugation';
-import { RoleplayComplete } from './pages/RoleplayComplete';
-import { Community } from './pages/Community';
+import { Culture } from './pages/Culture';
 import { MusicDance } from './pages/MusicDance';
 import { RegionsLandmarks } from './pages/RegionsLandmarks';
 import { FoodDrink } from './pages/FoodDrink';
 import { History } from './pages/History';
+import { Community } from './pages/Community';
 
-type AuthPage = 'login' | 'create' | 'reset';
+type PageState = 'login' | 'create' | 'reset';
 
 function AuthPages() {
-  const [currentPage, setCurrentPage] = useState<AuthPage>('login');
-
+  const [currentPage, setCurrentPage] = useState<PageState>('create');
   return (
     <main
       className="min-h-screen w-full flex items-center justify-center px-4 py-12"
@@ -41,81 +38,52 @@ function AuthPages() {
   );
 }
 
-function SetNewPasswordPage() {
-  const navigate = useNavigate();
-
-  return (
-    <main
-      className="min-h-screen w-full flex items-center justify-center px-4 py-12"
-      style={{ background: 'linear-gradient(to bottom left, #FF1500 0%, #FF9604 100%)' }}>
-      <SetNewPasswordCard onSuccess={() => navigate('/dashboard', { replace: true })} />
-    </main>
-  );
-}
-
 function DashboardPage() {
-  const navigate = useNavigate();
-
   return <Dashboard />;
 }
 
-function LessonsPage() {
+function LessonPage() {
   const navigate = useNavigate();
-  const [showLessonModal, setShowLessonModal] = useState(false);
-  const [showLessonFlow, setShowLessonFlow] = useState(false);
-
-  if (showLessonFlow) {
-    return <LessonFlow onClose={() => setShowLessonFlow(false)} />;
-  }
-
-  return <DashboardPage />;
+  return <LessonFlow onClose={() => navigate('/dashboard')} />;
 }
 
 function SpeakAndWritePage() {
   const navigate = useNavigate();
-
   return (
     <SpeakAndWrite
       onNavigateBack={() => navigate('/dashboard')}
-      onScenarioClick={(title) => {
-        const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        navigate(`/speak-and-write/${slug}`);
-      }}
-      onCultureClick={() => navigate('/culture')}
+      onScenarioClick={() => navigate('/speak-and-write/scenario')}
       onGrammarClick={() => navigate('/grammar')}
+      onCultureClick={() => navigate('/culture')}
       onCommunityClick={() => navigate('/community')}
     />
   );
 }
 
-function CulturePage() {
+function SpeakingPracticePage() {
   const navigate = useNavigate();
-
   return (
-    <Culture
-      onNavigateBack={() => navigate('/dashboard')}
-      onGrammarClick={() => navigate('/grammar')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
-      onCommunityClick={() => navigate('/community')}
-      onMusicDanceClick={() => navigate('/culture/music-dance')}
-      onRegionsClick={() => navigate('/culture/regions-landmarks')}
-      onFoodDrinkClick={() => navigate('/culture/food-drink')}
-      onHistoryClick={() => navigate('/culture/history')}
+    <SpeakingPractice
+      onBack={() => navigate('/speak-and-write')}
+      onRoleplayComplete={() => navigate('/speak-and-write/scenario/complete')}
     />
   );
+}
+
+function RoleplayCompletePage() {
+  const navigate = useNavigate();
+  return <RoleplayComplete onBack={() => navigate('/speak-and-write')} />;
 }
 
 function GrammarPage() {
   const navigate = useNavigate();
-
   return (
     <Grammar
       onNavigateBack={() => navigate('/dashboard')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
       onNavigateToERVerbs={() => navigate('/grammar/er-verbs')}
       onNavigateToSer={() => navigate('/grammar/er-verbs/ser-conjugation')}
+      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
+      onCultureClick={() => navigate('/culture')}
       onCommunityClick={() => navigate('/community')}
     />
   );
@@ -123,7 +91,6 @@ function GrammarPage() {
 
 function ERVerbsPage() {
   const navigate = useNavigate();
-
   return (
     <ERVerbs
       onBack={() => navigate('/grammar')}
@@ -138,7 +105,6 @@ function ERVerbsPage() {
 
 function SerConjugationPage() {
   const navigate = useNavigate();
-
   return (
     <SerConjugation
       onBack={() => navigate('/grammar/er-verbs')}
@@ -150,54 +116,24 @@ function SerConjugationPage() {
   );
 }
 
-function CommunityPage() {
+function CulturePage() {
   const navigate = useNavigate();
-
   return (
-    <Community
+    <Culture
       onNavigateBack={() => navigate('/dashboard')}
+      onMusicDanceClick={() => navigate('/culture/music-dance')}
+      onRegionsClick={() => navigate('/culture/regions-landmarks')}
+      onFoodDrinkClick={() => navigate('/culture/food-drink')}
+      onHistoryClick={() => navigate('/culture/history')}
       onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
       onGrammarClick={() => navigate('/grammar')}
-    />
-  );
-}
-
-function SpeakingPracticePage() {
-  const navigate = useNavigate();
-  const { scenarioSlug } = useParams();
-
-  return (
-    <SpeakingPractice
-      onBack={() => navigate('/speak-and-write')}
-      onRoleplayComplete={() => navigate(`/speak-and-write/${scenarioSlug}/complete`)}
-    />
-  );
-}
-
-function RoleplayCompletePage() {
-  const navigate = useNavigate();
-
-  return (
-    <RoleplayComplete
-      onBack={() => navigate('/speak-and-write')}
-    />
-  );
-}
-
-function LessonFlowPage() {
-  const navigate = useNavigate();
-
-  return (
-    <LessonFlow
-      onClose={() => navigate('/dashboard')}
+      onCommunityClick={() => navigate('/community')}
     />
   );
 }
 
 function MusicDancePage() {
   const navigate = useNavigate();
-
   return (
     <MusicDance
       onNavigateBack={() => navigate('/culture')}
@@ -211,7 +147,6 @@ function MusicDancePage() {
 
 function RegionsLandmarksPage() {
   const navigate = useNavigate();
-
   return (
     <RegionsLandmarks
       onNavigateBack={() => navigate('/culture')}
@@ -225,7 +160,6 @@ function RegionsLandmarksPage() {
 
 function FoodDrinkPage() {
   const navigate = useNavigate();
-
   return (
     <FoodDrink
       onNavigateBack={() => navigate('/culture')}
@@ -233,14 +167,12 @@ function FoodDrinkPage() {
       onCultureClick={() => navigate('/culture')}
       onGrammarClick={() => navigate('/grammar')}
       onCommunityClick={() => navigate('/community')}
-      onNavigateToRegion={(region) => navigate(`/culture/regions-landmarks`)}
     />
   );
 }
 
 function HistoryPage() {
   const navigate = useNavigate();
-
   return (
     <History
       onNavigateBack={() => navigate('/culture')}
@@ -252,48 +184,16 @@ function HistoryPage() {
   );
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <main
-        className="min-h-screen w-full flex items-center justify-center"
-        style={{ background: 'linear-gradient(to bottom left, #FF1500 0%, #FF9604 100%)' }}>
-        <div className="w-full max-w-[448px] bg-white rounded-xl border border-[#E5E7EB] p-8 text-center shadow-sm">
-          <p className="text-[13.6px] text-[#6B7280]">Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-}
-
-function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <main
-        className="min-h-screen w-full flex items-center justify-center"
-        style={{ background: 'linear-gradient(to bottom left, #FF1500 0%, #FF9604 100%)' }}>
-        <div className="w-full max-w-[448px] bg-white rounded-xl border border-[#E5E7EB] p-8 text-center shadow-sm">
-          <p className="text-[13.6px] text-[#6B7280]">Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
+function CommunityPage() {
+  const navigate = useNavigate();
+  return (
+    <Community
+      onNavigateBack={() => navigate('/dashboard')}
+      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
+      onGrammarClick={() => navigate('/grammar')}
+      onCultureClick={() => navigate('/culture')}
+    />
+  );
 }
 
 export function App() {
@@ -301,14 +201,14 @@ export function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public auth routes */}
+          {/* Public routes */}
           <Route path="/" element={<PublicRoute><AuthPages /></PublicRoute>} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/set-new-password" element={<SetNewPasswordPage />} />
+          <Route path="/set-new-password" element={<SetNewPasswordCard />} />
 
-          {/* Protected app routes */}
+          {/* Protected routes */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/lesson" element={<ProtectedRoute><LessonFlowPage /></ProtectedRoute>} />
+          <Route path="/lesson" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
           <Route path="/speak-and-write" element={<ProtectedRoute><SpeakAndWritePage /></ProtectedRoute>} />
           <Route path="/speak-and-write/:scenarioSlug" element={<ProtectedRoute><SpeakingPracticePage /></ProtectedRoute>} />
           <Route path="/speak-and-write/:scenarioSlug/complete" element={<ProtectedRoute><RoleplayCompletePage /></ProtectedRoute>} />
@@ -321,9 +221,6 @@ export function App() {
           <Route path="/culture/food-drink" element={<ProtectedRoute><FoodDrinkPage /></ProtectedRoute>} />
           <Route path="/culture/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
           <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
-
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
