@@ -24,7 +24,7 @@ interface UnitRow {
   description: string;
   sort_order: number;
   cefr_level_id: number;
-  cefr_levels: { code: string; name: string };
+  cefr_levels: { code: string; title: string };
   subunits: SubunitRow[];
 }
 
@@ -43,23 +43,17 @@ export function Dashboard() {
 
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
-  console.log('Dashboard rendered, user:', user?.id);
-
   useEffect(() => {
-    console.log('useEffect fired, user:', user?.id);
     async function fetchData() {
-      console.log('fetchData called');
       // Fetch units with their subunits and CEFR level
       const { data: units, error } = await supabase
         .from('units')
         .select(`
           unit_id, unit_number, title, description, sort_order, cefr_level_id,
-          cefr_levels ( code, name ),
+          cefr_levels ( code, title ),
           subunits ( subunit_id, subunit_code, title, description, image_url, goal_text, sort_order )
         `)
         .order('sort_order');
-
-      console.log('Units query result:', { data: units, error });
 
       if (error) {
         console.error('Error fetching units:', error);
@@ -82,7 +76,7 @@ export function Dashboard() {
 
       (units as UnitRow[])?.forEach((unit) => {
         const cefrCode = unit.cefr_levels?.code || 'A1';
-        const cefrName = unit.cefr_levels?.name || 'Beginner';
+        const cefrName = unit.cefr_levels?.title || 'Beginner';
         const levelKey = `${cefrCode} — ${cefrName}`;
 
         if (!grouped[levelKey]) grouped[levelKey] = [];
@@ -143,7 +137,7 @@ export function Dashboard() {
               Welcome, {username}!
             </h2>
             <p className="font-inter text-[13.6px] leading-[24px] text-[#6B7280]">
-              DEBUG: If you see this text, Vite is serving the updated file.
+              Your lessons will appear here once content is added to the database.
             </p>
           </div>
         ) : (
