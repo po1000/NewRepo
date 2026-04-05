@@ -53,21 +53,21 @@ INSERT INTO pronouns (pronoun_text, person_group, sort_order) VALUES
 -- ============================================================
 
 INSERT INTO verbs (infinitive, english_meaning, is_irregular, verb_category_id) VALUES
-  ('estar', 'to be (temporary)', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('ser', 'to be (permanent)', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('hablar', 'to speak', false, (SELECT category_id FROM grammar_verb_categories WHERE name = 'ar')),
-  ('poder', 'to be able to', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('entender', 'to understand', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'er')),
-  ('decir', 'to say/tell', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('tener', 'to have', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('necesitar', 'to need', false, (SELECT category_id FROM grammar_verb_categories WHERE name = 'ar')),
-  ('querer', 'to want', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('llamarse', 'to call oneself', false, (SELECT category_id FROM grammar_verb_categories WHERE name = 'reflexive')),
-  ('ir', 'to go', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('hacer', 'to do/make', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('ver', 'to see', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
-  ('pagar', 'to pay', false, (SELECT category_id FROM grammar_verb_categories WHERE name = 'ar')),
-  ('haber', 'to have (auxiliary)', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular'));
+  ('estar', 'to be (temporary)', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('ser', 'to be (permanent)', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('hablar', 'to speak', false, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'ar')),
+  ('poder', 'to be able to', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('entender', 'to understand', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'er')),
+  ('decir', 'to say/tell', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('tener', 'to have', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('necesitar', 'to need', false, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'ar')),
+  ('querer', 'to want', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('llamarse', 'to call oneself', false, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'reflexive')),
+  ('ir', 'to go', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('hacer', 'to do/make', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('ver', 'to see', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('pagar', 'to pay', false, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'ar')),
+  ('haber', 'to have (auxiliary)', true, (SELECT verb_category_id FROM grammar_verb_categories WHERE name = 'irregular'));
 
 -- ============================================================
 -- CONJUGATIONS — Present tense
@@ -243,298 +243,298 @@ WHERE v.infinitive = 'poder' AND t.name = 'preterite';
 
 -- === A1 1.1: Hola, How's It Going? ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Gender + Number Agreement Intro: All Spanish nouns are Feminine, Masculine, or Neutral and Singular or Plural. If a noun is plural, the words describing it become plural too. If feminine, they become feminine too.', 'concept'),
-  ('"día" means "day" and is a Masculine singular noun. "bueno" means "good" and is a Masculine singular adjective. "días" is the plural — used in "Buenos días" because you''re wishing someone good mornings in general. "bueno" must match: Bueno → Buenos (Masculine plural).', 'example'),
-  ('Infinitive Intro: "Estoy" comes from Estar = "to be", used for temporary states (how you feel, where you are).', 'concept'),
-  ('Conjugation: Estar — estoy, estás, está, estamos, estáis, están', 'conjugation'),
-  ('Formality Intro: "Tú" (informal you, singular) vs "Usted" (formal you, singular). Use "tú" with friends/peers, "usted" with strangers/elders.', 'concept');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Gender + Number Agreement', 'All Spanish nouns are Feminine, Masculine, or Neutral and Singular or Plural. If a noun is plural, the words describing it become plural too. If feminine, they become feminine too.', 'concept'),
+  ('Buenos días Example', '"día" means "day" and is a Masculine singular noun. "bueno" means "good" and is a Masculine singular adjective. "días" is the plural — used in "Buenos días" because you''re wishing someone good mornings in general. "bueno" must match: Bueno → Buenos (Masculine plural).', 'example'),
+  ('Infinitive: Estar', '"Estoy" comes from Estar = "to be", used for temporary states (how you feel, where you are).', 'concept'),
+  ('Conjugation: Estar', 'estoy, estás, está, estamos, estáis, están', 'conjugation'),
+  ('Formality: Tú vs Usted', '"Tú" (informal you, singular) vs "Usted" (formal you, singular). Use "tú" with friends/peers, "usted" with strangers/elders.', 'concept');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Buenos días' AND gh.hint_text LIKE 'Gender + Number Agreement%';
+WHERE t.spanish_text = 'Buenos días' AND gh.hint_title = 'Gender + Number Agreement';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Buenos días' AND gh.hint_text LIKE '"día" means%';
+WHERE t.spanish_text = 'Buenos días' AND gh.hint_title = 'Buenos días Example';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Estoy feliz' AND gh.hint_text LIKE 'Infinitive Intro%';
+WHERE t.spanish_text = 'Estoy feliz' AND gh.hint_title = 'Infinitive: Estar';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Estoy feliz' AND gh.hint_text LIKE 'Conjugation: Estar%';
+WHERE t.spanish_text = 'Estoy feliz' AND gh.hint_title = 'Conjugation: Estar';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Conjugation: Estar%' AND v.infinitive = 'estar';
+WHERE gh.hint_title = 'Conjugation: Estar' AND v.infinitive = 'estar';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = '¿Cómo está?' AND gh.hint_text LIKE 'Formality Intro%';
+WHERE t.spanish_text = '¿Cómo está?' AND gh.hint_title = 'Formality: Tú vs Usted';
 
 -- === A1 1.2: Putting Names to Faces ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Articles Intro: "El" is "the" for masculine singular words. "La" is "the" for feminine singular. "Los" is "the" for masculine plural. "Las" is "the" for feminine plural.', 'concept'),
-  ('"Soy" comes from Ser = "to be", used for permanent things (identity, nationality, profession) — vs Estar for temporary states.', 'concept'),
-  ('Conjugation: Ser — soy, eres, es, somos, sois, son', 'conjugation'),
-  ('Demonstratives: "This/these have the t''s, that/those don''t." This: este (m), esta (f), esto (neutral), estos (m.pl), estas (f.pl). That: ese, esa, eso, esos, esas.', 'concept'),
-  ('Reflexive Infinitive Intro: "Me llamo" comes from Llamarse = "to call oneself". The "-se" ending means the action reflects back on the person doing it.', 'concept'),
-  ('''-mente'' is always "-ly" in English. So "igualmente" literally means "equal-ly" (likewise).', 'concept');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Articles Intro', 'Articles Intro: "El" is "the" for masculine singular words. "La" is "the" for feminine singular. "Los" is "the" for masculine plural. "Las" is "the" for feminine plural.', 'concept'),
+  ('Infinitive: Ser', '"Soy" comes from Ser = "to be", used for permanent things (identity, nationality, profession) — vs Estar for temporary states.', 'concept'),
+  ('Conjugation: Ser', 'Conjugation: Ser — soy, eres, es, somos, sois, son', 'conjugation'),
+  ('Demonstratives', 'Demonstratives: "This/these have the t''s, that/those don''t." This: este (m), esta (f), esto (neutral), estos (m.pl), estas (f.pl). That: ese, esa, eso, esos, esas.', 'concept'),
+  ('Reflexive Infinitive Intro', 'Reflexive Infinitive Intro: "Me llamo" comes from Llamarse = "to call oneself". The "-se" ending means the action reflects back on the person doing it.', 'concept'),
+  ('The -mente Suffix', '''-mente'' is always "-ly" in English. So "igualmente" literally means "equal-ly" (likewise).', 'concept');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'El nombre' AND gh.hint_text LIKE 'Articles Intro%';
+WHERE t.spanish_text = 'El nombre' AND gh.hint_title = 'Articles Intro';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Soy...' AND gh.hint_text LIKE '"Soy" comes from Ser%';
+WHERE t.spanish_text = 'Soy...' AND gh.hint_title = 'Infinitive: Ser';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Soy...' AND gh.hint_text LIKE 'Conjugation: Ser%';
+WHERE t.spanish_text = 'Soy...' AND gh.hint_title = 'Conjugation: Ser';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Conjugation: Ser%' AND v.infinitive = 'ser';
+WHERE gh.hint_title = 'Conjugation: Ser' AND v.infinitive = 'ser';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Este es' AND gh.hint_text LIKE 'Demonstratives%';
+WHERE t.spanish_text = 'Este es' AND gh.hint_title = 'Demonstratives';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Me llamo' AND gh.hint_text LIKE 'Reflexive Infinitive%';
+WHERE t.spanish_text = 'Me llamo' AND gh.hint_title = 'Reflexive Infinitive Intro';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Igualmente' AND gh.hint_text LIKE '''-mente''%';
+WHERE t.spanish_text = 'Igualmente' AND gh.hint_title = 'The -mente Suffix';
 
 -- === A1 2.1: Lost in Translation ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Conjugation: Hablar — hablo, hablas, habla, hablamos, habláis, hablan', 'conjugation'),
-  ('Conjugation: Poder — puedo, puedes, puede, podemos, podéis, pueden', 'conjugation'),
-  ('Stem-changing verbs Intro: When you conjugate, some verbs change their stem (not just the ending). The "we" form NEVER changes stem. Common patterns: o→ue, e→ie, e→i.', 'concept'),
-  ('Examples: Poder → Puedo, Puedes, Puede, Podemos... | Entender → Entiendo, Entiendes, Entiende, Entendemos... | Decir → Digo, Dices, Dice, Decimos...', 'example'),
-  ('Poder + Infinitive for polite requests: "¿Puede repetir?" = "Can you repeat?"', 'concept');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Conjugation: Hablar', 'Conjugation: Hablar — hablo, hablas, habla, hablamos, habláis, hablan', 'conjugation'),
+  ('Conjugation: Poder', 'Conjugation: Poder — puedo, puedes, puede, podemos, podéis, pueden', 'conjugation'),
+  ('Stem-Changing Verbs Intro', 'Stem-changing verbs Intro: When you conjugate, some verbs change their stem (not just the ending). The "we" form NEVER changes stem. Common patterns: o→ue, e→ie, e→i.', 'concept'),
+  ('Stem-Changing Examples', 'Examples: Poder → Puedo, Puedes, Puede, Podemos... | Entender → Entiendo, Entiendes, Entiende, Entendemos... | Decir → Digo, Dices, Dice, Decimos...', 'example'),
+  ('Poder + Infinitive', 'Poder + Infinitive for polite requests: "¿Puede repetir?" = "Can you repeat?"', 'concept');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = '¿Habla inglés?' AND gh.hint_text LIKE 'Conjugation: Hablar%';
+WHERE t.spanish_text = '¿Habla inglés?' AND gh.hint_title = 'Conjugation: Hablar';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Conjugation: Hablar%' AND v.infinitive = 'hablar';
+WHERE gh.hint_title = 'Conjugation: Hablar' AND v.infinitive = 'hablar';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Poder' AND gh.hint_text LIKE 'Conjugation: Poder%';
+WHERE t.spanish_text = 'Poder' AND gh.hint_title = 'Conjugation: Poder';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Conjugation: Poder%' AND v.infinitive = 'poder';
+WHERE gh.hint_title = 'Conjugation: Poder' AND v.infinitive = 'poder';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Poder' AND gh.hint_text LIKE 'Stem-changing verbs%';
+WHERE t.spanish_text = 'Poder' AND gh.hint_title = 'Stem-Changing Verbs Intro';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Poder' AND gh.hint_text LIKE 'Examples: Poder%';
+WHERE t.spanish_text = 'Poder' AND gh.hint_title = 'Stem-Changing Examples';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = '¿Puede repetir por favor?' AND gh.hint_text LIKE 'Poder + Infinitive%';
+WHERE t.spanish_text = '¿Puede repetir por favor?' AND gh.hint_title = 'Poder + Infinitive';
 
 -- === A1 2.2: Help is on the Way ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Conjugation: Tener — tengo, tienes, tiene, tenemos, tenéis, tienen', 'conjugation'),
-  ('Conjugation: Necesitar — necesito, necesitas, necesita, necesitamos, necesitáis, necesitan', 'conjugation'),
-  ('Personal "a" Intro: When a person does an action TO another person or service of people, put "a" between verb and object. "Llame a la policía" = "Call (to) the police". It signifies humans are the recipients.', 'concept'),
-  ('"Llame a una ambulancia" needs personal "a" but "Necesito una ambulancia" doesn''t — you''re calling the service (people), but you need the vehicle.', 'example');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Conjugation: Tener', 'Conjugation: Tener — tengo, tienes, tiene, tenemos, tenéis, tienen', 'conjugation'),
+  ('Conjugation: Necesitar', 'Conjugation: Necesitar — necesito, necesitas, necesita, necesitamos, necesitáis, necesitan', 'conjugation'),
+  ('Personal A Intro', 'Personal "a" Intro: When a person does an action TO another person or service of people, put "a" between verb and object. "Llame a la policía" = "Call (to) the police". It signifies humans are the recipients.', 'concept'),
+  ('Personal A Example', '"Llame a una ambulancia" needs personal "a" but "Necesito una ambulancia" doesn''t — you''re calling the service (people), but you need the vehicle.', 'example');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Tengo un problema' AND gh.hint_text LIKE 'Conjugation: Tener%';
+WHERE t.spanish_text = 'Tengo un problema' AND gh.hint_title = 'Conjugation: Tener';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Conjugation: Tener%' AND v.infinitive = 'tener';
+WHERE gh.hint_title = 'Conjugation: Tener' AND v.infinitive = 'tener';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Necesitar' AND gh.hint_text LIKE 'Conjugation: Necesitar%';
+WHERE t.spanish_text = 'Necesitar' AND gh.hint_title = 'Conjugation: Necesitar';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Conjugation: Necesitar%' AND v.infinitive = 'necesitar';
+WHERE gh.hint_title = 'Conjugation: Necesitar' AND v.infinitive = 'necesitar';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Llame a la policía' AND gh.hint_text LIKE 'Personal "a" Intro%';
+WHERE t.spanish_text = 'Llame a la policía' AND gh.hint_title = 'Personal A Intro';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Llame a una ambulancia' AND gh.hint_text LIKE '"Llame a una ambulancia"%';
+WHERE t.spanish_text = 'Llame a una ambulancia' AND gh.hint_title = 'Personal A Example';
 
 -- === A1 3.1: Day at the Café ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Conjugation: Querer — quiero, quieres, quiere, queremos, queréis, quieren', 'conjugation'),
-  ('"Me pone un/una..." is common in Spain (cafés, bars). Literally "Will you put...?" but used to mean "serve/get me a..."', 'info');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Conjugation: Querer', 'Conjugation: Querer — quiero, quieres, quiere, queremos, queréis, quieren', 'conjugation'),
+  ('Me pone Idiom', '"Me pone un/una..." is common in Spain (cafés, bars). Literally "Will you put...?" but used to mean "serve/get me a..."', 'info');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Querer' AND gh.hint_text LIKE 'Conjugation: Querer%';
+WHERE t.spanish_text = 'Querer' AND gh.hint_title = 'Conjugation: Querer';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Conjugation: Querer%' AND v.infinitive = 'querer';
+WHERE gh.hint_title = 'Conjugation: Querer' AND v.infinitive = 'querer';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text LIKE 'Me pone un/una%' AND gh.hint_text LIKE '"Me pone un/una%';
+WHERE t.spanish_text LIKE 'Me pone un/una%' AND gh.hint_title = 'Me pone Idiom';
 
 -- === A1 4.1: Map Mode ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Interrogatives: ¿Qué? (What), ¿Quién/Quiénes? (Who), ¿Dónde? (Where), ¿Cuándo? (When), ¿Cómo? (How), ¿Cuál/Cuáles? (Which), ¿Por qué? (Why), ¿Cuánto/a? (How much)', 'concept'),
-  ('Simple Imperatives: Commands formed from the usted form. Girar→Gire (turn), Seguir→Siga (continue), Cruzar→Cruce (cross).', 'concept'),
-  ('Haber → "Hay" means "there is/there are". Haber is an auxiliary verb. Conjugation: he, has, ha/hay, hemos, habéis, han.', 'conjugation');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Interrogatives', 'Interrogatives: ¿Qué? (What), ¿Quién/Quiénes? (Who), ¿Dónde? (Where), ¿Cuándo? (When), ¿Cómo? (How), ¿Cuál/Cuáles? (Which), ¿Por qué? (Why), ¿Cuánto/a? (How much)', 'concept'),
+  ('Simple Imperatives', 'Simple Imperatives: Commands formed from the usted form. Girar→Gire (turn), Seguir→Siga (continue), Cruzar→Cruce (cross).', 'concept'),
+  ('Conjugation: Haber', 'Haber → "Hay" means "there is/there are". Haber is an auxiliary verb. Conjugation: he, has, ha/hay, hemos, habéis, han.', 'conjugation');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = '¿Dónde está...?' AND gh.hint_text LIKE 'Interrogatives%';
+WHERE t.spanish_text = '¿Dónde está...?' AND gh.hint_title = 'Interrogatives';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Girar' AND gh.hint_text LIKE 'Simple Imperatives%';
+WHERE t.spanish_text = 'Girar' AND gh.hint_title = 'Simple Imperatives';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Hay' AND gh.hint_text LIKE 'Haber →%';
+WHERE t.spanish_text = 'Hay' AND gh.hint_title = 'Conjugation: Haber';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Haber →%' AND v.infinitive = 'haber';
+WHERE gh.hint_title = 'Conjugation: Haber' AND v.infinitive = 'haber';
 
 -- === A2 1.1: Relative Truths: Family ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Possessives: mi (my), tu (your), su (his/her/your formal). "Mi madre" = my mother, "tu hermano" = your brother.', 'concept'),
-  ('Parecerse a = to resemble/look like. "Se parece a su padre" = He/she looks like his/her father.', 'concept'),
-  ('Muy/bastante + adjective for degree: "Es muy simpático" = very nice, "bastante trabajadora" = quite hardworking.', 'concept');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Possessives', 'Possessives: mi (my), tu (your), su (his/her/your formal). "Mi madre" = my mother, "tu hermano" = your brother.', 'concept'),
+  ('Parecerse a', 'Parecerse a = to resemble/look like. "Se parece a su padre" = He/she looks like his/her father.', 'concept'),
+  ('Muy/Bastante + Adjective', 'Muy/bastante + adjective for degree: "Es muy simpático" = very nice, "bastante trabajadora" = quite hardworking.', 'concept');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Mi madre es amable' AND gh.hint_text LIKE 'Possessives%';
+WHERE t.spanish_text = 'Mi madre es amable' AND gh.hint_title = 'Possessives';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Se parece a su padre' AND gh.hint_text LIKE 'Parecerse a%';
+WHERE t.spanish_text = 'Se parece a su padre' AND gh.hint_title = 'Parecerse a';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Es muy simpático/a' AND gh.hint_text LIKE 'Muy/bastante%';
+WHERE t.spanish_text = 'Es muy simpático/a' AND gh.hint_title = 'Muy/Bastante + Adjective';
 
 -- === A2 2.1: Rinse and Repeat ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Frequency adverbs usually go before the verb: "Siempre desayuno" (I always have breakfast). Or at the start/end of the sentence.', 'concept'),
-  ('Cada + time: cada día (every day), cada semana (every week). Todos los + plural: todos los días (every day), todos los lunes (every Monday) — "todos" means "all/every".', 'concept');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Frequency Adverbs', 'Frequency adverbs usually go before the verb: "Siempre desayuno" (I always have breakfast). Or at the start/end of the sentence.', 'concept'),
+  ('Cada + Time', 'Cada + time: cada día (every day), cada semana (every week). Todos los + plural: todos los días (every day), todos los lunes (every Monday) — "todos" means "all/every".', 'concept');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Siempre' AND gh.hint_text LIKE 'Frequency adverbs%';
+WHERE t.spanish_text = 'Siempre' AND gh.hint_title = 'Frequency Adverbs';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Todos los días' AND gh.hint_text LIKE 'Cada + time%';
+WHERE t.spanish_text = 'Todos los días' AND gh.hint_title = 'Cada + Time';
 
 -- === A2 3.1: Fill Me In ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Preterite tense for completed past actions. Regular -ar: -é, -aste, -ó, -amos, -asteis, -aron. Regular -er/-ir: -í, -iste, -ió, -imos, -isteis, -ieron.', 'concept'),
-  ('Key irregular preterites: ir/ser → fui, fuiste, fue, fuimos, fuisteis, fueron. hacer → hice, hiciste, hizo. ver → vi, viste, vio.', 'concept'),
-  ('Conjugation: Ir (present) — voy, vas, va, vamos, vais, van. Ir (preterite) — fui, fuiste, fue, fuimos, fuisteis, fueron.', 'conjugation');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Preterite Tense Intro', 'Preterite tense for completed past actions. Regular -ar: -é, -aste, -ó, -amos, -asteis, -aron. Regular -er/-ir: -í, -iste, -ió, -imos, -isteis, -ieron.', 'concept'),
+  ('Irregular Preterites', 'Key irregular preterites: ir/ser → fui, fuiste, fue, fuimos, fuisteis, fueron. hacer → hice, hiciste, hizo. ver → vi, viste, vio.', 'concept'),
+  ('Conjugation: Ir', 'Conjugation: Ir (present) — voy, vas, va, vamos, vais, van. Ir (preterite) — fui, fuiste, fue, fuimos, fuisteis, fueron.', 'conjugation');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Ayer' AND gh.hint_text LIKE 'Preterite tense for%';
+WHERE t.spanish_text = 'Ayer' AND gh.hint_title = 'Preterite Tense Intro';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Ir' AND gh.hint_text LIKE 'Key irregular preterites%';
+WHERE t.spanish_text = 'Ir' AND gh.hint_title = 'Irregular Preterites';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'Ir' AND gh.hint_text LIKE 'Conjugation: Ir%';
+WHERE t.spanish_text = 'Ir' AND gh.hint_title = 'Conjugation: Ir';
 
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v
-WHERE gh.hint_text LIKE 'Conjugation: Ir%' AND v.infinitive = 'ir';
+WHERE gh.hint_title = 'Conjugation: Ir' AND v.infinitive = 'ir';
 
 -- === A2 4.1: Tap and Go ===
 
-INSERT INTO grammar_hints (hint_text, hint_type) VALUES
-  ('Sin + noun = "Without" + thing. Sin recibo = without receipt. Sin contacto = contactless.', 'concept'),
-  ('No + verb: Put "no" directly before the verb. No funciona = It doesn''t work. No tengo cambio = I don''t have change. No aceptamos tarjeta = We don''t accept card.', 'concept');
+INSERT INTO grammar_hints (hint_title, hint_text, hint_type) VALUES
+  ('Sin + Noun', 'Sin + noun = "Without" + thing. Sin recibo = without receipt. Sin contacto = contactless.', 'concept'),
+  ('No + Verb Negation', 'No + verb: Put "no" directly before the verb. No funciona = It doesn''t work. No tengo cambio = I don''t have change. No aceptamos tarjeta = We don''t accept card.', 'concept');
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'El recibo' AND gh.hint_text LIKE 'Sin + noun%';
+WHERE t.spanish_text = 'El recibo' AND gh.hint_title = 'Sin + Noun';
 
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
-WHERE t.spanish_text = 'No funciona' AND gh.hint_text LIKE 'No + verb%';
+WHERE t.spanish_text = 'No funciona' AND gh.hint_title = 'No + Verb Negation';
 
 -- ============================================================
 -- GRANTS for grammar tables
