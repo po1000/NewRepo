@@ -10,10 +10,24 @@ interface Term {
   status: 'new' | 'seen' | 'learning' | 'reinforced' | 'mastered';
 }
 
+interface Conjugation {
+  pronoun: string;
+  form: string;
+}
+
+interface TenseData {
+  tense_id: number;
+  name: string;
+  english_name: string;
+  description: string;
+  conjugations: Conjugation[];
+}
+
 interface GrammarHint {
   hint_id: number;
   hint_text: string;
   hint_type: string;
+  verb?: { infinitive: string; english: string; tenses: TenseData[] };
 }
 
 interface SubunitDetailModalProps {
@@ -57,8 +71,63 @@ function MasteryIcon({ status }: { status: string }) {
   if (status === 'seen') {
     return <Eye className="w-[18px] h-[18px] text-[#9CA3AF]" />;
   }
-  // 'new' — not seen yet
   return <EyeOff className="w-[18px] h-[18px] text-[#D1D5DB]" />;
+}
+
+function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
+  const [selectedTense, setSelectedTense] = useState(0);
+  const [hoveredTense, setHoveredTense] = useState<number | null>(null);
+
+  if (!verb || !verb.tenses.length) return null;
+
+  const currentTense = verb.tenses[selectedTense];
+
+  return (
+    <div className="mt-2 bg-[#FFF8F0] rounded-[10px] p-3">
+      <p className="font-inter font-bold text-[13px] text-[#372213] mb-2">
+        {verb.infinitive} — {verb.english}
+      </p>
+
+      {/* Tense tabs */}
+      <div className="flex flex-wrap gap-1 mb-2">
+        {verb.tenses.map((tense, i) => (
+          <div key={tense.tense_id} className="relative">
+            <button
+              onClick={() => setSelectedTense(i)}
+              onMouseEnter={() => setHoveredTense(i)}
+              onMouseLeave={() => setHoveredTense(null)}
+              className={`px-2 py-0.5 rounded-full text-[11px] font-inter font-medium transition-colors ${
+                selectedTense === i
+                  ? 'bg-[#F97316] text-white'
+                  : 'bg-white text-[#6B7280] hover:bg-gray-100'
+              }`}
+            >
+              {tense.english_name}
+            </button>
+            {/* Hover tooltip */}
+            {hoveredTense === i && tense.description && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-48 p-2 bg-[#372213] text-white text-[11px] leading-[14px] rounded-lg shadow-lg z-10 font-inter">
+                {tense.description}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-[#372213] rotate-45 -mt-1" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Conjugation grid */}
+      {currentTense && (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          {currentTense.conjugations.map((c, i) => (
+            <div key={i} className="flex justify-between text-[12px] font-inter py-0.5">
+              <span className="text-[#9CA3AF]">{c.pronoun}</span>
+              <span className="text-[#372213] font-medium">{c.form}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function SubunitDetailModal({
@@ -101,7 +170,6 @@ export function SubunitDetailModal({
         }
       }
 
-      // Combine terms with progress
       const termsList: Term[] = (subunitTerms || []).map((st: any) => {
         const t = st.terms;
         return {
@@ -118,22 +186,88 @@ export function SubunitDetailModal({
       // Fetch grammar hints linked to these terms
       if (termsList.length) {
         const termIds = termsList.map(t => t.term_id);
-        const { data: hints } = await supabase
+        const { data: hintLinks } = await supabase
           .from('term_grammar_hints')
           .select('grammar_hints ( hint_id, hint_text, hint_type )')
           .in('term_id', termIds);
 
-        if (hints?.length) {
+        if (hintLinks?.length) {
           const seen = new Set<number>();
-          const uniqueHints: GrammarHint[] = [];
-          hints.forEach((h: any) => {
-            const hint = h.grammar_hints;
-            if (hint && !seen.has(hint.hint_id)) {
-              seen.add(hint.hint_id);
-              uniqueHints.push(hint);
+          const hints: GrammarHint[] = [];
+
+          for (const h of hintLinks) {
+            const hint = (h as any).grammar_hints;
+            if (!hint || seen.has(hint.hint_id)) continue;
+            seen.add(hint.hint_id);
+
+            const hintData: GrammarHint = { ...hint };
+
+            // Check if this hint is linked to a verb
+            if (hint.hint_type === 'conjugation') {
+              const { data: verbLinks } = await supabase
+                .from('grammar_hint_verb_links')
+                .select('verbs ( verb_id, infinitive, english )')
+                .eq('hint_id', hint.hint_id);
+
+              if (verbLinks?.length) {
+                const verb = (verbLinks[0] as any).verbs;
+                // Fetch all conjugations for this verb
+                const { data: conjugations } = await supabase
+                  .from('verb_conjugations')
+                  .select('conjugated, tenses ( tense_id, name, english_name, description, sort_order ), pronouns ( spanish, sort_order )')
+                  .eq('verb_id', verb.verb_id)
+                  .order('tense_id');
+
+                if (conjugations?.length) {
+                  // Group by tense
+                  const tenseMap = new Map<number, TenseData>();
+                  for (const c of conjugations) {
+                    const t = (c as any).tenses;
+                    const p = (c as any).pronouns;
+                    if (!tenseMap.has(t.tense_id)) {
+                      tenseMap.set(t.tense_id, {
+                        tense_id: t.tense_id,
+                        name: t.name,
+                        english_name: t.english_name,
+                        description: t.description || '',
+                        conjugations: [],
+                      });
+                    }
+                    tenseMap.get(t.tense_id)!.conjugations.push({
+                      pronoun: p.spanish,
+                      form: c.conjugated,
+                    });
+                  }
+
+                  // Sort tenses by sort_order, sort conjugations by pronoun sort_order
+                  const tenses = Array.from(tenseMap.values());
+                  tenses.sort((a, b) => {
+                    const aConj = conjugations.find((c: any) => (c as any).tenses.tense_id === a.tense_id);
+                    const bConj = conjugations.find((c: any) => (c as any).tenses.tense_id === b.tense_id);
+                    return ((aConj as any)?.tenses?.sort_order || 0) - ((bConj as any)?.tenses?.sort_order || 0);
+                  });
+
+                  for (const tense of tenses) {
+                    tense.conjugations.sort((a, b) => {
+                      const aP = conjugations.find((c: any) => (c as any).pronouns.spanish === a.pronoun);
+                      const bP = conjugations.find((c: any) => (c as any).pronouns.spanish === b.pronoun);
+                      return ((aP as any)?.pronouns?.sort_order || 0) - ((bP as any)?.pronouns?.sort_order || 0);
+                    });
+                  }
+
+                  hintData.verb = {
+                    infinitive: verb.infinitive,
+                    english: verb.english,
+                    tenses,
+                  };
+                }
+              }
             }
-          });
-          setGrammarHints(uniqueHints);
+
+            hints.push(hintData);
+          }
+
+          setGrammarHints(hints);
         }
       }
 
@@ -168,9 +302,13 @@ export function SubunitDetailModal({
               </h2>
               <button
                 onClick={() => setShowGrammar(!showGrammar)}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#372213] text-[12px] font-semibold text-[#372213] hover:bg-[#372213]/5 transition-colors whitespace-nowrap"
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[12px] font-semibold transition-colors whitespace-nowrap ${
+                  showGrammar
+                    ? 'border-[#F97316] bg-[#F97316] text-white'
+                    : 'border-[#372213] text-[#372213] hover:bg-[#372213]/5'
+                }`}
               >
-                <Star className="w-3.5 h-3.5 fill-[#F97316] text-[#F97316]" />
+                <Star className={`w-3.5 h-3.5 ${showGrammar ? 'fill-white text-white' : 'fill-[#F97316] text-[#F97316]'}`} />
                 Grammar
               </button>
             </div>
@@ -186,10 +324,13 @@ export function SubunitDetailModal({
             <div className="mx-5 mb-3 p-3 bg-white/80 rounded-[12px] border border-[#F97316]/20">
               <h3 className="font-inter font-bold text-[14px] text-[#372213] mb-2">Grammar Hints</h3>
               {grammarHints.length > 0 ? (
-                <ul className="flex flex-col gap-2">
+                <ul className="flex flex-col gap-3">
                   {grammarHints.map((hint) => (
-                    <li key={hint.hint_id} className="font-inter text-[13px] text-[#4B5563] leading-[18px]">
-                      {hint.hint_text}
+                    <li key={hint.hint_id}>
+                      <p className="font-inter text-[13px] text-[#4B5563] leading-[18px]">
+                        {hint.hint_text}
+                      </p>
+                      {hint.verb && <ConjugationTable verb={hint.verb} />}
                     </li>
                   ))}
                 </ul>
@@ -232,7 +373,7 @@ export function SubunitDetailModal({
           </div>
         </div>
 
-        {/* Start Lesson Button — fixed at bottom */}
+        {/* Start Lesson Button */}
         <div className="px-5 pb-5 pt-2">
           <button
             onClick={onStartLesson}

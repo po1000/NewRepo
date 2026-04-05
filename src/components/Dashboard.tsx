@@ -29,16 +29,11 @@ interface UnitRow {
   subunits: SubunitRow[];
 }
 
-// Map subunit codes to background colors matching their image themes
+// Map CEFR level + subunit code to exact background colors
 const SUBUNIT_COLORS: Record<string, string> = {
-  '1.1': '#FB3D3E', '1.2': '#4A90D9', '2.1': '#F5A623', '2.2': '#E74C3C',
-  '3.1': '#8B6914', '4.1': '#3498DB',
-};
-
-// Fallback colors per CEFR level
-const FALLBACK_COLORS: Record<string, string[]> = {
-  A1: ['#FB3D3E', '#4A90D9', '#F5A623', '#E74C3C', '#8B6914', '#3498DB'],
-  A2: ['#9B59B6', '#27AE60', '#E67E22', '#2980B9', '#E74C3C', '#1ABC9C'],
+  'A1:1.1': '#FB3D3E', 'A1:1.2': '#FF8543', 'A1:2.1': '#1AD2CC', 'A1:2.2': '#6499FC',
+  'A1:3.1': '#FF5B1F', 'A1:4.1': '#015CE7',
+  'A2:1.1': '#BD55DD', 'A2:2.1': '#FFE101', 'A2:3.1': '#4CBC26', 'A2:4.1': '#F64297',
 };
 
 export function Dashboard() {
@@ -48,7 +43,9 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState({ total_xp: 0, badge_count: 0, current_streak: 0 });
   const [selectedSubunit, setSelectedSubunit] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string } | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.user_metadata?.avatar_url || null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null
+  );
 
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
@@ -101,7 +98,6 @@ export function Dashboard() {
 
         if (!grouped[levelKey]) grouped[levelKey] = [];
 
-        const fallbackColors = FALLBACK_COLORS[cefrCode] || FALLBACK_COLORS['A1'];
         const sortedSubunits = (unit.subunits || []).sort((a, b) => a.sort_order - b.sort_order);
 
         grouped[levelKey].push({
@@ -110,7 +106,7 @@ export function Dashboard() {
           lessons: sortedSubunits.map((sub, i) => ({
             unitNumber: sub.subunit_code,
             title: sub.title,
-            color: SUBUNIT_COLORS[sub.subunit_code] || fallbackColors[i % fallbackColors.length],
+            color: SUBUNIT_COLORS[`${cefrCode}:${sub.subunit_code}`] || '#D9D9D9',
             imageUrl: sub.image_url || '',
             status: 'locked' as const,
             subunitId: sub.subunit_id,

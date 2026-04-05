@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface UserProfileProps {
   username: string;
@@ -12,9 +13,11 @@ interface UserProfileProps {
 
 export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: UserProfileProps) {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(avatarUrl);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -24,7 +27,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
     const fileExt = file.name.split('.').pop();
     const filePath = `${userId}/avatar.${fileExt}`;
 
-    // Upload to Supabase Storage (avatars bucket)
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filePath, file, { upsert: true });
@@ -35,20 +37,28 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
       return;
     }
 
-    // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
       .getPublicUrl(filePath);
 
-    // Update user metadata
+    // Add cache buster to force refresh
+    const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+
     await supabase.auth.updateUser({
-      data: { avatar_url: publicUrl },
+      data: { avatar_url: urlWithCacheBust },
     });
 
-    onAvatarChange?.(publicUrl);
+    setLocalAvatarUrl(urlWithCacheBust);
+    onAvatarChange?.(urlWithCacheBust);
     setUploading(false);
     setMenuOpen(false);
+
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
+
+  // Use Google avatar if available and no custom avatar
+  const displayUrl = localAvatarUrl || avatarUrl;
 
   return (
     <div className="relative">
@@ -57,9 +67,9 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
         aria-label="User profile menu"
         onClick={() => setMenuOpen(!menuOpen)}
       >
-        {avatarUrl ? (
+        {displayUrl ? (
           <img
-            src={avatarUrl}
+            src={displayUrl}
             alt="Profile"
             className="w-[25px] h-[25px] rounded-full object-cover flex-shrink-0"
           />
@@ -77,26 +87,38 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
 
       {/* Dropdown menu */}
       {menuOpen && (
-        <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden">
-          <button
-            onClick={() => {
-              fileInputRef.current?.click();
-              setMenuOpen(false);
-            }}
-            className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#372213] hover:bg-gray-50 transition-colors"
-          >
-            {uploading ? 'Uploading...' : 'Change Profile Photo'}
-          </button>
-          <button
-            onClick={() => {
-              navigate('/badges');
-              setMenuOpen(false);
-            }}
-            className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#372213] hover:bg-gray-50 transition-colors border-t border-gray-50"
-          >
-            My Badges
-          </button>
-        </div>
+        <>
+          {/* Backdrop to close menu */}
+          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+          <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden">
+            <button
+              onClick={() => {
+                fileInputRef.current?.click();
+              }}
+              className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#372213] hover:bg-gray-50 transition-colors"
+            >
+              {uploading ? 'Uploading...' : 'Change Profile Photo'}
+            </button>
+            <button
+              onClick={() => {
+                navigate('/badges');
+                setMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#372213] hover:bg-gray-50 transition-colors border-t border-gray-50"
+            >
+              My Badges
+            </button>
+            <button
+              onClick={() => {
+                signOut();
+                setMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#E53E3E] hover:bg-red-50 transition-colors border-t border-gray-100"
+            >
+              Sign Out
+            </button>
+          </div>
+        </>
       )}
 
       <input

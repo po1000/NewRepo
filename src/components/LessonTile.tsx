@@ -46,7 +46,7 @@ export function LessonTile({
           <img
             src={imageUrl}
             alt={`Illustration for ${title}`}
-            className="w-full h-full object-contain drop-shadow-md" />
+            className="w-full h-full object-contain" />
           
         </div>
 
