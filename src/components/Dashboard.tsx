@@ -143,7 +143,7 @@ export function Dashboard() {
               Welcome, {username}!
             </h2>
             <p className="font-inter text-[13.6px] leading-[24px] text-[#6B7280]">
-              Your lessons will appear here once content is added to the database.
+              DEBUG: If you see this text, Vite is serving the updated file.
             </p>
           </div>
         ) : (
