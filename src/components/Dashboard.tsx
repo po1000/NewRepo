@@ -55,6 +55,8 @@ export function Dashboard() {
         `)
         .order('sort_order');
 
+      console.log('Units query result:', { data: units, error });
+
       if (error) {
         console.error('Error fetching units:', error);
         setLoading(false);
