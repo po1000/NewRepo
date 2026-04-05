@@ -22,25 +22,25 @@ INSERT INTO tenses (name, english_name, description, sort_order) VALUES
   ('imperfect', 'Imperfect', 'Used for ongoing or repeated past actions. "I used to eat, I was eating."', 3),
   ('future', 'Future', 'Used for actions that will happen. "I will eat."', 4),
   ('conditional', 'Conditional', 'Used for hypothetical actions or polite requests. "I would eat."', 5),
-  ('subjunctive_present', 'Present Subjunctive', 'Used when an action is not definitely happening — hypothetical, wished for, or imagined. "I wish I were taller."', 6);
+  ('subjunctive_present', 'Present Subjunctive', 'Used when an action is not definitely happening - hypothetical, wished for, or imagined. "I wish I were taller."', 6);
 
 -- ============================================================
 -- PRONOUNS
 -- ============================================================
 
-INSERT INTO pronouns (spanish, english, person, sort_order) VALUES
-  ('yo', 'I', '1s', 1),
-  ('tú', 'you (informal)', '2s', 2),
-  ('él/ella/usted', 'he/she/you (formal)', '3s', 3),
-  ('nosotros/as', 'we', '1p', 4),
-  ('vosotros/as', 'you all (Spain)', '2p', 5),
-  ('ellos/ellas/ustedes', 'they/you all', '3p', 6);
+INSERT INTO pronouns (pronoun_text, person_group, sort_order) VALUES
+  ('yo', '1st singular', 1),
+  ('tú', '2nd singular', 2),
+  ('él/ella/usted', '3rd singular', 3),
+  ('nosotros/as', '1st plural', 4),
+  ('vosotros/as', '2nd plural', 5),
+  ('ellos/ellas/ustedes', '3rd plural', 6);
 
 -- ============================================================
 -- VERBS
 -- ============================================================
 
-INSERT INTO verbs (infinitive, english, is_irregular) VALUES
+INSERT INTO verbs (infinitive, english_meaning, is_irregular) VALUES
   ('estar', 'to be (temporary)', true),
   ('ser', 'to be (permanent)', true),
   ('hablar', 'to speak', false),
@@ -62,167 +62,167 @@ INSERT INTO verbs (infinitive, english, is_irregular) VALUES
 -- ============================================================
 
 -- estar
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','estoy'),('tú','estás'),('él/ella/usted','está'),('nosotros/as','estamos'),('vosotros/as','estáis'),('ellos/ellas/ustedes','están')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'estar' AND t.name = 'present';
 
 -- ser
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','soy'),('tú','eres'),('él/ella/usted','es'),('nosotros/as','somos'),('vosotros/as','sois'),('ellos/ellas/ustedes','son')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'ser' AND t.name = 'present';
 
 -- hablar
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, false
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, false
 FROM verbs v, tenses t,
   (VALUES ('yo','hablo'),('tú','hablas'),('él/ella/usted','habla'),('nosotros/as','hablamos'),('vosotros/as','habláis'),('ellos/ellas/ustedes','hablan')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'hablar' AND t.name = 'present';
 
 -- poder
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','puedo'),('tú','puedes'),('él/ella/usted','puede'),('nosotros/as','podemos'),('vosotros/as','podéis'),('ellos/ellas/ustedes','pueden')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'poder' AND t.name = 'present';
 
 -- entender
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','entiendo'),('tú','entiendes'),('él/ella/usted','entiende'),('nosotros/as','entendemos'),('vosotros/as','entendéis'),('ellos/ellas/ustedes','entienden')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'entender' AND t.name = 'present';
 
 -- decir
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','digo'),('tú','dices'),('él/ella/usted','dice'),('nosotros/as','decimos'),('vosotros/as','decís'),('ellos/ellas/ustedes','dicen')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'decir' AND t.name = 'present';
 
 -- tener
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','tengo'),('tú','tienes'),('él/ella/usted','tiene'),('nosotros/as','tenemos'),('vosotros/as','tenéis'),('ellos/ellas/ustedes','tienen')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'tener' AND t.name = 'present';
 
 -- necesitar
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, false
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, false
 FROM verbs v, tenses t,
   (VALUES ('yo','necesito'),('tú','necesitas'),('él/ella/usted','necesita'),('nosotros/as','necesitamos'),('vosotros/as','necesitáis'),('ellos/ellas/ustedes','necesitan')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'necesitar' AND t.name = 'present';
 
 -- querer
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','quiero'),('tú','quieres'),('él/ella/usted','quiere'),('nosotros/as','queremos'),('vosotros/as','queréis'),('ellos/ellas/ustedes','quieren')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'querer' AND t.name = 'present';
 
 -- ir
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','voy'),('tú','vas'),('él/ella/usted','va'),('nosotros/as','vamos'),('vosotros/as','vais'),('ellos/ellas/ustedes','van')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'ir' AND t.name = 'present';
 
 -- hacer
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','hago'),('tú','haces'),('él/ella/usted','hace'),('nosotros/as','hacemos'),('vosotros/as','hacéis'),('ellos/ellas/ustedes','hacen')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'hacer' AND t.name = 'present';
 
 -- ver
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','veo'),('tú','ves'),('él/ella/usted','ve'),('nosotros/as','vemos'),('vosotros/as','veis'),('ellos/ellas/ustedes','ven')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'ver' AND t.name = 'present';
 
 -- pagar
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, false
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, false
 FROM verbs v, tenses t,
   (VALUES ('yo','pago'),('tú','pagas'),('él/ella/usted','paga'),('nosotros/as','pagamos'),('vosotros/as','pagáis'),('ellos/ellas/ustedes','pagan')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'pagar' AND t.name = 'present';
 
--- haber (present - hay is impersonal)
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+-- haber
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','he'),('tú','has'),('él/ella/usted','ha/hay'),('nosotros/as','hemos'),('vosotros/as','habéis'),('ellos/ellas/ustedes','han')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'haber' AND t.name = 'present';
 
 -- ============================================================
 -- CONJUGATIONS — Preterite tense (key verbs)
 -- ============================================================
 
--- ir (preterite = same as ser)
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+-- ir (preterite)
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','fui'),('tú','fuiste'),('él/ella/usted','fue'),('nosotros/as','fuimos'),('vosotros/as','fuisteis'),('ellos/ellas/ustedes','fueron')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'ir' AND t.name = 'preterite';
 
--- hacer
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+-- hacer (preterite)
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','hice'),('tú','hiciste'),('él/ella/usted','hizo'),('nosotros/as','hicimos'),('vosotros/as','hicisteis'),('ellos/ellas/ustedes','hicieron')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'hacer' AND t.name = 'preterite';
 
--- ver
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+-- ver (preterite)
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','vi'),('tú','viste'),('él/ella/usted','vio'),('nosotros/as','vimos'),('vosotros/as','visteis'),('ellos/ellas/ustedes','vieron')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'ver' AND t.name = 'preterite';
 
 -- estar (preterite)
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','estuve'),('tú','estuviste'),('él/ella/usted','estuvo'),('nosotros/as','estuvimos'),('vosotros/as','estuvisteis'),('ellos/ellas/ustedes','estuvieron')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'estar' AND t.name = 'preterite';
 
 -- tener (preterite)
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','tuve'),('tú','tuviste'),('él/ella/usted','tuvo'),('nosotros/as','tuvimos'),('vosotros/as','tuvisteis'),('ellos/ellas/ustedes','tuvieron')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'tener' AND t.name = 'preterite';
 
 -- poder (preterite)
-INSERT INTO verb_conjugations (verb_id, tense_id, pronoun_id, conjugated, is_irregular)
-SELECT v.verb_id, t.tense_id, p.pronoun_id, c.form, true
+INSERT INTO verb_conjugations (verb_id, pronoun_id, tense_id, conjugated_form, is_irregular)
+SELECT v.verb_id, p.pronoun_id, t.tense_id, c.form, true
 FROM verbs v, tenses t,
   (VALUES ('yo','pude'),('tú','pudiste'),('él/ella/usted','pudo'),('nosotros/as','pudimos'),('vosotros/as','pudisteis'),('ellos/ellas/ustedes','pudieron')) AS c(pron, form)
-  JOIN pronouns p ON p.spanish = c.pron
+  JOIN pronouns p ON p.pronoun_text = c.pron
 WHERE v.infinitive = 'poder' AND t.name = 'preterite';
 
 -- ============================================================
@@ -238,7 +238,6 @@ INSERT INTO grammar_hints (hint_text, hint_type) VALUES
   ('Conjugation: Estar — estoy, estás, está, estamos, estáis, están', 'conjugation'),
   ('Formality Intro: "Tú" (informal you, singular) vs "Usted" (formal you, singular). Use "tú" with friends/peers, "usted" with strangers/elders.', 'concept');
 
--- Link these hints to terms in subunit 1.1
 INSERT INTO term_grammar_hints (term_id, hint_id)
 SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
@@ -259,7 +258,6 @@ SELECT t.term_id, gh.hint_id
 FROM terms t, grammar_hints gh
 WHERE t.spanish_text = 'Estoy feliz' AND gh.hint_text LIKE 'Conjugation: Estar%';
 
--- Link estar verb to the conjugation hint
 INSERT INTO grammar_hint_verb_links (hint_id, verb_id)
 SELECT gh.hint_id, v.verb_id
 FROM grammar_hints gh, verbs v

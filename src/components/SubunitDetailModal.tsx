@@ -206,7 +206,7 @@ export function SubunitDetailModal({
             if (hint.hint_type === 'conjugation') {
               const { data: verbLinks } = await supabase
                 .from('grammar_hint_verb_links')
-                .select('verbs ( verb_id, infinitive, english )')
+                .select('verbs ( verb_id, infinitive, english_meaning )')
                 .eq('hint_id', hint.hint_id);
 
               if (verbLinks?.length) {
@@ -214,7 +214,7 @@ export function SubunitDetailModal({
                 // Fetch all conjugations for this verb
                 const { data: conjugations } = await supabase
                   .from('verb_conjugations')
-                  .select('conjugated, tenses ( tense_id, name, english_name, description, sort_order ), pronouns ( spanish, sort_order )')
+                  .select('conjugated_form, tenses ( tense_id, name, english_name, description, sort_order ), pronouns ( pronoun_text, sort_order )')
                   .eq('verb_id', verb.verb_id)
                   .order('tense_id');
 
@@ -234,8 +234,8 @@ export function SubunitDetailModal({
                       });
                     }
                     tenseMap.get(t.tense_id)!.conjugations.push({
-                      pronoun: p.spanish,
-                      form: c.conjugated,
+                      pronoun: p.pronoun_text,
+                      form: c.conjugated_form,
                     });
                   }
 
@@ -249,15 +249,15 @@ export function SubunitDetailModal({
 
                   for (const tense of tenses) {
                     tense.conjugations.sort((a, b) => {
-                      const aP = conjugations.find((c: any) => (c as any).pronouns.spanish === a.pronoun);
-                      const bP = conjugations.find((c: any) => (c as any).pronouns.spanish === b.pronoun);
+                      const aP = conjugations.find((c: any) => (c as any).pronouns.pronoun_text === a.pronoun);
+                      const bP = conjugations.find((c: any) => (c as any).pronouns.pronoun_text === b.pronoun);
                       return ((aP as any)?.pronouns?.sort_order || 0) - ((bP as any)?.pronouns?.sort_order || 0);
                     });
                   }
 
                   hintData.verb = {
                     infinitive: verb.infinitive,
-                    english: verb.english,
+                    english: verb.english_meaning,
                     tenses,
                   };
                 }
