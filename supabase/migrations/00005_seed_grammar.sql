@@ -9,8 +9,20 @@ DELETE FROM term_grammar_hints;
 DELETE FROM grammar_hints;
 DELETE FROM verb_conjugations;
 DELETE FROM verbs;
+DELETE FROM grammar_verb_categories;
 DELETE FROM pronouns;
 DELETE FROM tenses;
+
+-- ============================================================
+-- VERB CATEGORIES
+-- ============================================================
+
+INSERT INTO grammar_verb_categories (name, description, sort_order) VALUES
+  ('ar', 'Regular -ar verbs', 1),
+  ('er', 'Regular -er verbs', 2),
+  ('ir', 'Regular -ir verbs', 3),
+  ('irregular', 'Irregular verbs', 4),
+  ('reflexive', 'Reflexive verbs', 5);
 
 -- ============================================================
 -- TENSES (with hover descriptions)
@@ -40,22 +52,22 @@ INSERT INTO pronouns (pronoun_text, person_group, sort_order) VALUES
 -- VERBS
 -- ============================================================
 
-INSERT INTO verbs (infinitive, english_meaning, is_irregular) VALUES
-  ('estar', 'to be (temporary)', true),
-  ('ser', 'to be (permanent)', true),
-  ('hablar', 'to speak', false),
-  ('poder', 'to be able to', true),
-  ('entender', 'to understand', true),
-  ('decir', 'to say/tell', true),
-  ('tener', 'to have', true),
-  ('necesitar', 'to need', false),
-  ('querer', 'to want', true),
-  ('llamarse', 'to call oneself', false),
-  ('ir', 'to go', true),
-  ('hacer', 'to do/make', true),
-  ('ver', 'to see', true),
-  ('pagar', 'to pay', false),
-  ('haber', 'to have (auxiliary)', true);
+INSERT INTO verbs (infinitive, english_meaning, is_irregular, verb_category_id) VALUES
+  ('estar', 'to be (temporary)', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('ser', 'to be (permanent)', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('hablar', 'to speak', false, (SELECT category_id FROM grammar_verb_categories WHERE name = 'ar')),
+  ('poder', 'to be able to', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('entender', 'to understand', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'er')),
+  ('decir', 'to say/tell', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('tener', 'to have', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('necesitar', 'to need', false, (SELECT category_id FROM grammar_verb_categories WHERE name = 'ar')),
+  ('querer', 'to want', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('llamarse', 'to call oneself', false, (SELECT category_id FROM grammar_verb_categories WHERE name = 'reflexive')),
+  ('ir', 'to go', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('hacer', 'to do/make', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('ver', 'to see', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular')),
+  ('pagar', 'to pay', false, (SELECT category_id FROM grammar_verb_categories WHERE name = 'ar')),
+  ('haber', 'to have (auxiliary)', true, (SELECT category_id FROM grammar_verb_categories WHERE name = 'irregular'));
 
 -- ============================================================
 -- CONJUGATIONS — Present tense
