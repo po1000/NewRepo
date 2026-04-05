@@ -9,21 +9,21 @@
 -- A1 UNITS
 -- ============================================================
 
-INSERT INTO units (cefr_level_id, unit_code, title, description, sort_order) VALUES
-  (1, '1', 'First Impressions', 'Learn basic Spanish greetings and how to introduce yourself', 1),
-  (1, '2', 'Asking for Help', 'Ask people to repeat, slow down, and get help in emergencies', 2),
-  (1, '3', 'Getting What You Need', 'Order food, ask for things, and navigate daily situations', 3),
-  (1, '4', 'Getting Around', 'Directions, transport, and exploring your surroundings', 4);
+INSERT INTO units (cefr_level_id, unit_number, title, description, sort_order) VALUES
+  (1, 1, 'First Impressions', 'Learn basic Spanish greetings and how to introduce yourself', 1),
+  (1, 2, 'Asking for Help', 'Ask people to repeat, slow down, and get help in emergencies', 2),
+  (1, 3, 'Getting What You Need', 'Order food, ask for things, and navigate daily situations', 3),
+  (1, 4, 'Getting Around', 'Directions, transport, and exploring your surroundings', 4);
 
 -- ============================================================
 -- A2 UNITS
 -- ============================================================
 
-INSERT INTO units (cefr_level_id, unit_code, title, description, sort_order) VALUES
-  (2, '1', 'Preferences & Who You Know', 'Describe family, friends, and personality traits', 1),
-  (2, '2', 'Your Routine', 'Talk about daily routines and how often you do things', 2),
-  (2, '3', 'Plans and The Past', 'Talk about what you did recently using simple past tense', 3),
-  (2, '4', 'Life Admin', 'Handle money, payments, and practical transactions', 4);
+INSERT INTO units (cefr_level_id, unit_number, title, description, sort_order) VALUES
+  (2, 1, 'Preferences & Who You Know', 'Describe family, friends, and personality traits', 1),
+  (2, 2, 'Your Routine', 'Talk about daily routines and how often you do things', 2),
+  (2, 3, 'Plans and The Past', 'Talk about what you did recently using simple past tense', 3),
+  (2, 4, 'Life Admin', 'Handle money, payments, and practical transactions', 4);
 
 -- ============================================================
 -- A1 SUBUNITS
@@ -71,7 +71,7 @@ INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort
 -- A1 TERMS — Unit 1, Subunit 1.1: Hola, How's It Going?
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech, image_url) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech, image_url) VALUES
   ('¡Hola!', 'Hello!', 'interjection', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/terms/spanish_greetings_real_photos/01_hola.jpg'),
   ('Adiós', 'Goodbye', 'interjection', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/terms/spanish_greetings_real_photos/02_adios.jpg'),
   ('Buenos días', 'Good morning', 'phrase', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/terms/spanish_greetings_real_photos/03_buenos_dias.jpg'),
@@ -96,7 +96,7 @@ FROM terms WHERE term_id BETWEEN 1 AND 14;
 -- A1 TERMS — Unit 1, Subunit 1.2: Putting Names to Faces
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
   ('El nombre', 'The name', 'noun'),
   ('El apellido', 'The surname', 'noun'),
   ('Llamarse', 'To call oneself', 'verb'),
@@ -119,7 +119,7 @@ FROM terms WHERE term_id BETWEEN 15 AND 26;
 -- A1 TERMS — Unit 2, Subunit 2.1: Lost in Translation
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
   ('Poder', 'To be able to / Can', 'verb'),
   ('Decir', 'To say / To tell', 'verb'),
   ('Entender', 'To understand', 'verb'),
@@ -143,7 +143,7 @@ FROM terms WHERE term_id BETWEEN 27 AND 39;
 -- A1 TERMS — Unit 2, Subunit 2.2: Help is on the Way
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
   ('Necesitar', 'To need', 'verb'),
   ('Ayuda', 'Help', 'noun'),
   ('La policía', 'The police', 'noun'),
@@ -168,7 +168,7 @@ FROM terms WHERE term_id BETWEEN 40 AND 53;
 -- A1 TERMS — Unit 3, Subunit 3.1: Day at the Café
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech, image_url) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech, image_url) VALUES
   ('Querer', 'To want', 'verb', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/terms/spanish_cafe_terms_pngs/360_F_362369029_MdmfC4iNvzP2wZfHM9qYQcY6vEsx4lQH.jpg'),
   ('Tomar', 'To take / To have (food/drink)', 'verb', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/terms/spanish_cafe_terms_pngs/young-man-drinking-coffee-from-cup-science-photo-library.jpg'),
   ('Café con leche', 'Coffee with milk', 'noun', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/terms/spanish_cafe_terms_pngs/l-intro-1685463467.jpg'),
@@ -200,7 +200,7 @@ FROM terms WHERE term_id BETWEEN 54 AND 74;
 -- A1 TERMS — Unit 4, Subunit 4.1: Map Mode
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
   ('Hay', 'There is / There are', 'verb'),
   ('Cerca', 'Near', 'adverb'),
   ('Lejos', 'Far', 'adverb'),
@@ -226,7 +226,7 @@ FROM terms WHERE term_id BETWEEN 75 AND 89;
 -- A2 TERMS — Unit 1, Subunit 1.1: Relative Truths: Family
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
   ('Padre', 'Father', 'noun'),
   ('Hermano/a', 'Brother/Sister', 'noun'),
   ('Hijo/a', 'Son/Daughter', 'noun'),
@@ -252,7 +252,7 @@ FROM terms WHERE term_id BETWEEN 90 AND 104;
 -- A2 TERMS — Unit 2, Subunit 2.1: Rinse and Repeat
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
   ('Siempre', 'Always', 'adverb'),
   ('Nunca', 'Never', 'adverb'),
   ('A veces', 'Sometimes', 'adverb'),
@@ -283,7 +283,7 @@ FROM terms WHERE term_id BETWEEN 105 AND 124;
 -- A2 TERMS — Unit 3, Subunit 3.1: Fill Me In
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
   ('Ayer', 'Yesterday', 'adverb'),
   ('Anoche', 'Last night', 'adverb'),
   ('Esta mañana', 'This morning', 'phrase'),
@@ -314,7 +314,7 @@ FROM terms WHERE term_id BETWEEN 125 AND 144;
 -- A2 TERMS — Unit 4, Subunit 4.1: Tap and Go
 -- ============================================================
 
-INSERT INTO terms (spanish, english, part_of_speech) VALUES
+INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
   ('El dinero', 'Money', 'noun'),
   ('Pagar', 'To pay', 'verb'),
   ('El cajero automático', 'ATM', 'noun'),
