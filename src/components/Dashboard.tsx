@@ -19,7 +19,7 @@ interface SubunitRow {
 
 interface UnitRow {
   unit_id: number;
-  unit_number: number;
+  unit_code: string;
   title: string;
   description: string;
   sort_order: number;
@@ -49,7 +49,7 @@ export function Dashboard() {
       const { data: units, error } = await supabase
         .from('units')
         .select(`
-          unit_id, unit_number, title, description, sort_order, cefr_level_id,
+          unit_id, unit_code, title, description, sort_order, cefr_level_id,
           cefr_levels ( code, name ),
           subunits ( subunit_id, subunit_code, title, description, image_url, goal_text, sort_order )
         `)
@@ -86,7 +86,7 @@ export function Dashboard() {
 
         grouped[levelKey].push({
           id: `unit-${unit.unit_id}`,
-          title: `Unit ${unit.unit_number} — ${unit.title}`,
+          title: `Unit ${unit.unit_code} — ${unit.title}`,
           lessons: sortedSubunits.map((sub, i) => ({
             unitNumber: sub.subunit_code,
             title: sub.title,

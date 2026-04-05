@@ -9,21 +9,21 @@
 -- A1 UNITS
 -- ============================================================
 
-INSERT INTO units (cefr_level_id, unit_number, title, description, sort_order) VALUES
-  (1, 1, 'First Impressions', 'Learn basic Spanish greetings and how to introduce yourself', 1),
-  (1, 2, 'Asking for Help', 'Ask people to repeat, slow down, and get help in emergencies', 2),
-  (1, 3, 'Getting What You Need', 'Order food, ask for things, and navigate daily situations', 3),
-  (1, 4, 'Getting Around', 'Directions, transport, and exploring your surroundings', 4);
+INSERT INTO units (cefr_level_id, unit_code, title, description, sort_order) VALUES
+  (1, '1', 'First Impressions', 'Learn basic Spanish greetings and how to introduce yourself', 1),
+  (1, '2', 'Asking for Help', 'Ask people to repeat, slow down, and get help in emergencies', 2),
+  (1, '3', 'Getting What You Need', 'Order food, ask for things, and navigate daily situations', 3),
+  (1, '4', 'Getting Around', 'Directions, transport, and exploring your surroundings', 4);
 
 -- ============================================================
 -- A2 UNITS
 -- ============================================================
 
-INSERT INTO units (cefr_level_id, unit_number, title, description, sort_order) VALUES
-  (2, 1, 'Preferences & Who You Know', 'Describe family, friends, and personality traits', 1),
-  (2, 2, 'Your Routine', 'Talk about daily routines and how often you do things', 2),
-  (2, 3, 'Plans and The Past', 'Talk about what you did recently using simple past tense', 3),
-  (2, 4, 'Life Admin', 'Handle money, payments, and practical transactions', 4);
+INSERT INTO units (cefr_level_id, unit_code, title, description, sort_order) VALUES
+  (2, '1', 'Preferences & Who You Know', 'Describe family, friends, and personality traits', 1),
+  (2, '2', 'Your Routine', 'Talk about daily routines and how often you do things', 2),
+  (2, '3', 'Plans and The Past', 'Talk about what you did recently using simple past tense', 3),
+  (2, '4', 'Life Admin', 'Handle money, payments, and practical transactions', 4);
 
 -- ============================================================
 -- A1 SUBUNITS
