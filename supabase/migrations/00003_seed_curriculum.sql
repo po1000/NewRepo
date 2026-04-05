@@ -30,42 +30,42 @@ INSERT INTO units (cefr_level_id, unit_number, title, description, sort_order) V
 -- ============================================================
 
 -- Unit 1: First Impressions
-INSERT INTO subunits (unit_id, subunit_number, title, description, image_url, sort_order) VALUES
-  (1, 1, 'Hola, How''s It Going?', 'Basic greetings, farewells, and asking how someone is', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012.svg', 1),
-  (1, 2, 'Putting Names to Faces', 'Introducing yourself and others, asking names', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2013.svg', 2);
+INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
+  (1, '1.1', 'Hola, How''s It Going?', 'Basic greetings, farewells, and asking how someone is', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012.svg', 1),
+  (1, '1.2', 'Putting Names to Faces', 'Introducing yourself and others, asking names', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2013.svg', 2);
 
 -- Unit 2: Asking for Help
-INSERT INTO subunits (unit_id, subunit_number, title, description, image_url, sort_order) VALUES
-  (2, 1, 'Lost in Translation', 'Ask people to repeat, speak slowly, and explain words', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-1.svg', 1),
-  (2, 2, 'Help is on the Way', 'Emergency vocabulary and asking for help', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2014.svg', 2);
+INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
+  (2, '2.1', 'Lost in Translation', 'Ask people to repeat, speak slowly, and explain words', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-1.svg', 1),
+  (2, '2.2', 'Help is on the Way', 'Emergency vocabulary and asking for help', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2014.svg', 2);
 
 -- Unit 3: Getting What You Need
-INSERT INTO subunits (unit_id, subunit_number, title, description, image_url, sort_order) VALUES
-  (3, 1, 'Day at the Café', 'Ordering food and drinks, allergies, polite requests', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-2.svg', 1);
+INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
+  (3, '3.1', 'Day at the Café', 'Ordering food and drinks, allergies, polite requests', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-2.svg', 1);
 
 -- Unit 4: Getting Around
-INSERT INTO subunits (unit_id, subunit_number, title, description, image_url, sort_order) VALUES
-  (4, 1, 'Map Mode', 'Asking for and giving directions', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-3.svg', 1);
+INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
+  (4, '4.1', 'Map Mode', 'Asking for and giving directions', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-3.svg', 1);
 
 -- ============================================================
 -- A2 SUBUNITS
 -- ============================================================
 
 -- Unit 5 (A2 Unit 1): Preferences & Who You Know
-INSERT INTO subunits (unit_id, subunit_number, title, description, image_url, sort_order) VALUES
-  (5, 1, 'Relative Truths: Family', 'Describe family members and friends with personality traits', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-4.svg', 1);
+INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
+  (5, '1.1', 'Relative Truths: Family', 'Describe family members and friends with personality traits', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-4.svg', 1);
 
 -- Unit 6 (A2 Unit 2): Your Routine
-INSERT INTO subunits (unit_id, subunit_number, title, description, image_url, sort_order) VALUES
-  (6, 1, 'Rinse and Repeat', 'Frequency adverbs and daily routine vocabulary', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2015.svg', 1);
+INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
+  (6, '1.1', 'Rinse and Repeat', 'Frequency adverbs and daily routine vocabulary', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2015.svg', 1);
 
 -- Unit 7 (A2 Unit 3): Plans and The Past
-INSERT INTO subunits (unit_id, subunit_number, title, description, image_url, sort_order) VALUES
-  (7, 1, 'Fill Me In', 'Past tense vocabulary and talking about recent events', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-5.svg', 1);
+INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
+  (7, '1.1', 'Fill Me In', 'Past tense vocabulary and talking about recent events', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-5.svg', 1);
 
 -- Unit 8 (A2 Unit 4): Life Admin
-INSERT INTO subunits (unit_id, subunit_number, title, description, image_url, sort_order) VALUES
-  (8, 1, 'Tap and Go', 'Money, payments, ATMs, and transactions', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-6.svg', 1);
+INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
+  (8, '1.1', 'Tap and Go', 'Money, payments, ATMs, and transactions', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-6.svg', 1);
 
 -- ============================================================
 -- A1 TERMS — Unit 1, Subunit 1.1: Hola, How's It Going?

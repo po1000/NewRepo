@@ -9,10 +9,11 @@ import { UnitSection, UnitData } from './UnitSection';
 
 interface SubunitRow {
   subunit_id: number;
-  subunit_number: number;
+  subunit_code: string;
   title: string;
   description: string;
   image_url: string | null;
+  goal_text: string | null;
   sort_order: number;
 }
 
@@ -50,7 +51,7 @@ export function Dashboard() {
         .select(`
           unit_id, unit_number, title, description, sort_order, cefr_level_id,
           cefr_levels ( code, name ),
-          subunits ( subunit_id, subunit_number, title, description, image_url, sort_order )
+          subunits ( subunit_id, subunit_code, title, description, image_url, goal_text, sort_order )
         `)
         .order('sort_order');
 
@@ -87,7 +88,7 @@ export function Dashboard() {
           id: `unit-${unit.unit_id}`,
           title: `Unit ${unit.unit_number} — ${unit.title}`,
           lessons: sortedSubunits.map((sub, i) => ({
-            unitNumber: `${unit.unit_number}.${sub.subunit_number}`,
+            unitNumber: sub.subunit_code,
             title: sub.title,
             color: colors[i % colors.length],
             imageUrl: sub.image_url || '',
