@@ -43,8 +43,12 @@ export function Dashboard() {
 
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
+  console.log('Dashboard rendered, user:', user?.id);
+
   useEffect(() => {
+    console.log('useEffect fired, user:', user?.id);
     async function fetchData() {
+      console.log('fetchData called');
       // Fetch units with their subunits and CEFR level
       const { data: units, error } = await supabase
         .from('units')
