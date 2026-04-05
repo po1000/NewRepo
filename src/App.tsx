@@ -22,6 +22,7 @@ import { RegionsLandmarks } from './pages/RegionsLandmarks';
 import { FoodDrink } from './pages/FoodDrink';
 import { History } from './pages/History';
 import { Community } from './pages/Community';
+import { Badges } from './pages/Badges';
 
 type PageState = 'login' | 'create' | 'reset';
 
@@ -221,6 +222,7 @@ export function App() {
           <Route path="/culture/food-drink" element={<ProtectedRoute><FoodDrinkPage /></ProtectedRoute>} />
           <Route path="/culture/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
           <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+          <Route path="/badges" element={<ProtectedRoute><Badges /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

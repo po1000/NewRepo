@@ -29,10 +29,16 @@ interface UnitRow {
   subunits: SubunitRow[];
 }
 
-// Map CEFR codes to tile colors
-const TILE_COLORS: Record<string, string[]> = {
-  A1: ['#FFE4CC', '#CCE4FF', '#D4FFCC', '#FFF3CC', '#FFCCCC', '#E4CCFF'],
-  A2: ['#FFDDE4', '#CCF5FF', '#E8FFCC', '#FFE8CC', '#CCFFE4', '#FFD4CC'],
+// Map subunit codes to background colors matching their image themes
+const SUBUNIT_COLORS: Record<string, string> = {
+  '1.1': '#FB3D3E', '1.2': '#4A90D9', '2.1': '#F5A623', '2.2': '#E74C3C',
+  '3.1': '#8B6914', '4.1': '#3498DB',
+};
+
+// Fallback colors per CEFR level
+const FALLBACK_COLORS: Record<string, string[]> = {
+  A1: ['#FB3D3E', '#4A90D9', '#F5A623', '#E74C3C', '#8B6914', '#3498DB'],
+  A2: ['#9B59B6', '#27AE60', '#E67E22', '#2980B9', '#E74C3C', '#1ABC9C'],
 };
 
 export function Dashboard() {
@@ -40,8 +46,9 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [unitsByLevel, setUnitsByLevel] = useState<Record<string, UnitData[]>>({});
   const [loading, setLoading] = useState(true);
-  const [userStats, setUserStats] = useState({ total_xp: 0, hearts: 5, current_streak: 0 });
+  const [userStats, setUserStats] = useState({ total_xp: 0, badge_count: 0, current_streak: 0 });
   const [selectedSubunit, setSelectedSubunit] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string } | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.user_metadata?.avatar_url || null);
 
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
@@ -67,10 +74,21 @@ export function Dashboard() {
       if (user) {
         const { data: stats } = await supabase
           .from('user_stats')
-          .select('total_xp, hearts, current_streak')
+          .select('total_xp, current_streak')
           .eq('user_id', user.id)
           .single();
-        if (stats) setUserStats(stats);
+
+        // Count badges earned
+        const { count: badgeCount } = await supabase
+          .from('user_badges')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        setUserStats({
+          total_xp: stats?.total_xp || 0,
+          current_streak: stats?.current_streak || 0,
+          badge_count: badgeCount || 0,
+        });
       }
 
       // Group units by CEFR level
@@ -83,7 +101,7 @@ export function Dashboard() {
 
         if (!grouped[levelKey]) grouped[levelKey] = [];
 
-        const colors = TILE_COLORS[cefrCode] || TILE_COLORS['A1'];
+        const fallbackColors = FALLBACK_COLORS[cefrCode] || FALLBACK_COLORS['A1'];
         const sortedSubunits = (unit.subunits || []).sort((a, b) => a.sort_order - b.sort_order);
 
         grouped[levelKey].push({
@@ -92,7 +110,7 @@ export function Dashboard() {
           lessons: sortedSubunits.map((sub, i) => ({
             unitNumber: sub.subunit_code,
             title: sub.title,
-            color: colors[i % colors.length],
+            color: SUBUNIT_COLORS[sub.subunit_code] || fallbackColors[i % fallbackColors.length],
             imageUrl: sub.image_url || '',
             status: 'locked' as const,
             subunitId: sub.subunit_id,
@@ -118,10 +136,15 @@ export function Dashboard() {
     <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #FFE484 0%, #FFF8F0 40%)' }}>
       {/* Top Bar */}
       <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between max-w-[900px] mx-auto">
-        <UserProfile username={username} />
+        <UserProfile
+          username={username}
+          avatarUrl={avatarUrl}
+          userId={user?.id || ''}
+          onAvatarChange={setAvatarUrl}
+        />
         <UserStats
           xp={userStats.total_xp.toLocaleString()}
-          hearts={userStats.hearts}
+          hearts={userStats.badge_count}
           streak={userStats.current_streak}
         />
       </header>
@@ -181,6 +204,10 @@ export function Dashboard() {
           goalText={selectedSubunit.goalText}
           userId={user?.id || ''}
           onClose={() => setSelectedSubunit(null)}
+          onStartLesson={() => {
+            setSelectedSubunit(null);
+            navigate('/lesson', { state: { subunitId: selectedSubunit.subunitId, subunitCode: selectedSubunit.subunitCode, title: selectedSubunit.title } });
+          }}
         />
       )}
     </div>
