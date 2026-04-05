@@ -8,6 +8,8 @@ export interface LessonTileProps {
   imageUrl: string;
   status: LessonStatus;
   progressPercent?: number;
+  subunitId?: number;
+  goalText?: string;
   onClick?: () => void;
 }
 export function LessonTile({
@@ -20,13 +22,13 @@ export function LessonTile({
   onClick
 }: LessonTileProps) {
   return (
-    <div className="flex flex-col gap-1 w-[188px]" data-lesson-tile>
+    <div className="flex flex-col gap-1 w-[203px]" data-lesson-tile>
       <h4 className="font-inter font-semibold text-[16px] leading-[28px] text-[#372213] truncate">
         {title}
       </h4>
 
       <div
-        className="relative w-[188px] h-[136px] rounded-lg overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform"
+        className="relative w-[203px] h-[151px] rounded-lg overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform"
         style={{
           backgroundColor: color
         }}

@@ -6,6 +6,7 @@ import { Navigation } from './Navigation';
 import { UserProfile } from './UserProfile';
 import { UserStats } from './UserStats';
 import { UnitSection, UnitData } from './UnitSection';
+import { SubunitDetailModal } from './SubunitDetailModal';
 
 interface SubunitRow {
   subunit_id: number;
@@ -40,6 +41,7 @@ export function Dashboard() {
   const [unitsByLevel, setUnitsByLevel] = useState<Record<string, UnitData[]>>({});
   const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState({ total_xp: 0, hearts: 5, current_streak: 0 });
+  const [selectedSubunit, setSelectedSubunit] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string } | null>(null);
 
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
@@ -77,7 +79,7 @@ export function Dashboard() {
       (units as UnitRow[])?.forEach((unit) => {
         const cefrCode = unit.cefr_levels?.code || 'A1';
         const cefrName = unit.cefr_levels?.title || 'Beginner';
-        const levelKey = `${cefrCode} — ${cefrName}`;
+        const levelKey = `${cefrCode}: ${cefrName}`;
 
         if (!grouped[levelKey]) grouped[levelKey] = [];
 
@@ -86,13 +88,21 @@ export function Dashboard() {
 
         grouped[levelKey].push({
           id: `unit-${unit.unit_id}`,
-          title: `Unit ${unit.unit_number} — ${unit.title}`,
+          title: `Unit ${unit.unit_number}: ${unit.title}`,
           lessons: sortedSubunits.map((sub, i) => ({
             unitNumber: sub.subunit_code,
             title: sub.title,
             color: colors[i % colors.length],
             imageUrl: sub.image_url || '',
             status: 'locked' as const,
+            subunitId: sub.subunit_id,
+            goalText: sub.goal_text || '',
+            onClick: () => setSelectedSubunit({
+              subunitId: sub.subunit_id,
+              subunitCode: sub.subunit_code,
+              title: sub.title,
+              goalText: sub.goal_text || '',
+            }),
           })),
         });
       });
@@ -162,6 +172,17 @@ export function Dashboard() {
           </button>
         </div>
       </main>
+
+      {selectedSubunit && (
+        <SubunitDetailModal
+          subunitId={selectedSubunit.subunitId}
+          subunitCode={selectedSubunit.subunitCode}
+          title={selectedSubunit.title}
+          goalText={selectedSubunit.goalText}
+          userId={user?.id || ''}
+          onClose={() => setSelectedSubunit(null)}
+        />
+      )}
     </div>
   );
 }
