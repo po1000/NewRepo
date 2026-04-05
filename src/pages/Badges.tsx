@@ -6,9 +6,11 @@ import { supabase } from '../lib/supabase';
 
 interface Badge {
   badge_id: number;
-  name: string;
+  label: string;
   description: string;
-  image_url: string | null;
+  icon_url: string | null;
+  criteria_type: string;
+  criteria_value: number;
   earned: boolean;
   earned_at: string | null;
 }
@@ -26,7 +28,7 @@ export function Badges() {
       // Fetch all badges
       const { data: allBadges } = await supabase
         .from('badges')
-        .select('badge_id, name, description, image_url')
+        .select('badge_id, label, description, icon_url, criteria_type, criteria_value')
         .order('badge_id');
 
       // Fetch user's earned badges
@@ -83,14 +85,14 @@ export function Badges() {
                 }`}
               >
                 <div className="w-16 h-16 rounded-full bg-[#FFF3E0] flex items-center justify-center mb-3">
-                  {badge.image_url ? (
-                    <img src={badge.image_url} alt={badge.name} className="w-10 h-10 object-contain" />
+                  {badge.icon_url ? (
+                    <img src={badge.icon_url} alt={badge.label} className="w-10 h-10 object-contain" />
                   ) : (
-                    <img src="/badges-icon.svg" alt={badge.name} className="w-10 h-10 object-contain" />
+                    <img src="/badges-icon.svg" alt={badge.label} className="w-10 h-10 object-contain" />
                   )}
                 </div>
                 <h3 className="font-inter font-bold text-[14px] text-[#372213] text-center">
-                  {badge.name}
+                  {badge.label}
                 </h3>
                 <p className="font-inter text-[12px] text-[#6B7280] text-center mt-1">
                   {badge.description}

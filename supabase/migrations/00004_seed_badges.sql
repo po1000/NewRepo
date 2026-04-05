@@ -5,11 +5,11 @@
 DELETE FROM user_badges;
 DELETE FROM badges;
 
-INSERT INTO badges (name, description, image_url, xp_required) VALUES
-  ('First Steps', 'Complete your first lesson', NULL, 0),
-  ('7-Day Streak', 'Study for 7 days in a row', NULL, 0),
-  ('Word Collector', 'Correctly answer 10 lesson questions', NULL, 0),
-  ('Word Collector II', 'Correctly answer 50 lesson questions', NULL, 0);
+INSERT INTO badges (label, description, criteria_type, criteria_value) VALUES
+  ('First Steps', 'Complete your first lesson', 'lessons_completed', 1),
+  ('7-Day Streak', 'Study for 7 days in a row', 'streak_days', 7),
+  ('Word Collector', 'Correctly answer 10 lesson questions', 'correct_answers', 10),
+  ('Word Collector II', 'Correctly answer 50 lesson questions', 'correct_answers', 50);
 
 -- ============================================================
 -- RLS: ensure badges + user_badges are readable
