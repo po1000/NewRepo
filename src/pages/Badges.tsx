@@ -81,7 +81,7 @@ export function Badges() {
                 className={`flex flex-col items-center p-5 rounded-[16px] shadow-sm transition-all ${
                   badge.earned
                     ? 'bg-white border-2 border-[#F97316]'
-                    : 'bg-white/60 border border-gray-100 opacity-50'
+                    : 'bg-white border border-gray-200'
                 }`}
               >
                 <div className="w-16 h-16 rounded-full bg-[#FFF3E0] flex items-center justify-center mb-3">
