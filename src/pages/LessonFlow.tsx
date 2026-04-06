@@ -39,6 +39,11 @@ interface GrammarHint {
   hint_type: string;
 }
 
+interface PronunciationHint {
+  id: number;
+  hint_text: string;
+}
+
 interface LessonFlowProps {
   onClose: () => void;
 }
@@ -66,8 +71,9 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const [queueIndex, setQueueIndex] = useState(0);
   const [progressMap, setProgressMap] = useState<Map<number, TermProgress>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [showGrammarHint, setShowGrammarHint] = useState(false);
+  const [hintsExpanded, setHintsExpanded] = useState(false);
   const [grammarHints, setGrammarHints] = useState<GrammarHint[]>([]);
+  const [pronunciationHints, setPronunciationHints] = useState<PronunciationHint[]>([]);
   const [slowAudio, setSlowAudio] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportText, setReportText] = useState('');
@@ -165,11 +171,12 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const currentTerm = currentTermId ? termsMap.get(currentTermId) || null : null;
   const currentProgress = currentTermId ? progressMap.get(currentTermId) : undefined;
 
-  // Fetch grammar hints for current term
+  // Fetch grammar + pronunciation hints for current term
   useEffect(() => {
     if (!currentTermId) return;
 
     async function fetchHints() {
+      // Grammar hints
       const { data: hintLinks } = await supabase
         .from('term_grammar_hints')
         .select('grammar_hints ( hint_id, hint_title, hint_text, hint_type )')
@@ -182,10 +189,18 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       } else {
         setGrammarHints([]);
       }
+
+      // Pronunciation hints
+      const { data: pronHints } = await supabase
+        .from('term_pronunciation_hints')
+        .select('id, hint_text')
+        .eq('term_id', currentTermId);
+
+      setPronunciationHints(pronHints || []);
     }
 
     fetchHints();
-    setShowGrammarHint(false);
+    setHintsExpanded(false);
   }, [currentTermId]);
 
   // Progress bar
@@ -200,7 +215,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       onClose();
     } else {
       setQueueIndex(queueIndex + 1);
-      setShowGrammarHint(false);
+      setHintsExpanded(false);
       setShowReport(false);
       setReportText('');
       setReportSent(false);
@@ -440,36 +455,49 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           )}
         </div>
 
-        {/* Bottom Actions */}
-        <div className="flex items-center justify-between mt-8 w-full max-w-[448px] mx-auto">
-          <div className="relative">
-            <button onClick={() => setShowGrammarHint(!showGrammarHint)}
-              className="flex items-center gap-2 px-4 py-3 border-2 border-[#FFFDE6] rounded-xl bg-[#FF6200] text-[#FFFDE6] font-bold text-[14.6px] hover:bg-[#e55800] transition-colors">
-              <Star className="w-4 h-4" />
-              Grammar Hint
+        {/* Inline Hints (grammar + pronunciation) — only on flashcards */}
+        {(grammarHints.length > 0 || pronunciationHints.length > 0) && (
+          <div className="w-full max-w-[422px] mx-auto mb-4">
+            <button
+              onClick={() => setHintsExpanded(!hintsExpanded)}
+              className="flex items-center gap-2 text-[#FFFDE6] font-semibold text-[13px] hover:text-white transition-colors"
+            >
+              <Star className="w-4 h-4 fill-[#FFFDE6]" />
+              {hintsExpanded ? 'Hide Hints' : 'Show Hints'}
+              <span className="text-[11px] opacity-70">
+                ({grammarHints.length + pronunciationHints.length})
+              </span>
             </button>
 
-            {showGrammarHint && (
-              <div className="absolute bottom-full left-0 mb-4 w-[300px] bg-[#FFFDE6] rounded-xl p-4 shadow-xl z-50">
-                <div className="absolute -bottom-2 left-8 w-4 h-4 bg-[#FFFDE6] rotate-45" />
-                <div className="relative z-10">
-                  {grammarHints.length > 0 ? (
-                    <div className="flex flex-col gap-3">
-                      {grammarHints.map((hint) => (
-                        <div key={hint.hint_id}>
-                          <p className="font-bold text-[13px] text-[#F97316] mb-0.5">{hint.hint_title}</p>
-                          <p className="text-[13px] leading-[18px] text-[#372213]">{hint.hint_text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[13px] text-[#9CA3AF]">No grammar hints for this term.</p>
-                  )}
-                </div>
+            {hintsExpanded && (
+              <div className="mt-2 bg-[#FFFDE6] rounded-xl p-4 shadow-lg">
+                {grammarHints.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {grammarHints.map((hint) => (
+                      <div key={hint.hint_id}>
+                        <p className="font-bold text-[13px] text-[#F97316] mb-0.5">{hint.hint_title}</p>
+                        <p className="text-[13px] leading-[18px] text-[#372213]">{hint.hint_text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {pronunciationHints.length > 0 && (
+                  <div className={`flex flex-col gap-2 ${grammarHints.length > 0 ? 'mt-3 pt-3 border-t border-[#E5E0D5]' : ''}`}>
+                    <p className="font-bold text-[13px] text-[#8B5CF6]">Pronunciation</p>
+                    {pronunciationHints.map((hint) => (
+                      <p key={hint.id} className="text-[13px] leading-[18px] text-[#372213]">
+                        {hint.hint_text}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
+        )}
 
+        {/* Bottom Actions */}
+        <div className="flex items-center justify-end mt-4 w-full max-w-[448px] mx-auto">
           <button onClick={handleNext}
             className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
             {isFirstSeen ? 'Got it!' : 'Next'}

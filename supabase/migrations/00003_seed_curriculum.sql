@@ -61,15 +61,15 @@ INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort
 
 -- A2 Unit 2: Your Routine
 INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
-  ((SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 2), '1.1', 'Rinse and Repeat', 'Frequency adverbs and daily routine vocabulary', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2015.svg', 1);
+  ((SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 2), '2.1', 'Rinse and Repeat', 'Frequency adverbs and daily routine vocabulary', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2015.svg', 1);
 
 -- A2 Unit 3: Plans and The Past
 INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
-  ((SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 3), '1.1', 'Fill Me In', 'Past tense vocabulary and talking about recent events', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-5.svg', 1);
+  ((SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 3), '3.1', 'Fill Me In', 'Past tense vocabulary and talking about recent events', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-5.svg', 1);
 
 -- A2 Unit 4: Life Admin
 INSERT INTO subunits (unit_id, subunit_code, title, description, image_url, sort_order) VALUES
-  ((SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 4), '1.1', 'Tap and Go', 'Money, payments, ATMs, and transactions', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-6.svg', 1);
+  ((SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 4), '4.1', 'Tap and Go', 'Money, payments, ATMs, and transactions', 'https://gpplxflzkjmbomzafqju.supabase.co/storage/v1/object/public/content-images/subunit-sessions/image%2012-6.svg', 1);
 
 -- ============================================================
 -- A1 TERMS — Unit 1, Subunit 1.1: Hola, How's It Going?
@@ -302,13 +302,13 @@ INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
 -- Link terms to subunit A2 2.1
 INSERT INTO subunit_terms (subunit_id, term_id, sort_order)
 SELECT
-  (SELECT subunit_id FROM subunits WHERE subunit_code = '1.1' AND unit_id = (SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 2)),
+  (SELECT subunit_id FROM subunits WHERE subunit_code = '2.1' AND unit_id = (SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 2)),
   term_id,
   row_number() OVER (ORDER BY term_id)
 FROM terms WHERE spanish_text IN ('Siempre', 'Nunca', 'A veces', 'Normalmente', 'Generalmente', 'Frecuentemente', 'Raramente', 'Todos los días', 'Cada semana', 'Una vez', 'Dos veces', 'Siempre desayuno', 'Nunca como carne', 'A veces voy al gimnasio', 'Normalmente trabajo desde casa', 'Dos veces a la semana', '¿Con qué frecuencia...?', '¿Cada cuánto...?', '¿Siempre haces eso?', '¿Nunca comes carne?');
 
 -- ============================================================
--- A2 TERMS — Unit 3, Subunit 1.1: Fill Me In
+-- A2 TERMS — Unit 3, Subunit 3.1: Fill Me In
 -- ============================================================
 
 INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
@@ -336,13 +336,13 @@ INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
 -- Link terms to subunit A2 3.1
 INSERT INTO subunit_terms (subunit_id, term_id, sort_order)
 SELECT
-  (SELECT subunit_id FROM subunits WHERE subunit_code = '1.1' AND unit_id = (SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 3)),
+  (SELECT subunit_id FROM subunits WHERE subunit_code = '3.1' AND unit_id = (SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 3)),
   term_id,
   row_number() OVER (ORDER BY term_id)
 FROM terms WHERE spanish_text IN ('Ayer', 'Anoche', 'Esta mañana', 'La semana pasada', 'El mes pasado', 'El año pasado', 'El otro día', 'Ir', 'Pasarlo bien/mal', 'Fuimos a un restaurante', 'Vimos una película', 'Me divertí mucho', 'Ayer fui a...', 'Anoche vi una película', 'Esta mañana comí...', 'La semana pasada trabajé mucho', 'Hace dos días...', '¿Lo pasaste bien?', '¿Qué hiciste ayer?', '¿Dónde fuiste?');
 
 -- ============================================================
--- A2 TERMS — Unit 4, Subunit 1.1: Tap and Go
+-- A2 TERMS — Unit 4, Subunit 4.1: Tap and Go
 -- ============================================================
 
 INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
@@ -366,7 +366,7 @@ INSERT INTO terms (spanish_text, english_text, part_of_speech) VALUES
 -- Link terms to subunit A2 4.1
 INSERT INTO subunit_terms (subunit_id, term_id, sort_order)
 SELECT
-  (SELECT subunit_id FROM subunits WHERE subunit_code = '1.1' AND unit_id = (SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 4)),
+  (SELECT subunit_id FROM subunits WHERE subunit_code = '4.1' AND unit_id = (SELECT unit_id FROM units WHERE cefr_level_id = 2 AND unit_number = 4)),
   term_id,
   row_number() OVER (ORDER BY term_id)
 FROM terms WHERE spanish_text IN ('El dinero', 'Pagar', 'El cajero automático', 'Sacar dinero', 'Con tarjeta', 'En efectivo', 'El recibo', 'La cuenta', 'Quiero sacar dinero', 'No funciona', 'Quédese con el cambio', '¿Aceptan tarjeta?', '¿Tiene cambio?', '¿Me da un recibo, por favor?', '¿Puedo pagar en efectivo?', '¿Dónde hay un cajero?');

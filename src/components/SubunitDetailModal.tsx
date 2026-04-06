@@ -9,6 +9,7 @@ interface Term {
   english_text: string;
   part_of_speech: string;
   status: TermStatus;
+  pronunciationHint?: string;
 }
 
 interface Conjugation {
@@ -176,6 +177,21 @@ export function SubunitDetailModal({
           status: (displayStatusMap[t.term_id] || 'not_seen') as Term['status'],
         };
       });
+
+      // Fetch pronunciation hints for all terms
+      if (termsList.length) {
+        const tIds = termsList.map(t => t.term_id);
+        const { data: pronHints } = await supabase
+          .from('term_pronunciation_hints')
+          .select('term_id, hint_text')
+          .in('term_id', tIds);
+
+        if (pronHints?.length) {
+          const pronMap: Record<number, string> = {};
+          pronHints.forEach((ph: any) => { pronMap[ph.term_id] = ph.hint_text; });
+          termsList.forEach(t => { t.pronunciationHint = pronMap[t.term_id]; });
+        }
+      }
 
       setTerms(termsList);
 
@@ -360,6 +376,11 @@ export function SubunitDetailModal({
                       <span className="font-inter text-[12px] text-[#9CA3AF] truncate">
                         {term.english_text}
                       </span>
+                      {term.pronunciationHint && (
+                        <span className="font-inter text-[11px] text-[#8B5CF6] leading-[14px] mt-0.5">
+                          {term.pronunciationHint}
+                        </span>
+                      )}
                     </div>
                     <MasteryIcon status={term.status} />
                   </li>
