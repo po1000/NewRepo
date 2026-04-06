@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, PlayCircle } from 'lucide-react';
-import { Navigation } from '../components/Navigation';
-import { UserProfile } from '../components/UserProfile';
+import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
+
 interface FoodDrinkProps {
-  onNavigateBack?: () => void;
-  onLearnSpeakWriteClick?: () => void;
-  onCultureClick?: () => void;
-  onGrammarClick?: () => void;
-  onCommunityClick?: () => void;
   onNavigateToRegion?: (region: string) => void;
 }
 interface MenuItem {
@@ -177,11 +172,6 @@ const MENU_DATA: MenuSection[] = [
 }];
 
 export function FoodDrink({
-  onNavigateBack,
-  onLearnSpeakWriteClick,
-  onCultureClick,
-  onGrammarClick,
-  onCommunityClick,
   onNavigateToRegion
 }: FoodDrinkProps) {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
@@ -210,29 +200,12 @@ export function FoodDrink({
     }
   };
   return (
-    <div className="min-h-screen w-full bg-[#E2F4FF] font-inter">
+    <PageLayout backgroundColor="#E2F4FF">
       {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
-      {/* Top Navigation */}
+      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
-        <div className="relative flex flex-col pt-[42px]">
-          <div className="absolute right-4 top-[42px] z-20 hidden md:block">
-            <UserProfile username="username_here" />
-          </div>
-          <Navigation
-            onLearnLessonsClick={onNavigateBack}
-            onLearnSpeakWriteClick={onLearnSpeakWriteClick}
-            onCultureClick={onCultureClick}
-            onGrammarClick={onGrammarClick}
-            onCommunityClick={onCommunityClick} />
-          
-          <div className="flex justify-end mt-4 md:hidden">
-            <UserProfile username="username_here" />
-          </div>
-        </div>
-
-        {/* Main Content */}
         <div className="max-w-[690px] mx-auto mt-12 pb-20">
           {/* Header Section */}
           <div className="bg-white rounded-t-[12px] border border-[#DBEAFE] p-6">
@@ -252,7 +225,7 @@ export function FoodDrink({
             <div
               key={section.title}
               className={sIndex > 0 ? 'mt-12' : 'mt-2'}>
-              
+
                 {/* Section Header */}
                 <div className="flex items-center justify-center gap-4 mb-8">
                   <div className="h-[1px] flex-1 bg-[#D1D5DB]" />
@@ -269,7 +242,7 @@ export function FoodDrink({
                   key={item.id}
                   className={`flex flex-col rounded-xl border transition-all duration-300 ${item.videoUrl ? 'border-[#FCD34D] bg-white shadow-sm hover:shadow-md cursor-pointer' : 'border-transparent'}`}
                   onClick={() => item.videoUrl && toggleItem(item.id)}>
-                  
+
                       <div className="flex gap-4 p-4">
                         {/* Food Image */}
                         <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] shrink-0 rounded-lg overflow-hidden relative">
@@ -277,7 +250,7 @@ export function FoodDrink({
                         src={item.imageUrl}
                         alt={item.name}
                         className="w-full h-full object-cover" />
-                      
+
                           {item.videoUrl &&
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                               <PlayCircle className="w-8 h-8 text-white opacity-90 drop-shadow-md" />
@@ -313,7 +286,7 @@ export function FoodDrink({
                           handleRegionClick(item.originRegion!, e)
                           }
                           className="text-[#1D4ED8] hover:text-[#1E40AF] underline decoration-dotted underline-offset-2 font-medium not-italic transition-colors">
-                          
+
                                   {item.origin}
                                 </button> :
 
@@ -341,7 +314,7 @@ export function FoodDrink({
                         opacity: 0
                       }}
                       className="overflow-hidden border-t border-[#FEF3C7]">
-                      
+
                             <div className="p-4 bg-[#FFFBEB] rounded-b-xl">
                               {/* Video Embed */}
                               <div className="w-full aspect-video bg-black rounded-lg overflow-hidden mb-4">
@@ -351,7 +324,7 @@ export function FoodDrink({
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             className="w-full h-full border-0" />
-                          
+
                               </div>
 
                               {/* Ingredients Toggle */}
@@ -362,7 +335,7 @@ export function FoodDrink({
                             toggleIngredients(item.id, e)
                             }
                             className="w-full flex items-center justify-between p-3 text-left hover:bg-[#FEF3C7] transition-colors">
-                            
+
                                     <span className="font-inter font-semibold text-[14px] text-[#92400E]">
                                       View Ingredients
                                     </span>
@@ -386,13 +359,13 @@ export function FoodDrink({
                                 height: 0
                               }}
                               className="overflow-hidden">
-                              
+
                                         <ul className="p-4 pt-0 space-y-2">
                                           {item.ingredients.map((ing, i) =>
                                 <li
                                   key={i}
                                   className="font-inter text-[13px] text-[#4B5563] flex items-start gap-2">
-                                  
+
                                               <span className="text-[#D97706] mt-0.5">
                                                 •
                                               </span>
@@ -417,6 +390,6 @@ export function FoodDrink({
           </div>
         </div>
       </div>
-    </div>);
+    </PageLayout>);
 
 }

@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { Navigation } from '../components/Navigation';
-import { UserProfile } from '../components/UserProfile';
+import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
+
 interface RegionsLandmarksProps {
-  onNavigateBack?: () => void;
-  onLearnSpeakWriteClick?: () => void;
-  onCultureClick?: () => void;
-  onGrammarClick?: () => void;
-  onCommunityClick?: () => void;
   initialRegion?: ViewType | null;
 }
 type ViewType =
@@ -57,7 +52,7 @@ const CLICKABLE_ITEMS: ClickableItem[] = [
 },
 {
   id: 'andalucia',
-  name: 'Andalucía',
+  name: 'Andalucia',
   left: '31.6%',
   top: '66.4%',
   width: '21.5%',
@@ -138,11 +133,6 @@ const DETAIL_DATA: Record<ViewType, DetailData> = {
   }
 };
 export function RegionsLandmarks({
-  onNavigateBack,
-  onLearnSpeakWriteClick,
-  onCultureClick,
-  onGrammarClick,
-  onCommunityClick,
   initialRegion = null
 }: RegionsLandmarksProps) {
   const [activeView, setActiveView] = useState<ViewType | null>(initialRegion);
@@ -156,29 +146,12 @@ export function RegionsLandmarks({
   };
   const activeData = activeView ? DETAIL_DATA[activeView] : null;
   return (
-    <div className="min-h-screen w-full bg-[#E2F4FF] font-inter">
+    <PageLayout backgroundColor="#E2F4FF">
       {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
-      {/* Top Navigation */}
+      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
-        <div className="relative flex flex-col pt-[42px]">
-          <div className="absolute right-4 top-[42px] z-20 hidden md:block">
-            <UserProfile username="username_here" />
-          </div>
-          <Navigation
-            onLearnLessonsClick={onNavigateBack}
-            onLearnSpeakWriteClick={onLearnSpeakWriteClick}
-            onCultureClick={onCultureClick}
-            onGrammarClick={onGrammarClick}
-            onCommunityClick={onCommunityClick} />
-          
-          <div className="flex justify-end mt-4 md:hidden">
-            <UserProfile username="username_here" />
-          </div>
-        </div>
-
-        {/* Main Content */}
         <div className="max-w-[690px] mx-auto mt-12 pb-20">
           {/* Header Section */}
           <div className="bg-white rounded-t-[12px] border border-[#DBEAFE] p-6">
@@ -203,12 +176,12 @@ export function RegionsLandmarks({
               onClick={() => {
                 if (!showStreetView) handleClose();
               }}>
-              
+
               <img
                 src={`${STORAGE_URL}/culture/regions/566-128566-128.png`}
                 alt="Illustrated map of Spain showing regions, cities, and landmarks"
                 className="absolute inset-0 w-full h-full object-cover" />
-              
+
 
               {/* Interactive clickable areas with hand-drawn circle hover effect */}
               {CLICKABLE_ITEMS.map((item) =>
@@ -229,7 +202,7 @@ export function RegionsLandmarks({
                   setShowStreetView(false);
                 }}
                 aria-label={item.name}>
-                
+
                   {/* Hand-drawn circle image indicator */}
                   <AnimatePresence>
                     {(hoveredItem === item.id || activeView === item.id) &&
@@ -285,16 +258,16 @@ export function RegionsLandmarks({
                     stiffness: 400
                   }}
                   className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  
+
                     <div
                     className="relative w-[82%] max-w-[480px] bg-white rounded-xl shadow-2xl pointer-events-auto overflow-hidden border border-gray-200"
                     onClick={(e) => e.stopPropagation()}>
-                    
+
                       <button
                       onClick={handleClose}
                       className="absolute top-2 right-2 z-30 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors"
                       aria-label="Close">
-                      
+
                         <X className="w-5 h-5 text-[#372213]" />
                       </button>
 
@@ -306,7 +279,7 @@ export function RegionsLandmarks({
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                         title={`${activeData.name} video`} />
-                      
+
                         </div> :
 
                     <div className="w-full aspect-video bg-[#111827] flex flex-col items-center justify-center relative overflow-hidden">
@@ -317,7 +290,7 @@ export function RegionsLandmarks({
                           <button
                         onClick={() => setShowStreetView(true)}
                         className="relative z-10 bg-[#DBEAFE] hover:bg-[#BFDBFE] transition-colors rounded-lg px-6 py-2.5 font-inter font-medium text-[13.6px] text-[#1D4ED8] shadow-lg flex items-center gap-2">
-                        
+
                             Enter Street View
                           </button>
                         </div>
@@ -341,12 +314,12 @@ export function RegionsLandmarks({
                     opacity: 0
                   }}
                   className="absolute inset-0 z-30 bg-[#111827]">
-                  
+
                     <button
                     onClick={() => setShowStreetView(false)}
                     className="absolute top-4 left-4 z-40 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
                     aria-label="Close Street View">
-                    
+
                       <X className="w-6 h-6 text-[#372213]" />
                     </button>
                     <iframe
@@ -354,7 +327,7 @@ export function RegionsLandmarks({
                     className="w-full h-full border-0"
                     allowFullScreen
                     title={`${activeData.name} street view`} />
-                  
+
                   </motion.div>
                 }
               </AnimatePresence>
@@ -377,7 +350,7 @@ export function RegionsLandmarks({
                   height: 0
                 }}
                 className="border-t border-[#E5E7EB] bg-white overflow-hidden">
-                
+
                   <div className="p-6">
                     <h2 className="font-inter font-bold text-[17px] leading-[28px] text-[#372213] mb-4">
                       {activeData.name}
@@ -390,7 +363,7 @@ export function RegionsLandmarks({
                     <button
                     onClick={() => setIsSpanish(!isSpanish)}
                     className="bg-[#DBEAFE] hover:bg-[#BFDBFE] transition-colors rounded-lg px-4 py-2 font-inter font-medium text-[11.9px] leading-[20px] text-[#1D4ED8]">
-                    
+
                       {isSpanish ?
                     'Translate to English' :
                     'Translate to Spanish'}
@@ -402,6 +375,6 @@ export function RegionsLandmarks({
           </div>
         </div>
       </div>
-    </div>);
+    </PageLayout>);
 
 }

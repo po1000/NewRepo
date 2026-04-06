@@ -1,15 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { ChevronRightIcon, ChevronLeftIcon, InfoIcon } from 'lucide-react';
-import { Navigation } from '../components/Navigation';
-import { UserProfile } from '../components/UserProfile';
+import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
-interface HistoryProps {
-  onNavigateBack?: () => void;
-  onLearnSpeakWriteClick?: () => void;
-  onCultureClick?: () => void;
-  onGrammarClick?: () => void;
-  onCommunityClick?: () => void;
-}
+
 interface TimelineItem {
   id: string;
   title: string;
@@ -158,13 +151,7 @@ const TIMELINE_DATA: TimelineItem[] = [
 
 }];
 
-export function History({
-  onNavigateBack,
-  onLearnSpeakWriteClick,
-  onCultureClick,
-  onGrammarClick,
-  onCommunityClick
-}: HistoryProps) {
+export function History() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -189,28 +176,12 @@ export function History({
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
   return (
-    <div className="min-h-screen w-full bg-[#E2F4FF] font-inter">
+    <PageLayout backgroundColor="#E2F4FF">
       {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
-      {/* Top Navigation */}
+      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
-        <div className="relative flex flex-col pt-[42px]">
-          <div className="absolute right-4 top-[42px] z-20 hidden md:block">
-            <UserProfile username="username_here" />
-          </div>
-          <Navigation
-            onLearnLessonsClick={onNavigateBack}
-            onLearnSpeakWriteClick={onLearnSpeakWriteClick}
-            onCultureClick={onCultureClick}
-            onGrammarClick={onGrammarClick}
-            onCommunityClick={onCommunityClick} />
-          
-          <div className="flex justify-end mt-4 md:hidden">
-            <UserProfile username="username_here" />
-          </div>
-        </div>
-
         {/* Header Section */}
         <div className="max-w-[690px] mx-auto mt-12 mb-3">
           <div className="bg-white rounded-[12px] border border-[#DBEAFE] p-6 shadow-sm">
@@ -248,7 +219,7 @@ export function History({
           style={{
             scrollBehavior: isDragging ? 'auto' : 'smooth'
           }}>
-          
+
           <div className="flex items-center min-w-max px-4 sm:px-[calc(50vw-345px)] pt-4 pb-8 relative">
             {/* Connecting Line (gradient) */}
             <div
@@ -257,7 +228,7 @@ export function History({
                 background:
                 'linear-gradient(to right, #3B82F6, #10B981, #EF4444, #8B5CF6)'
               }} />
-            
+
 
             {/* Timeline Items */}
             <div className="flex items-center gap-6 relative z-10">
@@ -265,7 +236,7 @@ export function History({
               <div
                 key={item.id}
                 className="relative flex flex-col items-center">
-                
+
                   {/* Timeline Node removed */}
 
                   {/* Card */}
@@ -275,7 +246,7 @@ export function History({
                     backgroundColor: item.bgColor,
                     borderColor: item.borderColor
                   }}>
-                  
+
                     {/* Fun Fact Header */}
                     {item.isFunFact &&
                   <div
@@ -283,7 +254,7 @@ export function History({
                     style={{
                       backgroundColor: item.borderColor
                     }}>
-                    
+
                         <InfoIcon className="w-4 h-4 text-[#D97706]" />
                         <span className="font-inter font-bold text-[12px] uppercase tracking-wider text-[#D97706]">
                           Fun Fact
@@ -298,19 +269,19 @@ export function History({
                     style={{
                       background: `linear-gradient(135deg, ${item.bgColor}, ${item.borderColor}40)`
                     }}>
-                    
+
                         <img
                       src={item.imageUrl}
                       alt={item.title}
                       className="w-[100px] h-[100px] object-contain drop-shadow-md"
                       draggable="false" />
-                    
+
                         <div
                       className="absolute bottom-2 left-3 px-2 py-0.5 rounded-full text-white font-inter font-bold text-[10px] uppercase tracking-wider"
                       style={{
                         backgroundColor: item.color
                       }}>
-                      
+
                           {item.period}
                         </div>
                       </div>
@@ -323,7 +294,7 @@ export function History({
                       style={{
                         color: item.color
                       }}>
-                      
+
                         {item.title}
                       </h3>
                       <div className="font-inter text-[12.5px] leading-[20px] text-[#4B5563]">
@@ -351,7 +322,7 @@ export function History({
         }
       `
         }} />
-      
-    </div>);
+
+    </PageLayout>);
 
 }

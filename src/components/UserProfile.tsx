@@ -19,10 +19,12 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
   const [menuOpen, setMenuOpen] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(avatarUrl);
   const [imgKey, setImgKey] = useState(0); // force re-render of <img>
+  const [imgError, setImgError] = useState(false);
 
   // Sync when parent prop changes
   useEffect(() => {
     setLocalAvatarUrl(avatarUrl);
+    setImgError(false);
   }, [avatarUrl]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -63,6 +65,7 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
     // Swap from blob preview to real URL
     URL.revokeObjectURL(previewUrl);
     setLocalAvatarUrl(urlWithCacheBust);
+    setImgError(false);
     setImgKey(prev => prev + 1);
     onAvatarChange?.(urlWithCacheBust);
     setUploading(false);
@@ -88,18 +91,23 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
         aria-label="User profile menu"
         onClick={() => setMenuOpen(!menuOpen)}
       >
-        {displayUrl ? (
+        {displayUrl && !imgError ? (
           <img
             key={imgKey}
             src={displayUrl}
             alt="Profile"
             className="w-[25px] h-[25px] rounded-full object-cover flex-shrink-0"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div
-            className="w-[25px] h-[25px] rounded-full bg-[#D9D9D9] flex-shrink-0"
+            className="w-[25px] h-[25px] rounded-full bg-[#D9D9D9] flex items-center justify-center flex-shrink-0"
             aria-hidden="true"
-          />
+          >
+            <span className="font-inter font-bold text-[11px] text-[#6B7280]">
+              {username.charAt(0).toUpperCase()}
+            </span>
+          </div>
         )}
         <span className="font-inter font-semibold text-[13px] leading-[20px] text-[#372213]">
           {username}

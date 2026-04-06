@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { Navigation } from '../components/Navigation';
-import { UserProfile } from '../components/UserProfile';
-interface MusicDanceProps {
-  onNavigateBack?: () => void;
-  onLearnSpeakWriteClick?: () => void;
-  onCultureClick?: () => void;
-  onGrammarClick?: () => void;
-  onCommunityClick?: () => void;
-}
+import { PageLayout } from '../components/PageLayout';
+
 interface DanceEntry {
   title: string;
   number: number;
@@ -95,13 +88,7 @@ const DANCE_ENTRIES: DanceEntry[] = [
 
 }];
 
-export function MusicDance({
-  onNavigateBack,
-  onLearnSpeakWriteClick,
-  onCultureClick,
-  onGrammarClick,
-  onCommunityClick
-}: MusicDanceProps) {
+export function MusicDance() {
   const [currentPage, setCurrentPage] = useState(0);
   const [isSpanish, setIsSpanish] = useState(false);
   const [direction, setDirection] = useState(1);
@@ -137,29 +124,12 @@ export function MusicDance({
     })
   };
   return (
-    <div className="min-h-screen w-full bg-[#E2F4FF] font-inter">
+    <PageLayout backgroundColor="#E2F4FF">
       {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
-      {/* Top Navigation */}
+      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
-        <div className="relative flex flex-col pt-[42px]">
-          <div className="absolute right-4 top-[42px] z-20 hidden md:block">
-            <UserProfile username="username_here" />
-          </div>
-          <Navigation
-            onLearnLessonsClick={onNavigateBack}
-            onLearnSpeakWriteClick={onLearnSpeakWriteClick}
-            onCultureClick={onCultureClick}
-            onGrammarClick={onGrammarClick}
-            onCommunityClick={onCommunityClick} />
-          
-          <div className="flex justify-end mt-4 md:hidden">
-            <UserProfile username="username_here" />
-          </div>
-        </div>
-
-        {/* Main Content */}
         <div className="max-w-[690px] mx-auto mt-12 pb-20">
           {/* Header Section */}
           <div className="bg-white rounded-t-[12px] border border-[#DBEAFE] p-6">
@@ -187,7 +157,7 @@ export function MusicDance({
                   duration: 0.3,
                   ease: 'easeInOut'
                 }}>
-                
+
                 {/* Video Container */}
                 <div className="w-full aspect-video bg-[#111827]">
                   <iframe
@@ -196,7 +166,7 @@ export function MusicDance({
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     className="w-full h-full border-0" />
-                  
+
                 </div>
 
                 {/* Description Section */}
@@ -211,7 +181,7 @@ export function MusicDance({
                     <button
                       onClick={() => setIsSpanish(!isSpanish)}
                       className="bg-[#DBEAFE] hover:bg-[#BFDBFE] transition-colors rounded-lg px-4 py-2 font-inter font-medium text-[11.9px] leading-[20px] text-[#1D4ED8]">
-                      
+
                       {isSpanish ?
                       'Translate to English' :
                       'Translate to Spanish'}
@@ -227,7 +197,7 @@ export function MusicDance({
                 onClick={goPrev}
                 disabled={isFirst}
                 className={`flex items-center gap-1.5 font-inter font-medium text-[13px] transition-colors rounded-lg px-3 py-2 ${isFirst ? 'text-gray-300 cursor-not-allowed' : 'text-[#1D4ED8] hover:bg-[#DBEAFE]'}`}>
-                
+
                 <ChevronLeftIcon className="w-4 h-4" />
                 Previous
               </button>
@@ -252,7 +222,7 @@ export function MusicDance({
                 onClick={goNext}
                 disabled={isLast}
                 className={`flex items-center gap-1.5 font-inter font-medium text-[13px] transition-colors rounded-lg px-3 py-2 ${isLast ? 'text-gray-300 cursor-not-allowed' : 'text-[#1D4ED8] hover:bg-[#DBEAFE]'}`}>
-                
+
                 Next
                 <ChevronRightIcon className="w-4 h-4" />
               </button>
@@ -260,6 +230,6 @@ export function MusicDance({
           </div>
         </div>
       </div>
-    </div>);
+    </PageLayout>);
 
 }

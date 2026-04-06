@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   X,
@@ -7,6 +7,8 @@ import {
   Star,
   Turtle,
   ThumbsUp,
+  Check,
+  XCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +20,7 @@ import {
   buildSessionQueue,
   requeueTerm,
   applyDecay,
+  multiChoiceQuality,
   TermProgress,
   TermStatus,
 } from '../lib/srs';
@@ -39,6 +42,7 @@ interface GrammarHint {
   hint_type: string;
 }
 
+type LessonMode = 'flashcard' | 'multi_choice';
 
 interface LessonFlowProps {
   onClose: () => void;
@@ -55,6 +59,27 @@ function speakSpanish(text: string, slow: boolean) {
   const esVoice = voices.find(v => v.lang.startsWith('es'));
   if (esVoice) utterance.voice = esVoice;
   window.speechSynthesis.speak(utterance);
+}
+
+// Shuffle array helper
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Session state persistence key
+function sessionKey(subunitId: number, userId: string) {
+  return `lesson_session_${userId}_${subunitId}`;
+}
+
+interface SavedSession {
+  queueIndex: number;
+  queue: number[];
+  newFlashcardCount: number;
 }
 
 export function LessonFlow({ onClose }: LessonFlowProps) {
@@ -76,9 +101,18 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const [totalTermCount, setTotalTermCount] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
 
+  // Question mode state
+  const [mode, setMode] = useState<LessonMode>('flashcard');
+  const [newFlashcardCount, setNewFlashcardCount] = useState(0);
+  const [mcOptions, setMcOptions] = useState<{ termId: number; text: string }[]>([]);
+  const [mcCorrectId, setMcCorrectId] = useState<number | null>(null);
+  const [mcSelectedId, setMcSelectedId] = useState<number | null>(null);
+  const [mcAnswered, setMcAnswered] = useState(false);
+  const [mcDirection, setMcDirection] = useState<'es_to_en' | 'en_to_es'>('es_to_en');
+
   const hasInitialized = useRef(false);
 
-  // Load terms + progress, build queue
+  // Load terms + progress, build queue (resume if possible)
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
@@ -124,12 +158,11 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       // Load existing progress
       const pMap = await loadTermProgress(user.id, termIds);
 
-      // Apply memory decay to all terms on session open
+      // Apply memory decay
       for (const [tid, tp] of pMap) {
         if (tp.status === 'reinforced' || tp.status === 'learnt') {
           const { displayStatus, strength } = applyDecay(tp.status, tp.sm2);
           if (displayStatus !== tp.status) {
-            // Persist the decayed status
             tp.status = displayStatus;
             tp.sm2.strength = strength;
             await saveTermProgress(user.id, tid, displayStatus, tp.sm2);
@@ -139,34 +172,61 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
       setProgressMap(pMap);
 
-      // Build session queue
-      const sessionQueue = buildSessionQueue(termIds, pMap);
+      // Try to restore saved session
+      const savedRaw = localStorage.getItem(sessionKey(state.subunitId, user.id));
+      let restored = false;
 
-      // Count already completed (learnt and not overdue)
+      if (savedRaw) {
+        try {
+          const saved: SavedSession = JSON.parse(savedRaw);
+          // Validate saved queue still has valid term IDs
+          const validQueue = saved.queue.filter(id => tMap.has(id));
+          if (validQueue.length > 0 && saved.queueIndex < validQueue.length) {
+            setQueue(validQueue);
+            setQueueIndex(saved.queueIndex);
+            setNewFlashcardCount(saved.newFlashcardCount || 0);
+            restored = true;
+          }
+        } catch {
+          // Invalid saved data, start fresh
+        }
+      }
+
+      if (!restored) {
+        const sessionQueue = buildSessionQueue(termIds, pMap);
+        setQueue(sessionQueue);
+      }
+
+      // Count already completed
       let done = 0;
       for (const tp of pMap.values()) {
         if (tp.status === 'learnt') done++;
       }
       setCompletedCount(done);
 
-      setQueue(sessionQueue);
       setLoading(false);
     }
 
     init();
 
-    // Preload voices
     if (window.speechSynthesis) {
       window.speechSynthesis.getVoices();
     }
   }, [state.subunitId, user]);
+
+  // Save session state whenever queue position changes
+  useEffect(() => {
+    if (!state.subunitId || !user || loading || queue.length === 0) return;
+    const data: SavedSession = { queueIndex, queue, newFlashcardCount };
+    localStorage.setItem(sessionKey(state.subunitId, user.id), JSON.stringify(data));
+  }, [queueIndex, queue, newFlashcardCount, state.subunitId, user, loading]);
 
   // Current term
   const currentTermId = queueIndex < queue.length ? queue[queueIndex] : null;
   const currentTerm = currentTermId ? termsMap.get(currentTermId) || null : null;
   const currentProgress = currentTermId ? progressMap.get(currentTermId) : undefined;
 
-  // Fetch grammar + pronunciation hints for current term
+  // Fetch grammar hints for current term
   useEffect(() => {
     if (!currentTermId) return;
 
@@ -177,9 +237,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
         .eq('term_id', currentTermId);
 
       if (hintLinks?.length) {
-        setGrammarHints(
-          hintLinks.map((h: any) => h.grammar_hints).filter(Boolean)
-        );
+        setGrammarHints(hintLinks.map((h: any) => h.grammar_hints).filter(Boolean));
       } else {
         setGrammarHints([]);
       }
@@ -189,37 +247,95 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     setHintsExpanded(false);
   }, [currentTermId]);
 
+  // Gather all seen/learning terms for MC distractors
+  const seenTermIds = useMemo(() => {
+    const ids: number[] = [];
+    for (const [tid, tp] of progressMap) {
+      if (tp.status !== 'not_seen') ids.push(tid);
+    }
+    return ids;
+  }, [progressMap]);
+
   // Progress bar
   const progressPercent = totalTermCount > 0
     ? Math.min(((completedCount + queueIndex) / totalTermCount) * 100, 100)
     : 0;
 
+  // ── Setup multiple choice question ──────────────────────────
+
+  const setupMultiChoice = useCallback((targetTermId: number) => {
+    const targetTerm = termsMap.get(targetTermId);
+    if (!targetTerm) return;
+
+    // Pick direction randomly
+    const dir = Math.random() < 0.5 ? 'es_to_en' : 'en_to_es';
+    setMcDirection(dir);
+
+    // Get distractor pool (other terms the user has seen)
+    const pool = seenTermIds.filter(id => id !== targetTermId && termsMap.has(id));
+    const distractorIds = shuffle(pool).slice(0, 3);
+
+    // Build options
+    const options = [targetTermId, ...distractorIds].map(id => {
+      const t = termsMap.get(id)!;
+      return {
+        termId: id,
+        text: dir === 'es_to_en' ? t.english_text : t.spanish_text,
+      };
+    });
+
+    setMcOptions(shuffle(options));
+    setMcCorrectId(targetTermId);
+    setMcSelectedId(null);
+    setMcAnswered(false);
+    setMode('multi_choice');
+  }, [termsMap, seenTermIds]);
+
   // ── Handlers ──────────────────────────────────────────────
 
   const advanceQueue = useCallback(() => {
     if (queueIndex + 1 >= queue.length) {
+      // Clear saved session on completion
+      if (state.subunitId && user) {
+        localStorage.removeItem(sessionKey(state.subunitId, user.id));
+      }
       onClose();
     } else {
-      setQueueIndex(queueIndex + 1);
+      const nextIndex = queueIndex + 1;
+      setQueueIndex(nextIndex);
       setHintsExpanded(false);
       setShowReport(false);
       setReportText('');
       setReportSent(false);
-    }
-  }, [queueIndex, queue, onClose]);
 
-  // "Got it!" / "Next" — flashcard reveal → mark seen, quality not scored yet
+      // Decide if next card should be a question
+      const nextTermId = queue[nextIndex];
+      const nextTp = progressMap.get(nextTermId);
+      const nextIsUnseen = !nextTp || nextTp.status === 'not_seen';
+
+      if (!nextIsUnseen && newFlashcardCount >= 2 && seenTermIds.length >= 4) {
+        // Time for a question! Pick a previously seen term to quiz on
+        // Use the current term from queue (which is already seen)
+        setupMultiChoice(nextTermId);
+        setNewFlashcardCount(0);
+      } else {
+        setMode('flashcard');
+      }
+    }
+  }, [queueIndex, queue, onClose, state.subunitId, user, progressMap, newFlashcardCount, seenTermIds, setupMultiChoice]);
+
+  // "Got it!" / "Next" — flashcard → mark seen, quality scored as flashcard
   const handleNext = useCallback(async () => {
     if (!currentTerm || !user) {
       onClose();
       return;
     }
 
-    // Mark as seen if first time
-    if (!currentProgress || currentProgress.status === 'not_seen') {
-      await markSeen(user.id, currentTerm.term_id);
+    const isNew = !currentProgress || currentProgress.status === 'not_seen';
 
-      // Update local progress map
+    // Mark as seen if first time
+    if (isNew) {
+      await markSeen(user.id, currentTerm.term_id);
       setProgressMap(prev => {
         const next = new Map(prev);
         const existing = next.get(currentTerm.term_id);
@@ -230,14 +346,9 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             term_id: currentTerm.term_id,
             status: 'seen',
             sm2: {
-              easiness_factor: 2.5,
-              interval_days: 0,
-              repetitions: 0,
-              next_review_date: null,
-              last_quality: null,
-              strength: 1.0,
-              correct_in_session: 0,
-              question_types_correct: [],
+              easiness_factor: 2.5, interval_days: 0, repetitions: 0,
+              next_review_date: null, last_quality: null, strength: 1.0,
+              correct_in_session: 0, question_types_correct: [],
             },
           });
         }
@@ -245,10 +356,13 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       });
     }
 
-    // For flashcard step: score q=4 (successful but no interactive test)
+    // Score q=4 for flashcard
     const tp = progressMap.get(currentTerm.term_id);
     if (tp && user) {
-      const result = processAnswer(tp.status === 'not_seen' ? 'seen' : tp.status, tp.sm2, 4, 'flashcard', false);
+      const result = processAnswer(
+        tp.status === 'not_seen' ? 'seen' : tp.status,
+        tp.sm2, 4, 'flashcard', false
+      );
       tp.status = result.newStatus;
       tp.sm2 = result.sm2;
 
@@ -265,21 +379,29 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       });
     }
 
+    // Track new flashcards for question triggering
+    if (isNew) {
+      setNewFlashcardCount(prev => prev + 1);
+    }
+
     advanceQueue();
   }, [currentTerm, currentProgress, user, progressMap, queueIndex, advanceQueue, onClose]);
 
-  // Thumbs up → mark as known (q=5, jump to learnt)
+  // Thumbs up → mark as known
   const handleKnown = useCallback(async () => {
     if (!currentTerm || !user) return;
 
     const tp = progressMap.get(currentTerm.term_id) || {
       term_id: currentTerm.term_id,
       status: 'not_seen' as TermStatus,
-      sm2: { easiness_factor: 2.5, interval_days: 0, repetitions: 0, next_review_date: null, last_quality: null, strength: 1.0, correct_in_session: 0, question_types_correct: [] },
+      sm2: {
+        easiness_factor: 2.5, interval_days: 0, repetitions: 0,
+        next_review_date: null, last_quality: null, strength: 1.0,
+        correct_in_session: 0, question_types_correct: [],
+      },
     };
 
     const result = processAnswer(tp.status, tp.sm2, 5, 'flashcard', true);
-
     await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2);
 
     setProgressMap(prev => {
@@ -291,6 +413,40 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     setCompletedCount(prev => prev + 1);
     advanceQueue();
   }, [currentTerm, user, progressMap, advanceQueue]);
+
+  // Multiple choice answer
+  const handleMcSelect = useCallback(async (selectedTermId: number) => {
+    if (mcAnswered || !currentTerm || !user) return;
+
+    setMcSelectedId(selectedTermId);
+    setMcAnswered(true);
+
+    const correct = selectedTermId === mcCorrectId;
+    const q = multiChoiceQuality(correct, false);
+
+    const tp = progressMap.get(currentTerm.term_id);
+    if (tp) {
+      const result = processAnswer(tp.status, tp.sm2, q, 'multi_choice', false);
+      tp.status = result.newStatus;
+      tp.sm2 = result.sm2;
+
+      await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2);
+
+      if (result.requeue) {
+        setQueue(prev => requeueTerm(prev, queueIndex, currentTerm.term_id));
+      }
+
+      setProgressMap(prev => {
+        const next = new Map(prev);
+        next.set(currentTerm.term_id, { ...tp });
+        return next;
+      });
+    }
+  }, [mcAnswered, currentTerm, user, mcCorrectId, progressMap, queueIndex]);
+
+  const handleMcContinue = useCallback(() => {
+    advanceQueue();
+  }, [advanceQueue]);
 
   const handlePlayAudio = useCallback(() => {
     if (currentTerm) speakSpanish(currentTerm.spanish_text, slowAudio);
@@ -329,7 +485,12 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
         style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
         <div className="text-center">
           <p className="text-[#FFFDE6] text-xl font-bold mb-4">Lesson Complete!</p>
-          <button onClick={onClose}
+          <button onClick={() => {
+            if (state.subunitId && user) {
+              localStorage.removeItem(sessionKey(state.subunitId, user.id));
+            }
+            onClose();
+          }}
             className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[15px]">
             Back to Dashboard
           </button>
@@ -347,7 +508,9 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       <div className="w-full max-w-[684px] min-h-[688px] relative flex flex-col p-8">
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={() => {
+            onClose();
+          }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <X className="w-6 h-6 text-[#FFFDE6]" />
           </button>
           <div className="flex-1 mx-8 h-3 bg-white/30 rounded-full overflow-hidden">
@@ -379,103 +542,181 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           </div>
         )}
 
-        {/* Flashcard Content */}
-        <div className="flex-1 flex flex-col items-center">
-          <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
-            <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
-              Flashcard
-            </span>
-          </div>
-
-          <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-8 flex flex-col items-center relative shadow-lg mb-8">
-            {currentTerm.image_url ? (
-              <img src={currentTerm.image_url} alt={currentTerm.english_text}
-                className="w-[235px] h-[157px] object-cover rounded-lg mb-12" />
-            ) : (
-              <div className="w-[235px] h-[157px] rounded-lg mb-12 bg-gradient-to-br from-[#FFE484] to-[#FFCA28] flex items-center justify-center">
-                <span className="text-[40px]">📖</span>
+        {/* ─── FLASHCARD MODE ─── */}
+        {mode === 'flashcard' && (
+          <>
+            <div className="flex-1 flex flex-col items-center">
+              <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
+                <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
+                  Flashcard
+                </span>
               </div>
-            )}
 
-            <button onClick={handlePlayAudio}
-              className="absolute top-[180px] w-16 h-16 bg-white border-4 border-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform">
-              <Volume2 className="w-8 h-8 text-[#FF4D01]" />
-            </button>
+              <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-8 flex flex-col items-center relative shadow-lg mb-8">
+                {currentTerm.image_url ? (
+                  <img src={currentTerm.image_url} alt={currentTerm.english_text}
+                    className="w-[235px] h-[157px] object-cover rounded-lg mb-12" />
+                ) : (
+                  <div className="w-[235px] h-[157px] rounded-lg mb-12 bg-gradient-to-br from-[#FFE484] to-[#FFCA28] flex items-center justify-center">
+                    <span className="text-[40px]">📖</span>
+                  </div>
+                )}
 
-            <h2 className="font-bold text-[24px] leading-[48px] text-black mb-1">
-              {currentTerm.spanish_text}
-            </h2>
-            <span className="font-medium text-[20px] leading-[20px] text-[#FF4D01]">
-              {currentTerm.english_text}
-            </span>
-
-            {/* Thumbs up */}
-            <button onClick={handleKnown} title="I already know this word"
-              className="absolute bottom-0 left-0 w-12 h-10 rounded-tr-2xl rounded-bl-2xl flex items-center justify-center transition-colors bg-[#FF4D01] hover:bg-[#3BBC00]">
-              <ThumbsUp className="w-5 h-5 text-[#FFFDE6]" />
-            </button>
-
-            {/* Turtle */}
-            <button onClick={() => setSlowAudio(!slowAudio)} title={slowAudio ? 'Normal speed' : 'Slow audio'}
-              className={`absolute bottom-0 right-0 w-12 h-10 rounded-tl-2xl rounded-br-2xl flex items-center justify-center transition-colors ${
-                slowAudio ? 'bg-[#3BBC00]' : 'bg-[#FF4D01]'
-              }`}>
-              <Turtle className="w-5 h-5 text-[#FFFDE6]" />
-            </button>
-          </div>
-
-          {/* Example Sentence */}
-          {(currentTerm.example_sentence_es || currentTerm.example_sentence_en) && (
-            <div className="text-center mb-4">
-              {currentTerm.example_sentence_es && (
-                <p className="font-medium italic text-[16.3px] leading-[28px] text-[#FFFDE6] mb-1">
-                  " {currentTerm.example_sentence_es} "
-                </p>
-              )}
-              {currentTerm.example_sentence_en && (
-                <p className="italic text-[14.6px] leading-[24px] text-[#FFFDE6]">
-                  {currentTerm.example_sentence_en}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Bottom Actions */}
-        <div className="flex items-center justify-between mt-8 w-full max-w-[448px] mx-auto">
-          {/* Grammar Hint — bottom-left, expandable, only when relevant */}
-          <div className="flex-1 mr-4">
-            {grammarHints.length > 0 && (
-              <div>
-                <button
-                  onClick={() => setHintsExpanded(!hintsExpanded)}
-                  className="flex items-center gap-2 text-[#FFFDE6] font-semibold text-[13px] hover:text-white transition-colors"
-                >
-                  <Star className="w-4 h-4 fill-[#FFFDE6]" />
-                  {hintsExpanded ? 'Hide Hint' : 'Grammar Hint'}
+                <button onClick={handlePlayAudio}
+                  className="absolute top-[180px] w-16 h-16 bg-white border-4 border-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform">
+                  <Volume2 className="w-8 h-8 text-[#FF4D01]" />
                 </button>
 
-                {hintsExpanded && (
-                  <div className="mt-2 bg-[#FFFDE6] rounded-xl p-4 shadow-lg max-w-[320px] max-h-[200px] overflow-y-auto">
-                    <div className="flex flex-col gap-3">
-                      {grammarHints.map((hint) => (
-                        <div key={hint.hint_id}>
-                          <p className="font-bold text-[13px] text-[#F97316] mb-0.5">{hint.hint_title}</p>
-                          <p className="text-[13px] leading-[18px] text-[#372213] whitespace-pre-line">{hint.hint_text}</p>
+                <h2 className="font-bold text-[24px] leading-[48px] text-black mb-1">
+                  {currentTerm.spanish_text}
+                </h2>
+                <span className="font-medium text-[20px] leading-[20px] text-[#FF4D01]">
+                  {currentTerm.english_text}
+                </span>
+
+                {/* Thumbs up */}
+                <button onClick={handleKnown} title="I already know this word"
+                  className="absolute bottom-0 left-0 w-12 h-10 rounded-tr-2xl rounded-bl-2xl flex items-center justify-center transition-colors bg-[#FF4D01] hover:bg-[#3BBC00]">
+                  <ThumbsUp className="w-5 h-5 text-[#FFFDE6]" />
+                </button>
+
+                {/* Turtle */}
+                <button onClick={() => setSlowAudio(!slowAudio)} title={slowAudio ? 'Normal speed' : 'Slow audio'}
+                  className={`absolute bottom-0 right-0 w-12 h-10 rounded-tl-2xl rounded-br-2xl flex items-center justify-center transition-colors ${
+                    slowAudio ? 'bg-[#3BBC00]' : 'bg-[#FF4D01]'
+                  }`}>
+                  <Turtle className="w-5 h-5 text-[#FFFDE6]" />
+                </button>
+              </div>
+
+              {/* Example Sentence */}
+              {(currentTerm.example_sentence_es || currentTerm.example_sentence_en) && (
+                <div className="text-center mb-4">
+                  {currentTerm.example_sentence_es && (
+                    <p className="font-medium italic text-[16.3px] leading-[28px] text-[#FFFDE6] mb-1">
+                      " {currentTerm.example_sentence_es} "
+                    </p>
+                  )}
+                  {currentTerm.example_sentence_en && (
+                    <p className="italic text-[14.6px] leading-[24px] text-[#FFFDE6]">
+                      {currentTerm.example_sentence_en}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between mt-8 w-full max-w-[448px] mx-auto">
+              {/* Grammar Hint */}
+              <div className="flex-1 mr-4">
+                {grammarHints.length > 0 && (
+                  <div>
+                    <button
+                      onClick={() => setHintsExpanded(!hintsExpanded)}
+                      className="flex items-center gap-2 text-[#FFFDE6] font-semibold text-[13px] hover:text-white transition-colors"
+                    >
+                      <Star className="w-4 h-4 fill-[#FFFDE6]" />
+                      {hintsExpanded ? 'Hide Hint' : 'Grammar Hint'}
+                    </button>
+
+                    {hintsExpanded && (
+                      <div className="mt-2 bg-[#FFFDE6] rounded-xl p-4 shadow-lg max-w-[320px] max-h-[200px] overflow-y-auto">
+                        <div className="flex flex-col gap-3">
+                          {grammarHints.map((hint) => (
+                            <div key={hint.hint_id}>
+                              <p className="font-bold text-[13px] text-[#F97316] mb-0.5">{hint.hint_title}</p>
+                              <p className="text-[13px] leading-[18px] text-[#372213] whitespace-pre-line">{hint.hint_text}</p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+
+              <button onClick={handleNext}
+                className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg shrink-0">
+                {isFirstSeen ? 'Got it!' : 'Next'}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ─── MULTIPLE CHOICE MODE ─── */}
+        {mode === 'multi_choice' && (
+          <div className="flex-1 flex flex-col items-center">
+            <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
+              <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
+                Quiz
+              </span>
+            </div>
+
+            {/* Question prompt */}
+            <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
+              <p className="text-[14px] text-[#6B7280] mb-2">
+                {mcDirection === 'es_to_en' ? 'What does this mean?' : 'How do you say this in Spanish?'}
+              </p>
+              <h2 className="font-bold text-[24px] leading-[36px] text-[#372213] text-center">
+                {mcDirection === 'es_to_en' ? currentTerm.spanish_text : currentTerm.english_text}
+              </h2>
+              {mcDirection === 'es_to_en' && (
+                <button onClick={handlePlayAudio} className="mt-3 p-2 hover:bg-black/5 rounded-full transition-colors">
+                  <Volume2 className="w-6 h-6 text-[#FF4D01]" />
+                </button>
+              )}
+            </div>
+
+            {/* Options */}
+            <div className="w-full max-w-[422px] flex flex-col gap-3 mb-8">
+              {mcOptions.map((opt) => {
+                let optClass = 'bg-white/90 border-2 border-white/50 hover:border-[#FF4D01] text-[#372213]';
+                if (mcAnswered) {
+                  if (opt.termId === mcCorrectId) {
+                    optClass = 'bg-[#DCFCE7] border-2 border-[#22C55E] text-[#166534]';
+                  } else if (opt.termId === mcSelectedId && opt.termId !== mcCorrectId) {
+                    optClass = 'bg-[#FEE2E2] border-2 border-[#EF4444] text-[#991B1B]';
+                  } else {
+                    optClass = 'bg-white/50 border-2 border-white/30 text-[#9CA3AF]';
+                  }
+                }
+
+                return (
+                  <button
+                    key={opt.termId}
+                    onClick={() => handleMcSelect(opt.termId)}
+                    disabled={mcAnswered}
+                    className={`w-full py-4 px-6 rounded-xl font-inter font-semibold text-[16px] transition-all ${optClass}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{opt.text}</span>
+                      {mcAnswered && opt.termId === mcCorrectId && (
+                        <Check className="w-5 h-5 text-[#22C55E]" />
+                      )}
+                      {mcAnswered && opt.termId === mcSelectedId && opt.termId !== mcCorrectId && (
+                        <XCircle className="w-5 h-5 text-[#EF4444]" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Feedback + Continue */}
+            {mcAnswered && (
+              <div className="flex flex-col items-center gap-4">
+                <p className={`font-bold text-[18px] ${mcSelectedId === mcCorrectId ? 'text-[#22C55E]' : 'text-[#FCA5A5]'}`}>
+                  {mcSelectedId === mcCorrectId ? 'Correct!' : 'Not quite!'}
+                </p>
+                <button onClick={handleMcContinue}
+                  className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
+                  Continue
+                </button>
+              </div>
             )}
           </div>
-
-          <button onClick={handleNext}
-            className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg shrink-0">
-            {isFirstSeen ? 'Got it!' : 'Next'}
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );

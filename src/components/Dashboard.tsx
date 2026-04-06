@@ -252,6 +252,7 @@ export function Dashboard() {
 
       {selectedSubunit && (
         <SubunitDetailModal
+          key={`${selectedSubunit.subunitId}-${Date.now()}`}
           subunitId={selectedSubunit.subunitId}
           subunitCode={selectedSubunit.subunitCode}
           title={selectedSubunit.title}

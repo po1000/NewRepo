@@ -77,124 +77,44 @@ function RoleplayCompletePage() {
 }
 
 function GrammarPage() {
-  const navigate = useNavigate();
-  return (
-    <Grammar
-      onNavigateBack={() => navigate('/dashboard')}
-      onNavigateToERVerbs={() => navigate('/grammar/er-verbs')}
-      onNavigateToSer={() => navigate('/grammar/er-verbs/ser-conjugation')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
-      onCommunityClick={() => navigate('/community')}
-    />
-  );
+  return <Grammar />;
 }
 
 function ERVerbsPage() {
-  const navigate = useNavigate();
-  return (
-    <ERVerbs
-      onBack={() => navigate('/grammar')}
-      onNavigateToSer={() => navigate('/grammar/er-verbs/ser-conjugation')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
-      onGrammarClick={() => navigate('/grammar')}
-      onCommunityClick={() => navigate('/community')}
-    />
-  );
+  return <ERVerbs />;
 }
 
 function SerConjugationPage() {
-  const navigate = useNavigate();
-  return (
-    <SerConjugation
-      onBack={() => navigate('/grammar/er-verbs')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
-      onGrammarClick={() => navigate('/grammar')}
-      onCommunityClick={() => navigate('/community')}
-    />
-  );
+  return <SerConjugation />;
 }
 
 function CulturePage() {
-  const navigate = useNavigate();
-  return (
-    <Culture
-      onNavigateBack={() => navigate('/dashboard')}
-      onMusicDanceClick={() => navigate('/culture/music-dance')}
-      onRegionsClick={() => navigate('/culture/regions-landmarks')}
-      onFoodDrinkClick={() => navigate('/culture/food-drink')}
-      onHistoryClick={() => navigate('/culture/history')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onGrammarClick={() => navigate('/grammar')}
-      onCommunityClick={() => navigate('/community')}
-    />
-  );
+  return <Culture />;
 }
 
 function MusicDancePage() {
-  const navigate = useNavigate();
-  return (
-    <MusicDance
-      onNavigateBack={() => navigate('/culture')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
-      onGrammarClick={() => navigate('/grammar')}
-      onCommunityClick={() => navigate('/community')}
-    />
-  );
+  return <MusicDance />;
 }
 
 function RegionsLandmarksPage() {
-  const navigate = useNavigate();
-  return (
-    <RegionsLandmarks
-      onNavigateBack={() => navigate('/culture')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
-      onGrammarClick={() => navigate('/grammar')}
-      onCommunityClick={() => navigate('/community')}
-    />
-  );
+  return <RegionsLandmarks />;
 }
 
 function FoodDrinkPage() {
   const navigate = useNavigate();
   return (
     <FoodDrink
-      onNavigateBack={() => navigate('/culture')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
-      onGrammarClick={() => navigate('/grammar')}
-      onCommunityClick={() => navigate('/community')}
+      onNavigateToRegion={(region) => navigate(`/culture/regions-landmarks?region=${region}`)}
     />
   );
 }
 
 function HistoryPage() {
-  const navigate = useNavigate();
-  return (
-    <History
-      onNavigateBack={() => navigate('/culture')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onCultureClick={() => navigate('/culture')}
-      onGrammarClick={() => navigate('/grammar')}
-      onCommunityClick={() => navigate('/community')}
-    />
-  );
+  return <History />;
 }
 
 function CommunityPage() {
-  const navigate = useNavigate();
-  return (
-    <Community
-      onNavigateBack={() => navigate('/dashboard')}
-      onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-      onGrammarClick={() => navigate('/grammar')}
-      onCultureClick={() => navigate('/culture')}
-    />
-  );
+  return <Community />;
 }
 
 export function App() {

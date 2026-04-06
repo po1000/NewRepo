@@ -1,46 +1,14 @@
 import React from 'react';
-import { Navigation } from '../components/Navigation';
-import { UserProfile } from '../components/UserProfile';
-interface SerConjugationProps {
-  onBack?: () => void;
-  onLearnSpeakWriteClick?: () => void;
-  onCultureClick?: () => void;
-  onGrammarClick?: () => void;
-  onCommunityClick?: () => void;
-}
-export function SerConjugation({
-  onBack,
-  onLearnSpeakWriteClick,
-  onCultureClick,
-  onGrammarClick,
-  onCommunityClick
-}: SerConjugationProps) {
+import { PageLayout } from '../components/PageLayout';
+
+export function SerConjugation() {
   return (
-    <div className="min-h-screen w-full bg-[#FF4D01] font-inter relative overflow-hidden">
+    <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-[#FFFDE6] [&_button]:text-[#FFFDE6] [&_svg]:text-[#FFFDE6]">
       {/* Diagonal Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#FF7032] origin-top-left -skew-y-3 pointer-events-none" />
 
-      {/* Top Navigation */}
+      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
-        <div className="relative flex flex-col pt-[42px]">
-          <div className="absolute right-4 top-[42px] z-20 hidden md:block">
-            <UserProfile username="username_here" />
-          </div>
-          <div className="[&_a]:text-[#FFFDE6] [&_button]:text-[#FFFDE6] [&_svg]:text-[#FFFDE6]">
-            <Navigation
-              onLearnLessonsClick={onBack}
-              onLearnSpeakWriteClick={onLearnSpeakWriteClick}
-              onCultureClick={onCultureClick}
-              onGrammarClick={onGrammarClick}
-              onCommunityClick={onCommunityClick} />
-            
-          </div>
-          <div className="flex justify-end mt-4 md:hidden">
-            <UserProfile username="username_here" />
-          </div>
-        </div>
-
-        {/* Main Content */}
         <div className="max-w-[684px] mx-auto pt-12 pb-20 px-8">
           {/* Breadcrumb */}
           <div className="mb-4">
@@ -102,12 +70,12 @@ export function SerConjugation({
                   </div>
                   <div className="w-full h-[68px] bg-[#FFE83C] rounded-lg flex items-center justify-center p-2">
                     <span className="font-inter font-medium text-[12px] leading-[20px] text-[#372213]">
-                      tú
+                      tu
                     </span>
                   </div>
                   <div className="w-full h-[68px] bg-[#FFE83C] rounded-lg flex items-center justify-center p-2">
                     <span className="font-inter font-medium text-[12px] leading-[20px] text-[#372213] text-center">
-                      él
+                      el
                       <br />
                       ella
                       <br />
@@ -221,6 +189,6 @@ export function SerConjugation({
           </div>
         </div>
       </div>
-    </div>);
+    </PageLayout>);
 
 }
