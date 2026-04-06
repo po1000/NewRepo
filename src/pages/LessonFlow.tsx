@@ -39,10 +39,6 @@ interface GrammarHint {
   hint_type: string;
 }
 
-interface PronunciationHint {
-  id: number;
-  hint_text: string;
-}
 
 interface LessonFlowProps {
   onClose: () => void;
@@ -73,7 +69,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const [loading, setLoading] = useState(true);
   const [hintsExpanded, setHintsExpanded] = useState(false);
   const [grammarHints, setGrammarHints] = useState<GrammarHint[]>([]);
-  const [pronunciationHints, setPronunciationHints] = useState<PronunciationHint[]>([]);
   const [slowAudio, setSlowAudio] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportText, setReportText] = useState('');
@@ -176,7 +171,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     if (!currentTermId) return;
 
     async function fetchHints() {
-      // Grammar hints
       const { data: hintLinks } = await supabase
         .from('term_grammar_hints')
         .select('grammar_hints ( hint_id, hint_title, hint_text, hint_type )')
@@ -189,14 +183,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       } else {
         setGrammarHints([]);
       }
-
-      // Pronunciation hints
-      const { data: pronHints } = await supabase
-        .from('term_pronunciation_hints')
-        .select('id, hint_text')
-        .eq('term_id', currentTermId);
-
-      setPronunciationHints(pronHints || []);
     }
 
     fetchHints();
@@ -455,51 +441,38 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           )}
         </div>
 
-        {/* Inline Hints (grammar + pronunciation) — only on flashcards */}
-        {(grammarHints.length > 0 || pronunciationHints.length > 0) && (
-          <div className="w-full max-w-[422px] mx-auto mb-4">
-            <button
-              onClick={() => setHintsExpanded(!hintsExpanded)}
-              className="flex items-center gap-2 text-[#FFFDE6] font-semibold text-[13px] hover:text-white transition-colors"
-            >
-              <Star className="w-4 h-4 fill-[#FFFDE6]" />
-              {hintsExpanded ? 'Hide Hints' : 'Show Hints'}
-              <span className="text-[11px] opacity-70">
-                ({grammarHints.length + pronunciationHints.length})
-              </span>
-            </button>
+        {/* Bottom Actions */}
+        <div className="flex items-center justify-between mt-8 w-full max-w-[448px] mx-auto">
+          {/* Grammar Hint — bottom-left, expandable, only when relevant */}
+          <div className="flex-1 mr-4">
+            {grammarHints.length > 0 && (
+              <div>
+                <button
+                  onClick={() => setHintsExpanded(!hintsExpanded)}
+                  className="flex items-center gap-2 text-[#FFFDE6] font-semibold text-[13px] hover:text-white transition-colors"
+                >
+                  <Star className="w-4 h-4 fill-[#FFFDE6]" />
+                  {hintsExpanded ? 'Hide Hint' : 'Grammar Hint'}
+                </button>
 
-            {hintsExpanded && (
-              <div className="mt-2 bg-[#FFFDE6] rounded-xl p-4 shadow-lg">
-                {grammarHints.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    {grammarHints.map((hint) => (
-                      <div key={hint.hint_id}>
-                        <p className="font-bold text-[13px] text-[#F97316] mb-0.5">{hint.hint_title}</p>
-                        <p className="text-[13px] leading-[18px] text-[#372213]">{hint.hint_text}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {pronunciationHints.length > 0 && (
-                  <div className={`flex flex-col gap-2 ${grammarHints.length > 0 ? 'mt-3 pt-3 border-t border-[#E5E0D5]' : ''}`}>
-                    <p className="font-bold text-[13px] text-[#8B5CF6]">Pronunciation</p>
-                    {pronunciationHints.map((hint) => (
-                      <p key={hint.id} className="text-[13px] leading-[18px] text-[#372213]">
-                        {hint.hint_text}
-                      </p>
-                    ))}
+                {hintsExpanded && (
+                  <div className="mt-2 bg-[#FFFDE6] rounded-xl p-4 shadow-lg max-w-[320px] max-h-[200px] overflow-y-auto">
+                    <div className="flex flex-col gap-3">
+                      {grammarHints.map((hint) => (
+                        <div key={hint.hint_id}>
+                          <p className="font-bold text-[13px] text-[#F97316] mb-0.5">{hint.hint_title}</p>
+                          <p className="text-[13px] leading-[18px] text-[#372213] whitespace-pre-line">{hint.hint_text}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             )}
           </div>
-        )}
 
-        {/* Bottom Actions */}
-        <div className="flex items-center justify-end mt-4 w-full max-w-[448px] mx-auto">
           <button onClick={handleNext}
-            className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
+            className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg shrink-0">
             {isFirstSeen ? 'Got it!' : 'Next'}
           </button>
         </div>

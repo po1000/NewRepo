@@ -9,7 +9,6 @@ interface Term {
   english_text: string;
   part_of_speech: string;
   status: TermStatus;
-  pronunciationHint?: string;
 }
 
 interface Conjugation {
@@ -27,6 +26,7 @@ interface TenseData {
 
 interface GrammarHint {
   hint_id: number;
+  hint_title: string;
   hint_text: string;
   hint_type: string;
   verb?: { infinitive: string; english: string; tenses: TenseData[] };
@@ -178,21 +178,6 @@ export function SubunitDetailModal({
         };
       });
 
-      // Fetch pronunciation hints for all terms
-      if (termsList.length) {
-        const tIds = termsList.map(t => t.term_id);
-        const { data: pronHints } = await supabase
-          .from('term_pronunciation_hints')
-          .select('term_id, hint_text')
-          .in('term_id', tIds);
-
-        if (pronHints?.length) {
-          const pronMap: Record<number, string> = {};
-          pronHints.forEach((ph: any) => { pronMap[ph.term_id] = ph.hint_text; });
-          termsList.forEach(t => { t.pronunciationHint = pronMap[t.term_id]; });
-        }
-      }
-
       setTerms(termsList);
 
       // Fetch grammar hints linked to these terms
@@ -200,7 +185,7 @@ export function SubunitDetailModal({
         const termIds = termsList.map(t => t.term_id);
         const { data: hintLinks } = await supabase
           .from('term_grammar_hints')
-          .select('grammar_hints ( hint_id, hint_text, hint_type )')
+          .select('grammar_hints ( hint_id, hint_title, hint_text, hint_type )')
           .in('term_id', termIds);
 
         if (hintLinks?.length) {
@@ -334,18 +319,29 @@ export function SubunitDetailModal({
           {/* Grammar Hints Section */}
           {showGrammar && (
             <div className="mx-5 mb-3 p-3 bg-white/80 rounded-[12px] border border-[#F97316]/20">
-              <h3 className="font-inter font-bold text-[14px] text-[#372213] mb-2">Grammar Hints</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-inter font-bold text-[14px] text-[#372213]">Grammar Hints</h3>
+                <button
+                  onClick={() => setShowGrammar(false)}
+                  className="text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
               {grammarHints.length > 0 ? (
-                <ul className="flex flex-col gap-3">
+                <ol className="flex flex-col gap-3 list-decimal list-inside">
                   {grammarHints.map((hint) => (
-                    <li key={hint.hint_id}>
-                      <p className="font-inter text-[13px] text-[#4B5563] leading-[18px]">
+                    <li key={hint.hint_id} className="list-none">
+                      <p className="font-inter font-bold text-[13px] text-[#F97316] mb-0.5">
+                        {hint.hint_title}
+                      </p>
+                      <p className="font-inter text-[13px] text-[#4B5563] leading-[18px] whitespace-pre-line">
                         {hint.hint_text}
                       </p>
                       {hint.verb && <ConjugationTable verb={hint.verb} />}
                     </li>
                   ))}
-                </ul>
+                </ol>
               ) : (
                 <p className="font-inter text-[13px] text-[#9CA3AF]">No grammar hints yet for this subunit.</p>
               )}
@@ -376,11 +372,6 @@ export function SubunitDetailModal({
                       <span className="font-inter text-[12px] text-[#9CA3AF] truncate">
                         {term.english_text}
                       </span>
-                      {term.pronunciationHint && (
-                        <span className="font-inter text-[11px] text-[#8B5CF6] leading-[14px] mt-0.5">
-                          {term.pronunciationHint}
-                        </span>
-                      )}
                     </div>
                     <MasteryIcon status={term.status} />
                   </li>
