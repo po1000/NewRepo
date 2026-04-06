@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { PageLayout } from '../components/PageLayout';
 
 interface Badge {
   badge_id: number;
@@ -56,19 +57,9 @@ export function Badges() {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-[#FFF8F0]">
-      {/* Header */}
-      <header className="w-full px-4 sm:px-8 py-4 max-w-[632px] mx-auto flex items-center gap-3">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm hover:bg-gray-50 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-[#372213]" />
-        </button>
-        <h1 className="font-inter font-bold text-[22px] text-[#372213]">My Badges</h1>
-      </header>
-
+    <PageLayout>
       <main className="max-w-[632px] mx-auto px-4 pb-12">
+        <h1 className="font-inter font-bold text-[22px] text-[#372213] mb-4">My Badges</h1>
         {loading ? (
           <p className="text-center text-[#9CA3AF] py-8">Loading badges...</p>
         ) : badges.length === 0 ? (
@@ -107,6 +98,6 @@ export function Badges() {
           </div>
         )}
       </main>
-    </div>
+    </PageLayout>
   );
 }

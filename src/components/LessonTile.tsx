@@ -69,10 +69,25 @@ export function LessonTile({
             style={{
               width: `${progressPercent}%`
             }} />
-          
+
           </div>
         }
       </div>
+
+      {/* Progress indicator below tile */}
+      {status === 'in-progress' && (
+        <div className="flex items-center gap-2 mt-1">
+          <div className="flex-1 h-[6px] bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%`, backgroundColor: color }}
+            />
+          </div>
+          <span className="font-inter font-semibold text-[11px] text-[#6B7280] shrink-0">
+            {progressPercent}%
+          </span>
+        </div>
+      )}
     </div>);
 
 }

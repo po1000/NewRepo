@@ -2,11 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Navigation } from './Navigation';
-import { UserProfile } from './UserProfile';
-import { UserStats } from './UserStats';
 import { UnitSection, UnitData } from './UnitSection';
 import { SubunitDetailModal } from './SubunitDetailModal';
+import { PageLayout } from './PageLayout';
 
 interface SubunitRow {
   subunit_id: number;
@@ -49,10 +47,6 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState({ total_xp: 0, badge_count: 0, current_streak: 0 });
   const [selectedSubunit, setSelectedSubunit] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string } | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(
-    user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null
-  );
-
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
   useEffect(() => {
@@ -211,31 +205,13 @@ export function Dashboard() {
   }, [user]);
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #FFE484 0%, #FFF8F0 40%)' }}>
-      {/* Top Bar */}
-      <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between max-w-[900px] mx-auto">
-        <UserProfile
-          username={username}
-          avatarUrl={avatarUrl}
-          userId={user?.id || ''}
-          onAvatarChange={setAvatarUrl}
-        />
-        <UserStats
-          xp={userStats.total_xp.toLocaleString()}
-          hearts={userStats.badge_count}
-          streak={userStats.current_streak}
-        />
-      </header>
-
-      {/* Navigation */}
-      <Navigation
-        onLearnLessonsClick={() => navigate('/dashboard')}
-        onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
-        onGrammarClick={() => navigate('/grammar')}
-        onCultureClick={() => navigate('/culture')}
-        onCommunityClick={() => navigate('/community')}
-      />
-
+    <PageLayout
+      stats={{
+        xp: userStats.total_xp.toLocaleString(),
+        hearts: userStats.badge_count,
+        streak: userStats.current_streak,
+      }}
+    >
       {/* Main Content */}
       <main className="flex flex-col items-center gap-6 px-4 pb-12">
         {loading ? (
@@ -288,6 +264,6 @@ export function Dashboard() {
           }}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
-import { Navigation } from '../components/Navigation';
+import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
 
 export interface ScenarioCriteria {
@@ -98,38 +98,17 @@ interface SpeakAndWriteProps {
 }
 
 export function SpeakAndWrite({
-  onNavigateBack,
   onScenarioClick,
-  onCultureClick,
-  onGrammarClick,
-  onCommunityClick,
 }: SpeakAndWriteProps) {
   return (
-    <div className="min-h-screen w-full font-inter"
-      style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
+    <PageLayout>
 
-      <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#FF1500] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
-
-      <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
-        <div className="relative flex flex-col pt-[42px]">
-          <div className="[&_a]:text-[#FFFDE6] [&_button]:text-[#FFFDE6] [&_svg]:text-[#FFFDE6]">
-            <Navigation
-              onLearnLessonsClick={onNavigateBack}
-              onLearnSpeakWriteClick={() => {}}
-              onCultureClick={onCultureClick}
-              onGrammarClick={onGrammarClick}
-              onCommunityClick={onCommunityClick}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-[684px] mx-auto px-8 pt-8 pb-20">
+      <div className="max-w-[684px] mx-auto px-8 pt-4 pb-20">
         <div className="flex flex-col gap-2 mb-6 text-center">
-          <h1 className="font-bold text-[25.5px] leading-[36px] text-[#FFFDE6]">
+          <h1 className="font-bold text-[25.5px] leading-[36px] text-[#372213]">
             Practice Speaking and Writing
           </h1>
-          <p className="text-[13.6px] leading-[24px] text-[#FFFDE6]">
+          <p className="text-[13.6px] leading-[24px] text-[#6B7280]">
             Practise real-world conversations with interactive scenarios.
           </p>
         </div>
@@ -175,6 +154,6 @@ export function SpeakAndWrite({
           ))}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
