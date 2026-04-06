@@ -29,8 +29,16 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
     if (!file || !userId) return;
 
     setUploading(true);
+
+    // Immediately show preview via object URL
+    const previewUrl = URL.createObjectURL(file);
+    setLocalAvatarUrl(previewUrl);
+
     const fileExt = file.name.split('.').pop();
     const filePath = `${userId}/avatar.${fileExt}`;
+
+    // Remove old file first, then upload new one
+    await supabase.storage.from('avatars').remove([filePath]);
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
@@ -49,10 +57,16 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
     // Add cache buster to force refresh
     const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
-    await supabase.auth.updateUser({
+    const { error: updateError } = await supabase.auth.updateUser({
       data: { avatar_url: urlWithCacheBust },
     });
 
+    if (updateError) {
+      console.error('Failed to update user metadata:', updateError);
+    }
+
+    // Use the storage URL (revoke the preview blob)
+    URL.revokeObjectURL(previewUrl);
     setLocalAvatarUrl(urlWithCacheBust);
     onAvatarChange?.(urlWithCacheBust);
     setUploading(false);

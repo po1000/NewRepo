@@ -39,7 +39,6 @@ function speakSpanish(text: string, slow: boolean) {
   utterance.lang = 'es-ES';
   utterance.rate = slow ? 0.5 : 0.9;
   utterance.pitch = 1;
-  // Try to find a Spanish voice
   const voices = window.speechSynthesis.getVoices();
   const esVoice = voices.find(v => v.lang.startsWith('es'));
   if (esVoice) utterance.voice = esVoice;
@@ -58,11 +57,12 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const [grammarHints, setGrammarHints] = useState<GrammarHint[]>([]);
   const [slowAudio, setSlowAudio] = useState(false);
   const [knownWords, setKnownWords] = useState<Set<number>>(new Set());
+  const [seenWords, setSeenWords] = useState<Set<number>>(new Set());
   const [showReport, setShowReport] = useState(false);
   const [reportText, setReportText] = useState('');
   const [reportSent, setReportSent] = useState(false);
 
-  // Fetch terms for this subunit
+  // Fetch terms for this subunit AND existing progress to resume
   useEffect(() => {
     async function fetchTerms() {
       if (!state.subunitId) {
@@ -87,6 +87,39 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           example_sentence_en: st.terms.example_sentence_en,
         }));
         setTerms(termsList);
+
+        // Load existing progress to resume from where user left off
+        if (user) {
+          const termIds = termsList.map(t => t.term_id);
+          const { data: progress } = await supabase
+            .from('user_term_progress')
+            .select('term_id, status')
+            .eq('user_id', user.id)
+            .in('term_id', termIds);
+
+          if (progress?.length) {
+            const known = new Set<number>();
+            const seen = new Set<number>();
+
+            progress.forEach((p: any) => {
+              if (p.status === 'mastered') {
+                known.add(p.term_id);
+              } else if (p.status === 'seen' || p.status === 'learning' || p.status === 'reinforced') {
+                seen.add(p.term_id);
+              }
+            });
+
+            setKnownWords(known);
+            setSeenWords(seen);
+
+            // Resume: skip past already-seen terms (but not mastered, those are filtered out)
+            const remaining = termsList.filter(t => !known.has(t.term_id));
+            const firstUnseen = remaining.findIndex(t => !seen.has(t.term_id));
+            if (firstUnseen > 0) {
+              setCurrentIndex(firstUnseen);
+            }
+          }
+        }
       }
       setLoading(false);
     }
@@ -101,10 +134,11 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
   // Fetch grammar hints for current term
   useEffect(() => {
-    async function fetchHints() {
-      if (!terms.length || currentIndex >= terms.length) return;
-      const termId = terms[currentIndex].term_id;
+    const activeTerms = terms.filter(t => !knownWords.has(t.term_id));
+    if (!activeTerms.length || currentIndex >= activeTerms.length) return;
+    const termId = activeTerms[currentIndex].term_id;
 
+    async function fetchHints() {
       const { data: hintLinks } = await supabase
         .from('term_grammar_hints')
         .select('grammar_hints ( hint_id, hint_title, hint_text, hint_type )')
@@ -122,13 +156,13 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
     fetchHints();
     setShowGrammarHint(false);
-  }, [currentIndex, terms]);
+  }, [currentIndex, terms, knownWords]);
 
-  // Filter out known words from active terms
+  // Filter out known words
   const activeTerms = terms.filter(t => !knownWords.has(t.term_id));
   const totalTerms = terms.length;
-  const viewedCount = knownWords.size + currentIndex;
-  const progressPercent = totalTerms > 0 ? Math.min(((viewedCount + 1) / totalTerms) * 100, 100) : 0;
+  const completedCount = knownWords.size + seenWords.size + (currentIndex < activeTerms.length ? currentIndex : activeTerms.length);
+  const progressPercent = totalTerms > 0 ? Math.min((completedCount / totalTerms) * 100, 100) : 0;
 
   const currentTerm = activeTerms.length > 0 && currentIndex < activeTerms.length
     ? activeTerms[currentIndex]
@@ -147,10 +181,11 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
         term_id: currentTerm.term_id,
         status: 'seen',
       }, { onConflict: 'user_id,term_id' }).then(() => {});
+
+      setSeenWords(prev => new Set(prev).add(currentTerm.term_id));
     }
 
     if (currentIndex + 1 >= activeTerms.length) {
-      // Lesson complete
       onClose();
     } else {
       setCurrentIndex(currentIndex + 1);
@@ -175,11 +210,9 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
     setKnownWords(prev => new Set(prev).add(currentTerm.term_id));
 
-    // Move to next if this was the current card
     if (currentIndex >= activeTerms.length - 1) {
       onClose();
     }
-    // The card will be removed from activeTerms, so currentIndex stays
   }, [currentTerm, user, currentIndex, activeTerms, onClose]);
 
   const handlePlayAudio = useCallback(() => {
@@ -231,20 +264,15 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center font-inter"
-      style={{
-        background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)',
-      }}>
+      style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
 
       <div className="w-full max-w-[684px] min-h-[688px] relative flex flex-col p-8">
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <X className="w-6 h-6 text-[#FFFDE6]" />
           </button>
 
-          {/* Progress Bar */}
           <div className="flex-1 mx-8 h-3 bg-white/30 rounded-full overflow-hidden">
             <div
               className="h-full bg-[#FFFDE6] rounded-full transition-all duration-300"
@@ -252,10 +280,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             />
           </div>
 
-          {/* Flag / Report */}
-          <button
-            onClick={() => setShowReport(!showReport)}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={() => setShowReport(!showReport)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <Flag className="w-6 h-6 text-[#FFFDE6]" />
           </button>
         </div>
@@ -287,7 +312,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
         {/* Content Area — Flashcard */}
         <div className="flex-1 flex flex-col items-center">
-          {/* Badge */}
           <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
             <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
               Flashcard
@@ -296,49 +320,35 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
           {/* Card */}
           <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-8 flex flex-col items-center relative shadow-lg mb-8">
-            {/* Image */}
             {currentTerm.image_url ? (
-              <img
-                src={currentTerm.image_url}
-                alt={currentTerm.english_text}
-                className="w-[235px] h-[157px] object-cover rounded-lg mb-12"
-              />
+              <img src={currentTerm.image_url} alt={currentTerm.english_text}
+                className="w-[235px] h-[157px] object-cover rounded-lg mb-12" />
             ) : (
               <div className="w-[235px] h-[157px] rounded-lg mb-12 bg-gradient-to-br from-[#FFE484] to-[#FFCA28] flex items-center justify-center">
                 <span className="text-[40px]">📖</span>
               </div>
             )}
 
-            {/* Speaker Button */}
-            <button
-              onClick={handlePlayAudio}
+            <button onClick={handlePlayAudio}
               className="absolute top-[180px] w-16 h-16 bg-white border-4 border-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform">
               <Volume2 className="w-8 h-8 text-[#FF4D01]" />
             </button>
 
-            {/* Spanish text */}
             <h2 className="font-bold text-[24px] leading-[48px] text-black mb-1">
               {currentTerm.spanish_text}
             </h2>
-
-            {/* English text */}
             <span className="font-medium text-[20px] leading-[20px] text-[#FF4D01]">
               {currentTerm.english_text}
             </span>
 
-            {/* Bottom Icons */}
-            <button
-              onClick={handleKnown}
-              title="I already know this word"
+            <button onClick={handleKnown} title="I already know this word"
               className={`absolute bottom-0 left-0 w-12 h-10 rounded-tr-2xl rounded-bl-2xl flex items-center justify-center transition-colors ${
                 knownWords.has(currentTerm.term_id) ? 'bg-[#3BBC00]' : 'bg-[#FF4D01]'
               }`}>
               <ThumbsUp className="w-5 h-5 text-[#FFFDE6]" />
             </button>
 
-            <button
-              onClick={() => setSlowAudio(!slowAudio)}
-              title={slowAudio ? 'Normal speed' : 'Slow audio'}
+            <button onClick={() => setSlowAudio(!slowAudio)} title={slowAudio ? 'Normal speed' : 'Slow audio'}
               className={`absolute bottom-0 right-0 w-12 h-10 rounded-tl-2xl rounded-br-2xl flex items-center justify-center transition-colors ${
                 slowAudio ? 'bg-[#3BBC00]' : 'bg-[#FF4D01]'
               }`}>
@@ -365,16 +375,13 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
         {/* Bottom Actions */}
         <div className="flex items-center justify-between mt-8 w-full max-w-[448px] mx-auto">
-          {/* Grammar Hint */}
           <div className="relative">
-            <button
-              onClick={() => setShowGrammarHint(!showGrammarHint)}
+            <button onClick={() => setShowGrammarHint(!showGrammarHint)}
               className="flex items-center gap-2 px-4 py-3 border-2 border-[#FFFDE6] rounded-xl bg-[#FF6200] text-[#FFFDE6] font-bold text-[14.6px] hover:bg-[#e55800] transition-colors">
               <Star className="w-4 h-4" />
               Grammar Hint
             </button>
 
-            {/* Grammar Hint Popup */}
             {showGrammarHint && (
               <div className="absolute bottom-full left-0 mb-4 w-[300px] bg-[#FFFDE6] rounded-xl p-4 shadow-xl z-50">
                 <div className="absolute -bottom-2 left-8 w-4 h-4 bg-[#FFFDE6] rotate-45" />
@@ -396,11 +403,9 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             )}
           </div>
 
-          {/* Got it! / Next */}
-          <button
-            onClick={handleNext}
+          <button onClick={handleNext}
             className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
-            {currentIndex === 0 ? 'Got it!' : 'Next'}
+            {!seenWords.has(currentTerm.term_id) && !knownWords.has(currentTerm.term_id) ? 'Got it!' : 'Next'}
           </button>
         </div>
       </div>

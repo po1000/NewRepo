@@ -53,7 +53,7 @@ function SpeakAndWritePage() {
   return (
     <SpeakAndWrite
       onNavigateBack={() => navigate('/dashboard')}
-      onScenarioClick={() => navigate('/speak-and-write/scenario')}
+      onScenarioClick={(scenarioId) => navigate(`/speak-and-write/${scenarioId}`)}
       onGrammarClick={() => navigate('/grammar')}
       onCultureClick={() => navigate('/culture')}
       onCommunityClick={() => navigate('/community')}

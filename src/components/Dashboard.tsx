@@ -36,6 +36,12 @@ const SUBUNIT_COLORS: Record<string, string> = {
   'A2:1.1': '#BD55DD', 'A2:2.1': '#FFE101', 'A2:3.1': '#4CBC26', 'A2:4.1': '#F64297',
 };
 
+interface SubunitProgress {
+  totalTerms: number;
+  seenTerms: number;
+  masteredTerms: number;
+}
+
 export function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -88,6 +94,70 @@ export function Dashboard() {
         });
       }
 
+      // Gather all subunit IDs to fetch progress
+      const allSubunitIds: number[] = [];
+      (units as UnitRow[])?.forEach(unit => {
+        unit.subunits?.forEach(sub => allSubunitIds.push(sub.subunit_id));
+      });
+
+      // Fetch term counts per subunit and user progress
+      const progressMap: Record<number, SubunitProgress> = {};
+
+      if (allSubunitIds.length > 0) {
+        // Get total terms per subunit
+        const { data: subunitTermCounts } = await supabase
+          .from('subunit_terms')
+          .select('subunit_id, term_id')
+          .in('subunit_id', allSubunitIds);
+
+        // Group by subunit
+        const termsBySubunit: Record<number, number[]> = {};
+        subunitTermCounts?.forEach((st: any) => {
+          if (!termsBySubunit[st.subunit_id]) termsBySubunit[st.subunit_id] = [];
+          termsBySubunit[st.subunit_id].push(st.term_id);
+        });
+
+        // Get user progress for all terms
+        if (user) {
+          const allTermIds = subunitTermCounts?.map((st: any) => st.term_id) || [];
+          const uniqueTermIds = [...new Set(allTermIds)];
+
+          if (uniqueTermIds.length > 0) {
+            const { data: progress } = await supabase
+              .from('user_term_progress')
+              .select('term_id, status')
+              .eq('user_id', user.id)
+              .in('term_id', uniqueTermIds);
+
+            const termStatusMap: Record<number, string> = {};
+            progress?.forEach((p: any) => {
+              termStatusMap[p.term_id] = p.status;
+            });
+
+            // Calculate progress per subunit
+            for (const subId of allSubunitIds) {
+              const termIds = termsBySubunit[subId] || [];
+              const total = termIds.length;
+              let seen = 0;
+              let mastered = 0;
+              for (const tid of termIds) {
+                const status = termStatusMap[tid];
+                if (status === 'seen' || status === 'learning' || status === 'reinforced') seen++;
+                if (status === 'mastered') mastered++;
+              }
+              progressMap[subId] = { totalTerms: total, seenTerms: seen + mastered, masteredTerms: mastered };
+            }
+          }
+        }
+
+        // Fill in subunits without progress data
+        for (const subId of allSubunitIds) {
+          if (!progressMap[subId]) {
+            progressMap[subId] = { totalTerms: termsBySubunit[subId]?.length || 0, seenTerms: 0, masteredTerms: 0 };
+          }
+        }
+      }
+
       // Group units by CEFR level
       const grouped: Record<string, UnitData[]> = {};
 
@@ -103,21 +173,33 @@ export function Dashboard() {
         grouped[levelKey].push({
           id: `unit-${unit.unit_id}`,
           title: `Unit ${unit.unit_number}: ${unit.title}`,
-          lessons: sortedSubunits.map((sub, i) => ({
-            unitNumber: sub.subunit_code,
-            title: sub.title,
-            color: SUBUNIT_COLORS[`${cefrCode}:${sub.subunit_code}`] || '#D9D9D9',
-            imageUrl: sub.image_url || '',
-            status: 'locked' as const,
-            subunitId: sub.subunit_id,
-            goalText: sub.goal_text || '',
-            onClick: () => setSelectedSubunit({
-              subunitId: sub.subunit_id,
-              subunitCode: sub.subunit_code,
+          lessons: sortedSubunits.map((sub) => {
+            const prog = progressMap[sub.subunit_id];
+            const total = prog?.totalTerms || 0;
+            const seen = prog?.seenTerms || 0;
+            const pct = total > 0 ? Math.round((seen / total) * 100) : 0;
+
+            let status: 'completed' | 'in-progress' | 'locked' = 'locked';
+            if (pct >= 100) status = 'completed';
+            else if (seen > 0) status = 'in-progress';
+
+            return {
+              unitNumber: sub.subunit_code,
               title: sub.title,
+              color: SUBUNIT_COLORS[`${cefrCode}:${sub.subunit_code}`] || '#D9D9D9',
+              imageUrl: sub.image_url || '',
+              status,
+              progressPercent: pct,
+              subunitId: sub.subunit_id,
               goalText: sub.goal_text || '',
-            }),
-          })),
+              onClick: () => setSelectedSubunit({
+                subunitId: sub.subunit_id,
+                subunitCode: sub.subunit_code,
+                title: sub.title,
+                goalText: sub.goal_text || '',
+              }),
+            };
+          }),
         });
       });
 
