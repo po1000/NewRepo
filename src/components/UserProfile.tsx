@@ -18,6 +18,7 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(avatarUrl);
+  const [imgKey, setImgKey] = useState(0); // force re-render of <img>
 
   // Sync when parent prop changes
   useEffect(() => {
@@ -29,16 +30,15 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
     if (!file || !userId) return;
 
     setUploading(true);
+    setMenuOpen(false);
 
     // Immediately show preview via object URL
     const previewUrl = URL.createObjectURL(file);
     setLocalAvatarUrl(previewUrl);
+    setImgKey(prev => prev + 1);
 
     const fileExt = file.name.split('.').pop();
     const filePath = `${userId}/avatar.${fileExt}`;
-
-    // Remove old file first, then upload new one
-    await supabase.storage.from('avatars').remove([filePath]);
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
@@ -54,33 +54,35 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
       .from('avatars')
       .getPublicUrl(filePath);
 
-    // Add cache buster to force refresh
     const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
-    const { error: updateError } = await supabase.auth.updateUser({
+    await supabase.auth.updateUser({
       data: { avatar_url: urlWithCacheBust },
     });
 
-    if (updateError) {
-      console.error('Failed to update user metadata:', updateError);
-    }
-
-    // Use the storage URL (revoke the preview blob)
+    // Swap from blob preview to real URL
     URL.revokeObjectURL(previewUrl);
     setLocalAvatarUrl(urlWithCacheBust);
+    setImgKey(prev => prev + 1);
     onAvatarChange?.(urlWithCacheBust);
     setUploading(false);
-    setMenuOpen(false);
 
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  // Use Google avatar if available and no custom avatar
   const displayUrl = localAvatarUrl || avatarUrl;
 
   return (
     <div className="relative">
+      {/* File input lives outside the menu so it persists */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
       <button
         className="flex flex-row items-center gap-2 p-2 bg-white rounded-lg shadow-[2px_2px_4px_rgba(0,0,0,0.06)] hover:bg-gray-50 transition-colors"
         aria-label="User profile menu"
@@ -88,6 +90,7 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
       >
         {displayUrl ? (
           <img
+            key={imgKey}
             src={displayUrl}
             alt="Profile"
             className="w-[25px] h-[25px] rounded-full object-cover flex-shrink-0"
@@ -104,15 +107,14 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
         <ChevronDown className="w-4 h-4 text-[#372213]" aria-hidden="true" />
       </button>
 
-      {/* Dropdown menu */}
       {menuOpen && (
         <>
-          {/* Backdrop to close menu */}
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
           <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden">
             <button
               onClick={() => {
                 fileInputRef.current?.click();
+                // Don't close menu yet — let handleFileChange close it after file is picked
               }}
               className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#372213] hover:bg-gray-50 transition-colors"
             >
@@ -139,14 +141,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
           </div>
         </>
       )}
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileChange}
-      />
     </div>
   );
 }
