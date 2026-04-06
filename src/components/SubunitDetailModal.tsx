@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { X, Star, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { loadTermProgress, applyDecay, TermStatus } from '../lib/srs';
 
 interface Term {
   term_id: number;
   spanish_text: string;
   english_text: string;
   part_of_speech: string;
-  status: 'new' | 'seen' | 'learning' | 'reinforced' | 'mastered';
+  status: TermStatus;
 }
 
 interface Conjugation {
@@ -41,7 +42,7 @@ interface SubunitDetailModalProps {
 }
 
 function MasteryIcon({ status }: { status: string }) {
-  if (status === 'mastered') {
+  if (status === 'learnt' || status === 'mastered') {
     return (
       <div className="flex items-end gap-[2px] h-[18px]">
         <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
@@ -153,20 +154,15 @@ export function SubunitDetailModal({
         .eq('subunit_id', subunitId)
         .order('sort_order');
 
-      // Fetch user progress for these terms
-      let progressMap: Record<number, string> = {};
+      // Fetch user progress with SM2 data for decay-adjusted display
+      let displayStatusMap: Record<number, TermStatus> = {};
       if (userId && subunitTerms?.length) {
         const termIds = subunitTerms.map((st: any) => st.term_id);
-        const { data: progress } = await supabase
-          .from('user_term_progress')
-          .select('term_id, status')
-          .eq('user_id', userId)
-          .in('term_id', termIds);
+        const pMap = await loadTermProgress(userId, termIds);
 
-        if (progress) {
-          progress.forEach((p: any) => {
-            progressMap[p.term_id] = p.status;
-          });
+        for (const [tid, tp] of pMap) {
+          const { displayStatus } = applyDecay(tp.status, tp.sm2);
+          displayStatusMap[tid] = displayStatus;
         }
       }
 
@@ -177,7 +173,7 @@ export function SubunitDetailModal({
           spanish_text: t.spanish_text,
           english_text: t.english_text,
           part_of_speech: t.part_of_speech,
-          status: (progressMap[t.term_id] || 'new') as Term['status'],
+          status: (displayStatusMap[t.term_id] || 'not_seen') as Term['status'],
         };
       });
 

@@ -143,7 +143,7 @@ export function Dashboard() {
               for (const tid of termIds) {
                 const status = termStatusMap[tid];
                 if (status === 'seen' || status === 'learning' || status === 'reinforced') seen++;
-                if (status === 'mastered') mastered++;
+                if (status === 'mastered' || status === 'learnt') mastered++;
               }
               progressMap[subId] = { totalTerms: total, seenTerms: seen + mastered, masteredTerms: mastered };
             }

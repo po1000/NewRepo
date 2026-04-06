@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   X,
@@ -10,6 +10,17 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import {
+  loadTermProgress,
+  saveTermProgress,
+  markSeen,
+  processAnswer,
+  buildSessionQueue,
+  requeueTerm,
+  applyDecay,
+  TermProgress,
+  TermStatus,
+} from '../lib/srs';
 
 interface Term {
   term_id: number;
@@ -50,105 +61,124 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const { user } = useAuth();
   const state = (location.state as { subunitId?: number; subunitCode?: string; title?: string }) || {};
 
-  const [terms, setTerms] = useState<Term[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [termsMap, setTermsMap] = useState<Map<number, Term>>(new Map());
+  const [queue, setQueue] = useState<number[]>([]);
+  const [queueIndex, setQueueIndex] = useState(0);
+  const [progressMap, setProgressMap] = useState<Map<number, TermProgress>>(new Map());
   const [loading, setLoading] = useState(true);
   const [showGrammarHint, setShowGrammarHint] = useState(false);
   const [grammarHints, setGrammarHints] = useState<GrammarHint[]>([]);
   const [slowAudio, setSlowAudio] = useState(false);
-  const [knownWords, setKnownWords] = useState<Set<number>>(new Set());
-  const [seenWords, setSeenWords] = useState<Set<number>>(new Set());
   const [showReport, setShowReport] = useState(false);
   const [reportText, setReportText] = useState('');
   const [reportSent, setReportSent] = useState(false);
+  const [totalTermCount, setTotalTermCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
 
-  // Fetch terms for this subunit AND existing progress to resume
+  const hasInitialized = useRef(false);
+
+  // Load terms + progress, build queue
   useEffect(() => {
-    async function fetchTerms() {
-      if (!state.subunitId) {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    async function init() {
+      if (!state.subunitId || !user) {
         setLoading(false);
         return;
       }
 
+      // Fetch terms for subunit
       const { data: subunitTerms } = await supabase
         .from('subunit_terms')
         .select('term_id, sort_order, terms ( term_id, spanish_text, english_text, part_of_speech, image_url, example_sentence_es, example_sentence_en )')
         .eq('subunit_id', state.subunitId)
         .order('sort_order');
 
-      if (subunitTerms?.length) {
-        const termsList: Term[] = subunitTerms.map((st: any) => ({
-          term_id: st.terms.term_id,
-          spanish_text: st.terms.spanish_text,
-          english_text: st.terms.english_text,
-          part_of_speech: st.terms.part_of_speech,
-          image_url: st.terms.image_url,
-          example_sentence_es: st.terms.example_sentence_es,
-          example_sentence_en: st.terms.example_sentence_en,
-        }));
-        setTerms(termsList);
+      if (!subunitTerms?.length) {
+        setLoading(false);
+        return;
+      }
 
-        // Load existing progress to resume from where user left off
-        if (user) {
-          const termIds = termsList.map(t => t.term_id);
-          const { data: progress } = await supabase
-            .from('user_term_progress')
-            .select('term_id, status')
-            .eq('user_id', user.id)
-            .in('term_id', termIds);
+      const tMap = new Map<number, Term>();
+      const termIds: number[] = [];
 
-          if (progress?.length) {
-            const known = new Set<number>();
-            const seen = new Set<number>();
+      subunitTerms.forEach((st: any) => {
+        const t = st.terms;
+        tMap.set(t.term_id, {
+          term_id: t.term_id,
+          spanish_text: t.spanish_text,
+          english_text: t.english_text,
+          part_of_speech: t.part_of_speech,
+          image_url: t.image_url,
+          example_sentence_es: t.example_sentence_es,
+          example_sentence_en: t.example_sentence_en,
+        });
+        termIds.push(t.term_id);
+      });
 
-            progress.forEach((p: any) => {
-              if (p.status === 'mastered') {
-                known.add(p.term_id);
-              } else if (p.status === 'seen' || p.status === 'learning' || p.status === 'reinforced') {
-                seen.add(p.term_id);
-              }
-            });
+      setTermsMap(tMap);
+      setTotalTermCount(termIds.length);
 
-            setKnownWords(known);
-            setSeenWords(seen);
+      // Load existing progress
+      const pMap = await loadTermProgress(user.id, termIds);
 
-            // Resume: skip past already-seen terms (but not mastered, those are filtered out)
-            const remaining = termsList.filter(t => !known.has(t.term_id));
-            const firstUnseen = remaining.findIndex(t => !seen.has(t.term_id));
-            if (firstUnseen > 0) {
-              setCurrentIndex(firstUnseen);
-            }
+      // Apply memory decay to all terms on session open
+      for (const [tid, tp] of pMap) {
+        if (tp.status === 'reinforced' || tp.status === 'learnt') {
+          const { displayStatus, strength } = applyDecay(tp.status, tp.sm2);
+          if (displayStatus !== tp.status) {
+            // Persist the decayed status
+            tp.status = displayStatus;
+            tp.sm2.strength = strength;
+            await saveTermProgress(user.id, tid, displayStatus, tp.sm2);
           }
         }
       }
+
+      setProgressMap(pMap);
+
+      // Build session queue
+      const sessionQueue = buildSessionQueue(termIds, pMap);
+
+      // Count already completed (learnt and not overdue)
+      let done = 0;
+      for (const tp of pMap.values()) {
+        if (tp.status === 'learnt') done++;
+      }
+      setCompletedCount(done);
+
+      setQueue(sessionQueue);
       setLoading(false);
     }
 
-    fetchTerms();
+    init();
 
-    // Preload voices for TTS
+    // Preload voices
     if (window.speechSynthesis) {
       window.speechSynthesis.getVoices();
     }
-  }, [state.subunitId]);
+  }, [state.subunitId, user]);
+
+  // Current term
+  const currentTermId = queueIndex < queue.length ? queue[queueIndex] : null;
+  const currentTerm = currentTermId ? termsMap.get(currentTermId) || null : null;
+  const currentProgress = currentTermId ? progressMap.get(currentTermId) : undefined;
 
   // Fetch grammar hints for current term
   useEffect(() => {
-    const activeTerms = terms.filter(t => !knownWords.has(t.term_id));
-    if (!activeTerms.length || currentIndex >= activeTerms.length) return;
-    const termId = activeTerms[currentIndex].term_id;
+    if (!currentTermId) return;
 
     async function fetchHints() {
       const { data: hintLinks } = await supabase
         .from('term_grammar_hints')
         .select('grammar_hints ( hint_id, hint_title, hint_text, hint_type )')
-        .eq('term_id', termId);
+        .eq('term_id', currentTermId);
 
       if (hintLinks?.length) {
-        const hints: GrammarHint[] = hintLinks
-          .map((h: any) => h.grammar_hints)
-          .filter(Boolean);
-        setGrammarHints(hints);
+        setGrammarHints(
+          hintLinks.map((h: any) => h.grammar_hints).filter(Boolean)
+        );
       } else {
         setGrammarHints([]);
       }
@@ -156,69 +186,113 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
     fetchHints();
     setShowGrammarHint(false);
-  }, [currentIndex, terms, knownWords]);
+  }, [currentTermId]);
 
-  // Filter out known words
-  const activeTerms = terms.filter(t => !knownWords.has(t.term_id));
-  const totalTerms = terms.length;
-  const completedCount = knownWords.size + seenWords.size + (currentIndex < activeTerms.length ? currentIndex : activeTerms.length);
-  const progressPercent = totalTerms > 0 ? Math.min((completedCount / totalTerms) * 100, 100) : 0;
+  // Progress bar
+  const progressPercent = totalTermCount > 0
+    ? Math.min(((completedCount + queueIndex) / totalTermCount) * 100, 100)
+    : 0;
 
-  const currentTerm = activeTerms.length > 0 && currentIndex < activeTerms.length
-    ? activeTerms[currentIndex]
-    : null;
+  // ── Handlers ──────────────────────────────────────────────
 
-  const handleNext = useCallback(() => {
-    if (!currentTerm) {
-      onClose();
-      return;
-    }
-
-    // Mark term as "seen" in user_term_progress
-    if (user && currentTerm) {
-      supabase.from('user_term_progress').upsert({
-        user_id: user.id,
-        term_id: currentTerm.term_id,
-        status: 'seen',
-      }, { onConflict: 'user_id,term_id' }).then(() => {});
-
-      setSeenWords(prev => new Set(prev).add(currentTerm.term_id));
-    }
-
-    if (currentIndex + 1 >= activeTerms.length) {
+  const advanceQueue = useCallback(() => {
+    if (queueIndex + 1 >= queue.length) {
       onClose();
     } else {
-      setCurrentIndex(currentIndex + 1);
+      setQueueIndex(queueIndex + 1);
       setShowGrammarHint(false);
       setShowReport(false);
       setReportText('');
       setReportSent(false);
     }
-  }, [currentIndex, activeTerms, currentTerm, user, onClose]);
+  }, [queueIndex, queue, onClose]);
 
-  const handleKnown = useCallback(() => {
-    if (!currentTerm) return;
-
-    // Mark as mastered
-    if (user) {
-      supabase.from('user_term_progress').upsert({
-        user_id: user.id,
-        term_id: currentTerm.term_id,
-        status: 'mastered',
-      }, { onConflict: 'user_id,term_id' }).then(() => {});
-    }
-
-    setKnownWords(prev => new Set(prev).add(currentTerm.term_id));
-
-    if (currentIndex >= activeTerms.length - 1) {
+  // "Got it!" / "Next" — flashcard reveal → mark seen, quality not scored yet
+  const handleNext = useCallback(async () => {
+    if (!currentTerm || !user) {
       onClose();
+      return;
     }
-  }, [currentTerm, user, currentIndex, activeTerms, onClose]);
+
+    // Mark as seen if first time
+    if (!currentProgress || currentProgress.status === 'not_seen') {
+      await markSeen(user.id, currentTerm.term_id);
+
+      // Update local progress map
+      setProgressMap(prev => {
+        const next = new Map(prev);
+        const existing = next.get(currentTerm.term_id);
+        if (existing) {
+          existing.status = 'seen';
+        } else {
+          next.set(currentTerm.term_id, {
+            term_id: currentTerm.term_id,
+            status: 'seen',
+            sm2: {
+              easiness_factor: 2.5,
+              interval_days: 0,
+              repetitions: 0,
+              next_review_date: null,
+              last_quality: null,
+              strength: 1.0,
+              correct_in_session: 0,
+              question_types_correct: [],
+            },
+          });
+        }
+        return next;
+      });
+    }
+
+    // For flashcard step: score q=4 (successful but no interactive test)
+    const tp = progressMap.get(currentTerm.term_id);
+    if (tp && user) {
+      const result = processAnswer(tp.status === 'not_seen' ? 'seen' : tp.status, tp.sm2, 4, 'flashcard', false);
+      tp.status = result.newStatus;
+      tp.sm2 = result.sm2;
+
+      await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2);
+
+      if (result.requeue) {
+        setQueue(prev => requeueTerm(prev, queueIndex, currentTerm.term_id));
+      }
+
+      setProgressMap(prev => {
+        const next = new Map(prev);
+        next.set(currentTerm.term_id, { ...tp });
+        return next;
+      });
+    }
+
+    advanceQueue();
+  }, [currentTerm, currentProgress, user, progressMap, queueIndex, advanceQueue, onClose]);
+
+  // Thumbs up → mark as known (q=5, jump to learnt)
+  const handleKnown = useCallback(async () => {
+    if (!currentTerm || !user) return;
+
+    const tp = progressMap.get(currentTerm.term_id) || {
+      term_id: currentTerm.term_id,
+      status: 'not_seen' as TermStatus,
+      sm2: { easiness_factor: 2.5, interval_days: 0, repetitions: 0, next_review_date: null, last_quality: null, strength: 1.0, correct_in_session: 0, question_types_correct: [] },
+    };
+
+    const result = processAnswer(tp.status, tp.sm2, 5, 'flashcard', true);
+
+    await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2);
+
+    setProgressMap(prev => {
+      const next = new Map(prev);
+      next.set(currentTerm.term_id, { term_id: currentTerm.term_id, status: result.newStatus, sm2: result.sm2 });
+      return next;
+    });
+
+    setCompletedCount(prev => prev + 1);
+    advanceQueue();
+  }, [currentTerm, user, progressMap, advanceQueue]);
 
   const handlePlayAudio = useCallback(() => {
-    if (currentTerm) {
-      speakSpanish(currentTerm.spanish_text, slowAudio);
-    }
+    if (currentTerm) speakSpanish(currentTerm.spanish_text, slowAudio);
   }, [currentTerm, slowAudio]);
 
   const handleReport = useCallback(async () => {
@@ -236,6 +310,8 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       setReportSent(false);
     }, 1500);
   }, [reportText, user, currentTerm, state.subunitId]);
+
+  // ── Render ────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -261,9 +337,10 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     );
   }
 
+  const isFirstSeen = !currentProgress || currentProgress.status === 'not_seen';
+
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center font-inter"
+    <div className="min-h-screen w-full flex items-center justify-center font-inter"
       style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
 
       <div className="w-full max-w-[684px] min-h-[688px] relative flex flex-col p-8">
@@ -272,14 +349,10 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <X className="w-6 h-6 text-[#FFFDE6]" />
           </button>
-
           <div className="flex-1 mx-8 h-3 bg-white/30 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#FFFDE6] rounded-full transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
+            <div className="h-full bg-[#FFFDE6] rounded-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }} />
           </div>
-
           <button onClick={() => setShowReport(!showReport)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <Flag className="w-6 h-6 text-[#FFFDE6]" />
           </button>
@@ -293,15 +366,10 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
               <p className="text-[13px] text-[#3BBC00] font-medium">Thanks! Report sent.</p>
             ) : (
               <>
-                <textarea
-                  value={reportText}
-                  onChange={(e) => setReportText(e.target.value)}
+                <textarea value={reportText} onChange={(e) => setReportText(e.target.value)}
                   placeholder="Describe the issue..."
-                  className="w-full h-20 px-3 py-2 rounded-lg border border-[#D5C4A5] text-[13px] text-[#372213] placeholder:text-[#C8B89B] focus:outline-none focus:border-[#FF4D01] resize-none"
-                />
-                <button
-                  onClick={handleReport}
-                  disabled={!reportText.trim()}
+                  className="w-full h-20 px-3 py-2 rounded-lg border border-[#D5C4A5] text-[13px] text-[#372213] placeholder:text-[#C8B89B] focus:outline-none focus:border-[#FF4D01] resize-none" />
+                <button onClick={handleReport} disabled={!reportText.trim()}
                   className="mt-2 w-full py-2 rounded-lg bg-[#FF4D01] text-white font-bold text-[13px] disabled:opacity-50">
                   Submit
                 </button>
@@ -310,7 +378,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           </div>
         )}
 
-        {/* Content Area — Flashcard */}
+        {/* Flashcard Content */}
         <div className="flex-1 flex flex-col items-center">
           <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
             <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
@@ -318,7 +386,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             </span>
           </div>
 
-          {/* Card */}
           <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-8 flex flex-col items-center relative shadow-lg mb-8">
             {currentTerm.image_url ? (
               <img src={currentTerm.image_url} alt={currentTerm.english_text}
@@ -341,13 +408,13 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
               {currentTerm.english_text}
             </span>
 
+            {/* Thumbs up */}
             <button onClick={handleKnown} title="I already know this word"
-              className={`absolute bottom-0 left-0 w-12 h-10 rounded-tr-2xl rounded-bl-2xl flex items-center justify-center transition-colors ${
-                knownWords.has(currentTerm.term_id) ? 'bg-[#3BBC00]' : 'bg-[#FF4D01]'
-              }`}>
+              className="absolute bottom-0 left-0 w-12 h-10 rounded-tr-2xl rounded-bl-2xl flex items-center justify-center transition-colors bg-[#FF4D01] hover:bg-[#3BBC00]">
               <ThumbsUp className="w-5 h-5 text-[#FFFDE6]" />
             </button>
 
+            {/* Turtle */}
             <button onClick={() => setSlowAudio(!slowAudio)} title={slowAudio ? 'Normal speed' : 'Slow audio'}
               className={`absolute bottom-0 right-0 w-12 h-10 rounded-tl-2xl rounded-br-2xl flex items-center justify-center transition-colors ${
                 slowAudio ? 'bg-[#3BBC00]' : 'bg-[#FF4D01]'
@@ -405,7 +472,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
           <button onClick={handleNext}
             className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
-            {!seenWords.has(currentTerm.term_id) && !knownWords.has(currentTerm.term_id) ? 'Got it!' : 'Next'}
+            {isFirstSeen ? 'Got it!' : 'Next'}
           </button>
         </div>
       </div>
