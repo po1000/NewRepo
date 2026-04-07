@@ -17,14 +17,23 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(avatarUrl);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(() => {
+    // Initialize from localStorage first so we never flash the default avatar
+    if (userId) {
+      const stored = localStorage.getItem(`avatar_url_${userId}`);
+      if (stored) return stored;
+    }
+    return avatarUrl;
+  });
   const [imgKey, setImgKey] = useState(0); // force re-render of <img>
   const [imgError, setImgError] = useState(false);
 
-  // Sync when parent prop changes
+  // Only sync from parent prop when it becomes non-null (auth has loaded)
   useEffect(() => {
-    setLocalAvatarUrl(avatarUrl);
-    setImgError(false);
+    if (avatarUrl) {
+      setLocalAvatarUrl(avatarUrl);
+      setImgError(false);
+    }
   }, [avatarUrl]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {

@@ -274,8 +274,8 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     const dir = Math.random() < 0.5 ? 'es_to_en' : 'en_to_es';
     setMcDirection(dir);
 
-    // Get distractor pool (other terms the user has seen)
-    const pool = seenTermIds.filter(id => id !== targetTermId && termsMap.has(id));
+    // Get distractor pool (all terms in this subunit)
+    const pool = Array.from(termsMap.keys()).filter(id => id !== targetTermId);
     const distractorIds = shuffle(pool).slice(0, 3);
 
     // Build options
@@ -316,7 +316,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       const nextTp = progressMap.get(nextTermId);
       const nextIsUnseen = !nextTp || nextTp.status === 'not_seen';
 
-      if (!nextIsUnseen && newFlashcardCount >= 2 && seenTermIds.length >= 4) {
+      if (!nextIsUnseen && newFlashcardCount >= 2 && seenTermIds.length >= 2) {
         // Time for a question! Pick a previously seen term to quiz on
         // Use the current term from queue (which is already seen)
         setupMultiChoice(nextTermId);
@@ -327,7 +327,9 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     }
   }, [queueIndex, queue, onClose, state.subunitId, user, progressMap, newFlashcardCount, seenTermIds, setupMultiChoice]);
 
-  // "Got it!" / "Next" — flashcard → mark seen, quality scored as flashcard
+  // "Got it!" / "Next" — flashcard handler
+  // First encounter: only mark as seen (no processAnswer — don't advance status yet)
+  // Already seen: score q=4 as flashcard review
   const handleNext = useCallback(async () => {
     if (!currentTerm || !user) {
       onClose();
@@ -336,8 +338,8 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
     const isNew = !currentProgress || currentProgress.status === 'not_seen';
 
-    // Mark as seen if first time
     if (isNew) {
+      // First time seeing this term — only mark as seen, do NOT score
       await markSeen(user.id, currentTerm.term_id);
       setProgressMap(prev => {
         const next = new Map(prev);
@@ -357,34 +359,27 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
         }
         return next;
       });
-    }
-
-    // Score q=4 for flashcard
-    const tp = progressMap.get(currentTerm.term_id);
-    if (tp && user) {
-      const result = processAnswer(
-        tp.status === 'not_seen' ? 'seen' : tp.status,
-        tp.sm2, 4, 'flashcard', false
-      );
-      tp.status = result.newStatus;
-      tp.sm2 = result.sm2;
-
-      await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2);
-
-      if (result.requeue) {
-        setQueue(prev => requeueTerm(prev, queueIndex, currentTerm.term_id));
-      }
-
-      setProgressMap(prev => {
-        const next = new Map(prev);
-        next.set(currentTerm.term_id, { ...tp });
-        return next;
-      });
-    }
-
-    // Track new flashcards for question triggering
-    if (isNew) {
       setNewFlashcardCount(prev => prev + 1);
+    } else {
+      // Already-seen term — score as flashcard review (q=4)
+      const tp = progressMap.get(currentTerm.term_id);
+      if (tp) {
+        const result = processAnswer(tp.status, tp.sm2, 4, 'flashcard', false);
+        tp.status = result.newStatus;
+        tp.sm2 = result.sm2;
+
+        await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2);
+
+        if (result.requeue) {
+          setQueue(prev => requeueTerm(prev, queueIndex, currentTerm.term_id));
+        }
+
+        setProgressMap(prev => {
+          const next = new Map(prev);
+          next.set(currentTerm.term_id, { ...tp });
+          return next;
+        });
+      }
     }
 
     advanceQueue();
