@@ -53,11 +53,14 @@ function speakSpanish(text: string, slow: boolean) {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
-  utterance.rate = slow ? 0.5 : 0.9;
-  utterance.pitch = 1;
+  utterance.rate = slow ? 0.5 : 0.92;
+  utterance.pitch = 1.05;
   const voices = window.speechSynthesis.getVoices();
-  const esVoice = voices.find(v => v.lang.startsWith('es'));
-  if (esVoice) utterance.voice = esVoice;
+  const preferred = ['Google español', 'Paulina', 'Monica', 'Jorge', 'Lucia', 'Microsoft Helena', 'Microsoft Sabina'];
+  let best = voices.find(v => preferred.some(p => v.name.includes(p)) && v.lang.startsWith('es'));
+  if (!best) best = voices.find(v => v.lang === 'es-ES');
+  if (!best) best = voices.find(v => v.lang.startsWith('es'));
+  if (best) utterance.voice = best;
   window.speechSynthesis.speak(utterance);
 }
 

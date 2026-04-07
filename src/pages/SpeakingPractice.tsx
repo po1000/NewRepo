@@ -25,11 +25,25 @@ function speakSpanish(text: string) {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
-  utterance.rate = 0.9;
-  utterance.pitch = 1;
+  utterance.rate = 0.92;
+  utterance.pitch = 1.05;
+  // Pick best available Spanish voice — prefer high-quality / natural sounding
   const voices = window.speechSynthesis.getVoices();
-  const esVoice = voices.find(v => v.lang.startsWith('es'));
-  if (esVoice) utterance.voice = esVoice;
+  const preferred = [
+    'Google español',
+    'Paulina',     // macOS
+    'Monica',      // macOS
+    'Jorge',       // macOS
+    'Lucia',       // Windows
+    'Microsoft Helena',
+    'Microsoft Sabina',
+  ];
+  let best = voices.find(v =>
+    preferred.some(p => v.name.includes(p)) && v.lang.startsWith('es')
+  );
+  if (!best) best = voices.find(v => v.lang === 'es-ES');
+  if (!best) best = voices.find(v => v.lang.startsWith('es'));
+  if (best) utterance.voice = best;
   window.speechSynthesis.speak(utterance);
 }
 
@@ -73,7 +87,8 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
   const scenario = scenarios.find(s => s.id === scenarioSlug) || scenarios[0];
   const storageKey = `chat_${user?.id}_${scenario.id}`;
   const characterAvatar = CHARACTER_AVATARS[scenario.id] || CHARACTER_AVATARS['ordering-cafe'];
-  const userAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  const storedAvatar = user?.id ? localStorage.getItem(`avatar_url_${user.id}`) : null;
+  const userAvatar = storedAvatar || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
 
   // Load saved messages from localStorage
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -223,15 +238,10 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
           {scenario.title}
         </h1>
         <button
-          onClick={() => setShowTranslations(!showTranslations)}
-          title={showTranslations ? 'Hide translations' : 'Show translations'}
           className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          title="Report issue"
         >
-          {showTranslations ? (
-            <EyeOff className="w-5 h-5 text-[#FFFDE6]" />
-          ) : (
-            <Eye className="w-5 h-5 text-[#FFFDE6]" />
-          )}
+          <Flag className="w-5 h-5 text-[#FFFDE6]" />
         </button>
       </div>
 
@@ -356,6 +366,20 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
 
       {/* Input Area */}
       <div className="shrink-0 px-4 pb-4">
+        <div className="max-w-[600px] mx-auto flex items-center gap-2 mb-2">
+          <button
+            onClick={() => setShowTranslations(!showTranslations)}
+            title={showTranslations ? 'Hide English translations' : 'Show English translations'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${
+              showTranslations
+                ? 'bg-[#FFFDE6] text-[#FF4D01]'
+                : 'bg-white/20 text-[#FFFDE6] hover:bg-white/30'
+            }`}
+          >
+            {showTranslations ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            {showTranslations ? 'Hide English' : 'Show English'}
+          </button>
+        </div>
         <div className="max-w-[600px] mx-auto flex gap-2">
           {/* Mode toggle */}
           <div className="relative w-20 h-11 bg-[#F3F4F6] rounded-lg flex items-center p-1 shrink-0">

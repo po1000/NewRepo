@@ -2,16 +2,21 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
+import { GrammarBreadcrumb } from '../components/GrammarBreadcrumb';
 
 export function Grammar() {
   const navigate = useNavigate();
 
+  const crumbs = [{ label: 'Grammar' }];
+
   return (
-    <PageLayout backgroundColor="#FF4D01">
+    <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-[#FFFDE6] [&_button]:text-[#FFFDE6] [&_svg]:text-[#FFFDE6]">
       {/* Diagonal Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#FF7032] origin-top-left -skew-y-3 pointer-events-none" />
 
       <div className="max-w-[620px] mx-auto px-4 sm:px-6 pt-8 pb-20 relative z-10">
+        <GrammarBreadcrumb crumbs={crumbs} />
+
         {/* Header & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h1 className="font-inter font-bold text-[25.5px] leading-[36px] text-white">
@@ -34,7 +39,9 @@ export function Grammar() {
               Conjugations
             </h2>
             <div className="flex flex-col gap-2">
-              <button className="w-full h-[48px] bg-[#A9DEFF] rounded-lg flex items-center px-4 hover:brightness-95 transition-all">
+              <button
+                onClick={() => navigate('/grammar/ar-verbs')}
+                className="w-full h-[48px] bg-[#A9DEFF] rounded-lg flex items-center px-4 hover:brightness-95 transition-all">
                 <span className="font-inter font-semibold text-[13.6px] leading-[24px] text-[#372213]">
                   -ar Verbs
                 </span>
@@ -46,7 +53,9 @@ export function Grammar() {
                   -er Verbs
                 </span>
               </button>
-              <button className="w-full h-[48px] bg-[#FFB1B1] rounded-lg flex items-center px-4 hover:brightness-95 transition-all">
+              <button
+                onClick={() => navigate('/grammar/ir-verbs')}
+                className="w-full h-[48px] bg-[#FFB1B1] rounded-lg flex items-center px-4 hover:brightness-95 transition-all">
                 <span className="font-inter font-semibold text-[13.6px] leading-[24px] text-[#372213]">
                   -ir Verbs
                 </span>
@@ -60,7 +69,9 @@ export function Grammar() {
               Topics
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button className="h-[58px] bg-white rounded-lg border border-[#E5E7EB] flex items-center px-4 hover:bg-gray-50 transition-colors text-left">
+              <button
+                onClick={() => navigate('/grammar/pronouns')}
+                className="h-[58px] bg-white rounded-lg border border-[#E5E7EB] flex items-center px-4 hover:bg-gray-50 transition-colors text-left">
                 <span className="font-inter font-medium text-[13.6px] leading-[24px] text-[#372213]">
                   Pronouns
                 </span>
@@ -71,7 +82,7 @@ export function Grammar() {
                 </span>
               </button>
               <button
-                onClick={() => navigate('/grammar/er-verbs/ser-conjugation')}
+                onClick={() => navigate('/grammar/er-verbs/ser')}
                 className="h-[82px] bg-white rounded-lg border border-[#E5E7EB] flex items-center px-4 hover:bg-gray-50 transition-colors text-left">
                 <span className="font-inter font-medium text-[13.6px] leading-[24px] text-[#372213]">
                   Ser vs Estar

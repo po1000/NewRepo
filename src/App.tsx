@@ -15,7 +15,10 @@ import { SpeakingPractice } from './pages/SpeakingPractice';
 import { RoleplayComplete } from './pages/RoleplayComplete';
 import { Grammar } from './pages/Grammar';
 import { ERVerbs } from './pages/ERVerbs';
-import { SerConjugation } from './pages/SerConjugation';
+import { ARVerbs } from './pages/ARVerbs';
+import { IRVerbs } from './pages/IRVerbs';
+import { VerbConjugation } from './pages/VerbConjugation';
+import { Pronouns } from './pages/Pronouns';
 import { Culture } from './pages/Culture';
 import { MusicDance } from './pages/MusicDance';
 import { RegionsLandmarks } from './pages/RegionsLandmarks';
@@ -37,10 +40,6 @@ function AuthPages() {
       {currentPage === 'reset' && <ResetPasswordCard onNavigate={setCurrentPage} />}
     </main>
   );
-}
-
-function DashboardPage() {
-  return <Dashboard />;
 }
 
 function LessonPage() {
@@ -76,30 +75,6 @@ function RoleplayCompletePage() {
   return <RoleplayComplete onBack={() => navigate('/speak-and-write')} />;
 }
 
-function GrammarPage() {
-  return <Grammar />;
-}
-
-function ERVerbsPage() {
-  return <ERVerbs />;
-}
-
-function SerConjugationPage() {
-  return <SerConjugation />;
-}
-
-function CulturePage() {
-  return <Culture />;
-}
-
-function MusicDancePage() {
-  return <MusicDance />;
-}
-
-function RegionsLandmarksPage() {
-  return <RegionsLandmarks />;
-}
-
 function FoodDrinkPage() {
   const navigate = useNavigate();
   return (
@@ -107,14 +82,6 @@ function FoodDrinkPage() {
       onNavigateToRegion={(region) => navigate(`/culture/regions-landmarks?region=${region}`)}
     />
   );
-}
-
-function HistoryPage() {
-  return <History />;
-}
-
-function CommunityPage() {
-  return <Community />;
 }
 
 export function App() {
@@ -128,20 +95,30 @@ export function App() {
           <Route path="/set-new-password" element={<SetNewPasswordCard />} />
 
           {/* Protected routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/lesson" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
           <Route path="/speak-and-write" element={<ProtectedRoute><SpeakAndWritePage /></ProtectedRoute>} />
           <Route path="/speak-and-write/:scenarioSlug" element={<ProtectedRoute><SpeakingPracticePage /></ProtectedRoute>} />
           <Route path="/speak-and-write/:scenarioSlug/complete" element={<ProtectedRoute><RoleplayCompletePage /></ProtectedRoute>} />
-          <Route path="/grammar" element={<ProtectedRoute><GrammarPage /></ProtectedRoute>} />
-          <Route path="/grammar/er-verbs" element={<ProtectedRoute><ERVerbsPage /></ProtectedRoute>} />
-          <Route path="/grammar/er-verbs/ser-conjugation" element={<ProtectedRoute><SerConjugationPage /></ProtectedRoute>} />
-          <Route path="/culture" element={<ProtectedRoute><CulturePage /></ProtectedRoute>} />
-          <Route path="/culture/music-dance" element={<ProtectedRoute><MusicDancePage /></ProtectedRoute>} />
-          <Route path="/culture/regions-landmarks" element={<ProtectedRoute><RegionsLandmarksPage /></ProtectedRoute>} />
+
+          {/* Grammar routes */}
+          <Route path="/grammar" element={<ProtectedRoute><Grammar /></ProtectedRoute>} />
+          <Route path="/grammar/pronouns" element={<ProtectedRoute><Pronouns /></ProtectedRoute>} />
+          <Route path="/grammar/ar-verbs" element={<ProtectedRoute><ARVerbs /></ProtectedRoute>} />
+          <Route path="/grammar/er-verbs" element={<ProtectedRoute><ERVerbs /></ProtectedRoute>} />
+          <Route path="/grammar/ir-verbs" element={<ProtectedRoute><IRVerbs /></ProtectedRoute>} />
+          <Route path="/grammar/ar-verbs/:verb" element={<ProtectedRoute><VerbConjugation /></ProtectedRoute>} />
+          <Route path="/grammar/er-verbs/:verb" element={<ProtectedRoute><VerbConjugation /></ProtectedRoute>} />
+          <Route path="/grammar/ir-verbs/:verb" element={<ProtectedRoute><VerbConjugation /></ProtectedRoute>} />
+
+          {/* Culture routes */}
+          <Route path="/culture" element={<ProtectedRoute><Culture /></ProtectedRoute>} />
+          <Route path="/culture/music-dance" element={<ProtectedRoute><MusicDance /></ProtectedRoute>} />
+          <Route path="/culture/regions-landmarks" element={<ProtectedRoute><RegionsLandmarks /></ProtectedRoute>} />
           <Route path="/culture/food-drink" element={<ProtectedRoute><FoodDrinkPage /></ProtectedRoute>} />
-          <Route path="/culture/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-          <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+          <Route path="/culture/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+
+          <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
           <Route path="/badges" element={<ProtectedRoute><Badges /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>

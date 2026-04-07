@@ -17,12 +17,14 @@ export function PageLayout({ children, stats, backgroundColor = '#FFEF74', navOv
   const navigate = useNavigate();
 
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
-  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  // Priority: localStorage cache > Supabase user_metadata > Google picture
+  const storedAvatar = user?.id ? localStorage.getItem(`avatar_url_${user.id}`) : null;
+  const avatarUrl = storedAvatar || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
 
   return (
     <div className="min-h-screen font-inter" style={{ backgroundColor }}>
       {/* Top Bar */}
-      <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between max-w-[900px] mx-auto">
+      <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between max-w-[900px] mx-auto relative z-50">
         <UserProfile
           username={username}
           avatarUrl={avatarUrl}

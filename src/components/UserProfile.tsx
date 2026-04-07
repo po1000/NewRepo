@@ -62,6 +62,11 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
       data: { avatar_url: urlWithCacheBust },
     });
 
+    // Persist to localStorage so it survives refresh/logout cycles
+    if (userId) {
+      localStorage.setItem(`avatar_url_${userId}`, urlWithCacheBust);
+    }
+
     // Swap from blob preview to real URL
     URL.revokeObjectURL(previewUrl);
     setLocalAvatarUrl(urlWithCacheBust);
