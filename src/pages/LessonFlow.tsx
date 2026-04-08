@@ -9,6 +9,9 @@ import {
   ThumbsUp,
   Check,
   XCircle,
+  Zap,
+  Trophy,
+  Flame,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -64,6 +67,10 @@ function speakSpanish(text: string, slow: boolean) {
   window.speechSynthesis.speak(utterance);
 }
 
+// XP constants
+const XP_CORRECT_ANSWER = 10;
+const XP_FLASHCARD_SEEN = 2;
+
 // Shuffle array helper
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -113,7 +120,17 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const [mcAnswered, setMcAnswered] = useState(false);
   const [mcDirection, setMcDirection] = useState<'es_to_en' | 'en_to_es'>('es_to_en');
 
+  // XP & lesson completion state
+  const [sessionXp, setSessionXp] = useState(0);
+  const [xpPopup, setXpPopup] = useState<{ amount: number; key: number } | null>(null);
+  const [lessonComplete, setLessonComplete] = useState(false);
+  const [termsSeenThisSession, setTermsSeenThisSession] = useState(0);
+  const [correctAnswersThisSession, setCorrectAnswersThisSession] = useState(0);
+  const [streakUpdated, setStreakUpdated] = useState(false);
+  const [newStreak, setNewStreak] = useState(0);
+
   const hasInitialized = useRef(false);
+  const lessonCompletionHandled = useRef(false);
 
   // Load terms + progress, build queue (resume if possible)
   useEffect(() => {
@@ -298,34 +315,38 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
   const advanceQueue = useCallback(() => {
     if (queueIndex + 1 >= queue.length) {
-      // Clear saved session on completion
+      // Lesson is done — show end screen instead of closing immediately
       if (state.subunitId && user) {
         localStorage.removeItem(sessionKey(state.subunitId, user.id));
       }
-      onClose();
-    } else {
-      const nextIndex = queueIndex + 1;
-      setQueueIndex(nextIndex);
-      setHintsExpanded(false);
-      setShowReport(false);
-      setReportText('');
-      setReportSent(false);
+      setLessonComplete(true);
+      return;
+    }
 
-      // Decide if next card should be a question
-      const nextTermId = queue[nextIndex];
-      const nextTp = progressMap.get(nextTermId);
-      const nextIsUnseen = !nextTp || nextTp.status === 'not_seen';
+    const nextIndex = queueIndex + 1;
+    setQueueIndex(nextIndex);
+    setHintsExpanded(false);
+    setShowReport(false);
+    setReportText('');
+    setReportSent(false);
 
-      if (!nextIsUnseen && newFlashcardCount >= 2 && seenTermIds.length >= 2) {
-        // Time for a question! Pick a previously seen term to quiz on
-        // Use the current term from queue (which is already seen)
-        setupMultiChoice(nextTermId);
+    // After every 2 new flashcards seen, trigger a quiz on a random SEEN term
+    if (newFlashcardCount >= 2 && seenTermIds.length >= 2) {
+      // Pick a random seen term to quiz (not necessarily the next in queue)
+      const quizCandidates = seenTermIds.filter(id => {
+        const tp = progressMap.get(id);
+        return tp && tp.status !== 'not_seen';
+      });
+      if (quizCandidates.length > 0) {
+        const randomId = quizCandidates[Math.floor(Math.random() * quizCandidates.length)];
+        setupMultiChoice(randomId);
         setNewFlashcardCount(0);
-      } else {
-        setMode('flashcard');
+        return;
       }
     }
-  }, [queueIndex, queue, onClose, state.subunitId, user, progressMap, newFlashcardCount, seenTermIds, setupMultiChoice]);
+
+    setMode('flashcard');
+  }, [queueIndex, queue, state.subunitId, user, progressMap, newFlashcardCount, seenTermIds, setupMultiChoice]);
 
   // "Got it!" / "Next" — flashcard handler
   // First encounter: only mark as seen (no processAnswer — don't advance status yet)
@@ -360,6 +381,10 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
         return next;
       });
       setNewFlashcardCount(prev => prev + 1);
+      setTermsSeenThisSession(prev => prev + 1);
+      // Small XP for seeing a new term
+      setSessionXp(prev => prev + XP_FLASHCARD_SEEN);
+      setXpPopup({ amount: XP_FLASHCARD_SEEN, key: Date.now() });
     } else {
       // Already-seen term — score as flashcard review (q=4)
       const tp = progressMap.get(currentTerm.term_id);
@@ -409,12 +434,16 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     });
 
     setCompletedCount(prev => prev + 1);
+    // Award XP for marking as known
+    setSessionXp(prev => prev + XP_CORRECT_ANSWER);
+    setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
+    setCorrectAnswersThisSession(prev => prev + 1);
     advanceQueue();
   }, [currentTerm, user, progressMap, advanceQueue]);
 
-  // Multiple choice answer
+  // Multiple choice answer — quiz the term that mcCorrectId points to
   const handleMcSelect = useCallback(async (selectedTermId: number) => {
-    if (mcAnswered || !currentTerm || !user) return;
+    if (mcAnswered || !mcCorrectId || !user) return;
 
     setMcSelectedId(selectedTermId);
     setMcAnswered(true);
@@ -422,25 +451,34 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     const correct = selectedTermId === mcCorrectId;
     const q = multiChoiceQuality(correct, false);
 
-    const tp = progressMap.get(currentTerm.term_id);
+    // Process answer for the QUIZZED term (mcCorrectId), not necessarily currentTerm
+    const quizzedTermId = mcCorrectId;
+    const tp = progressMap.get(quizzedTermId);
     if (tp) {
       const result = processAnswer(tp.status, tp.sm2, q, 'multi_choice', false);
       tp.status = result.newStatus;
       tp.sm2 = result.sm2;
 
-      await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2);
+      await saveTermProgress(user.id, quizzedTermId, result.newStatus, result.sm2);
 
       if (result.requeue) {
-        setQueue(prev => requeueTerm(prev, queueIndex, currentTerm.term_id));
+        setQueue(prev => requeueTerm(prev, queueIndex, quizzedTermId));
       }
 
       setProgressMap(prev => {
         const next = new Map(prev);
-        next.set(currentTerm.term_id, { ...tp });
+        next.set(quizzedTermId, { ...tp });
         return next;
       });
     }
-  }, [mcAnswered, currentTerm, user, mcCorrectId, progressMap, queueIndex]);
+
+    // Award XP on correct answer
+    if (correct) {
+      setSessionXp(prev => prev + XP_CORRECT_ANSWER);
+      setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
+      setCorrectAnswersThisSession(prev => prev + 1);
+    }
+  }, [mcAnswered, mcCorrectId, user, progressMap, queueIndex]);
 
   const handleMcContinue = useCallback(() => {
     advanceQueue();
@@ -477,20 +515,123 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     );
   }
 
-  if (!currentTerm) {
+  // Handle lesson completion: update XP, streak, lessons_completed in DB
+  useEffect(() => {
+    if (!lessonComplete || lessonCompletionHandled.current || !user) return;
+    lessonCompletionHandled.current = true;
+
+    async function completeLesson() {
+      // 1. Update total_xp and lessons_completed
+      const { data: stats } = await supabase
+        .from('user_stats')
+        .select('total_xp, lessons_completed, current_streak, longest_streak, updated_at')
+        .eq('user_id', user!.id)
+        .single();
+
+      const currentXp = stats?.total_xp || 0;
+      const currentLessons = stats?.lessons_completed || 0;
+      const currentStreak = stats?.current_streak || 0;
+      const longestStreak = stats?.longest_streak || 0;
+
+      // 2. Check if streak should increment (new day since last update)
+      const lastUpdate = stats?.updated_at ? new Date(stats.updated_at) : null;
+      const today = new Date();
+      const isNewDay = !lastUpdate ||
+        lastUpdate.toDateString() !== today.toDateString();
+
+      let updatedStreak = currentStreak;
+      if (isNewDay) {
+        // Check if it's consecutive (yesterday or first time)
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const isConsecutive = lastUpdate &&
+          lastUpdate.toDateString() === yesterday.toDateString();
+
+        updatedStreak = isConsecutive ? currentStreak + 1 : 1;
+        setStreakUpdated(true);
+      }
+      setNewStreak(updatedStreak);
+
+      const newLongest = Math.max(longestStreak, updatedStreak);
+
+      await supabase
+        .from('user_stats')
+        .upsert({
+          user_id: user!.id,
+          total_xp: currentXp + sessionXp,
+          lessons_completed: currentLessons + 1,
+          current_streak: updatedStreak,
+          longest_streak: newLongest,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+
+      // 3. Log XP event
+      if (sessionXp > 0) {
+        await supabase.from('xp_events').insert({
+          user_id: user!.id,
+          xp_amount: sessionXp,
+          source_type: 'lesson',
+          source_id: state.subunitId || null,
+        });
+      }
+    }
+
+    completeLesson();
+  }, [lessonComplete, user, sessionXp, state.subunitId]);
+
+  // End of lesson screen
+  if (lessonComplete || !currentTerm) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center font-inter"
         style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
-        <div className="text-center">
-          <p className="text-[#FFFDE6] text-xl font-bold mb-4">Lesson Complete!</p>
-          <button onClick={() => {
-            if (state.subunitId && user) {
-              localStorage.removeItem(sessionKey(state.subunitId, user.id));
-            }
-            onClose();
-          }}
-            className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[15px]">
-            Back to Dashboard
+        <div className="w-full max-w-[420px] mx-4">
+          {/* Trophy */}
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 bg-[#FFFDE6] rounded-full flex items-center justify-center shadow-lg">
+              <Trophy className="w-12 h-12 text-[#FF4D01]" />
+            </div>
+          </div>
+
+          <h1 className="text-[#FFFDE6] text-[28px] font-bold text-center mb-2">
+            Lesson Complete!
+          </h1>
+          <p className="text-[#FFFDE6]/80 text-[15px] text-center mb-8">
+            {state.title || 'Great work!'}
+          </p>
+
+          {/* Stats cards */}
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            {/* XP Earned */}
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
+              <Zap className="w-7 h-7 text-[#FFE101] mb-1" />
+              <span className="text-[#FFFDE6] text-[24px] font-bold">{sessionXp}</span>
+              <span className="text-[#FFFDE6]/70 text-[12px]">XP Earned</span>
+            </div>
+            {/* Terms Seen */}
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
+              <Star className="w-7 h-7 text-[#FFE101] mb-1" />
+              <span className="text-[#FFFDE6] text-[24px] font-bold">{termsSeenThisSession}</span>
+              <span className="text-[#FFFDE6]/70 text-[12px]">New Terms</span>
+            </div>
+            {/* Correct Answers */}
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
+              <Check className="w-7 h-7 text-[#22C55E] mb-1" />
+              <span className="text-[#FFFDE6] text-[24px] font-bold">{correctAnswersThisSession}</span>
+              <span className="text-[#FFFDE6]/70 text-[12px]">Correct Answers</span>
+            </div>
+            {/* Streak */}
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
+              <Flame className="w-7 h-7 text-[#FF4D01] mb-1" />
+              <span className="text-[#FFFDE6] text-[24px] font-bold">{newStreak}</span>
+              <span className="text-[#FFFDE6]/70 text-[12px]">
+                {streakUpdated ? 'Day Streak!' : 'Day Streak'}
+              </span>
+            </div>
+          </div>
+
+          <button onClick={onClose}
+            className="w-full py-4 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[16px] hover:bg-white transition-colors shadow-lg">
+            Continue
           </button>
         </div>
       </div>
@@ -519,6 +660,29 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             <Flag className="w-6 h-6 text-[#FFFDE6]" />
           </button>
         </div>
+
+        {/* XP Popup Animation */}
+        {xpPopup && (
+          <div
+            key={xpPopup.key}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce"
+            onAnimationEnd={() => setTimeout(() => setXpPopup(null), 800)}
+          >
+            <div className="flex items-center gap-1 bg-[#FFFDE6] rounded-full px-4 py-2 shadow-lg"
+              style={{ animation: 'xpFadeUp 1.2s ease-out forwards' }}>
+              <Zap className="w-5 h-5 text-[#FF4D01]" />
+              <span className="font-bold text-[16px] text-[#FF4D01]">+{xpPopup.amount} XP</span>
+            </div>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes xpFadeUp {
+            0% { opacity: 1; transform: translateY(0); }
+            70% { opacity: 1; transform: translateY(-30px); }
+            100% { opacity: 0; transform: translateY(-50px); }
+          }
+        `}</style>
 
         {/* Report Popup */}
         {showReport && (
@@ -643,7 +807,10 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
         )}
 
         {/* ─── MULTIPLE CHOICE MODE ─── */}
-        {mode === 'multi_choice' && (
+        {mode === 'multi_choice' && mcCorrectId && (() => {
+          const quizzedTerm = termsMap.get(mcCorrectId);
+          if (!quizzedTerm) return null;
+          return (
           <div className="flex-1 flex flex-col items-center">
             <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
               <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
@@ -657,10 +824,11 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
                 {mcDirection === 'es_to_en' ? 'What does this mean?' : 'How do you say this in Spanish?'}
               </p>
               <h2 className="font-bold text-[24px] leading-[36px] text-[#372213] text-center">
-                {mcDirection === 'es_to_en' ? currentTerm.spanish_text : currentTerm.english_text}
+                {mcDirection === 'es_to_en' ? quizzedTerm.spanish_text : quizzedTerm.english_text}
               </h2>
               {mcDirection === 'es_to_en' && (
-                <button onClick={handlePlayAudio} className="mt-3 p-2 hover:bg-black/5 rounded-full transition-colors">
+                <button onClick={() => speakSpanish(quizzedTerm.spanish_text, slowAudio)}
+                  className="mt-3 p-2 hover:bg-black/5 rounded-full transition-colors">
                   <Volume2 className="w-6 h-6 text-[#FF4D01]" />
                 </button>
               )}
@@ -714,7 +882,8 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

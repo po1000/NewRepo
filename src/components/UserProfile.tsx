@@ -18,9 +18,10 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(() => {
-    // Initialize from localStorage first so we never flash the default avatar
-    if (userId) {
-      const stored = localStorage.getItem(`avatar_url_${userId}`);
+    // Try provided userId first, then fall back to cached userId
+    const id = userId || localStorage.getItem('last_user_id');
+    if (id) {
+      const stored = localStorage.getItem(`avatar_url_${id}`);
       if (stored) return stored;
     }
     return avatarUrl;
@@ -28,13 +29,28 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
   const [imgKey, setImgKey] = useState(0); // force re-render of <img>
   const [imgError, setImgError] = useState(false);
 
-  // Only sync from parent prop when it becomes non-null (auth has loaded)
+  // When userId becomes available (auth loaded), cache it and read stored avatar
   useEffect(() => {
-    if (avatarUrl) {
-      setLocalAvatarUrl(avatarUrl);
+    if (!userId) return;
+    localStorage.setItem('last_user_id', userId);
+    const stored = localStorage.getItem(`avatar_url_${userId}`);
+    if (stored) {
+      setLocalAvatarUrl(stored);
       setImgError(false);
     }
-  }, [avatarUrl]);
+  }, [userId]);
+
+  // Sync from parent prop when it becomes non-null (auth loaded with metadata URL)
+  useEffect(() => {
+    if (avatarUrl) {
+      // Only override if we don't already have a localStorage value
+      const stored = userId ? localStorage.getItem(`avatar_url_${userId}`) : null;
+      if (!stored) {
+        setLocalAvatarUrl(avatarUrl);
+        setImgError(false);
+      }
+    }
+  }, [avatarUrl, userId]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
