@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Flag, Star, Mic, Volume2, Check, Send, Square, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Flag, Star, Mic, Volume2, Check, Send, Square, Eye, EyeOff, Trash2, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { scenarios, PracticeScenario } from './SpeakAndWrite';
 
@@ -12,32 +12,44 @@ interface ChatMessage {
   inputMode: 'text' | 'voice';
 }
 
-// Character avatar mapping per scenario
-const CHARACTER_AVATARS: Record<string, string> = {
-  'ordering-cafe': 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=80&h=80&fit=crop&crop=face',
-  'presentation-time': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face',
-  'asking-directions': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face',
-  'shopping-market': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face',
+// Character info: avatar (human face) + gender for voice matching
+const CHARACTER_INFO: Record<string, { avatar: string; gender: 'male' | 'female'; name: string }> = {
+  'ordering-cafe': {
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face',
+    gender: 'male',
+    name: 'Carlos',
+  },
+  'presentation-time': {
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face',
+    gender: 'female',
+    name: 'Maria',
+  },
+  'asking-directions': {
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face',
+    gender: 'male',
+    name: 'Pedro',
+  },
+  'shopping-market': {
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face',
+    gender: 'female',
+    name: 'Elena',
+  },
 };
 
-function speakSpanish(text: string) {
+function speakSpanish(text: string, gender: 'male' | 'female' = 'female') {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
   utterance.rate = 0.92;
-  utterance.pitch = 1.05;
-  // Pick best available Spanish voice — prefer high-quality / natural sounding
+  utterance.pitch = gender === 'female' ? 1.1 : 0.95;
   const voices = window.speechSynthesis.getVoices();
-  const preferred = [
-    'Google español',
-    'Paulina',     // macOS
-    'Monica',      // macOS
-    'Jorge',       // macOS
-    'Lucia',       // Windows
-    'Microsoft Helena',
-    'Microsoft Sabina',
-  ];
+
+  // Gender-specific voice preference
+  const femalePreferred = ['Paulina', 'Monica', 'Lucia', 'Microsoft Helena', 'Microsoft Sabina', 'Google español'];
+  const malePreferred = ['Jorge', 'Diego', 'Juan', 'Microsoft Pablo', 'Google español'];
+  const preferred = gender === 'female' ? femalePreferred : malePreferred;
+
   let best = voices.find(v =>
     preferred.some(p => v.name.includes(p)) && v.lang.startsWith('es')
   );
@@ -47,30 +59,69 @@ function speakSpanish(text: string) {
   window.speechSynthesis.speak(utterance);
 }
 
-// Simple AI response generator
+// Contextual AI response generator — reacts to what the user actually said
 function generateAiResponse(scenario: PracticeScenario, userMessages: ChatMessage[]): { es: string; en: string } {
   const msgCount = userMessages.filter(m => m.role === 'user').length;
   const lastUserMsg = userMessages[userMessages.length - 1]?.text.toLowerCase() || '';
 
   if (scenario.id === 'ordering-cafe') {
+    // React to greetings
+    if (lastUserMsg.match(/hola|buenos|buenas/))
+      return { es: '¡Hola! Bienvenido a nuestro cafe. ¿Que le apetece hoy? Tenemos churros frescos, tostadas y zumo natural.', en: 'Hello! Welcome to our cafe. What would you like today? We have fresh churros, toast and fresh juice.' };
+    // React to ordering with "me pone"
+    if (lastUserMsg.includes('me pone'))
+      return { es: '¡Marchando! Excelente eleccion. ¿Quiere algo mas? Tenemos un cafe con leche muy rico.', en: 'Coming right up! Excellent choice. Would you like anything else? We have a very good cafe con leche.' };
+    // React to specific food/drink mentions
+    if (lastUserMsg.match(/cafe|café|churro|tostada|zumo|agua|leche|té|te /))
+      return { es: '¡Muy buena eleccion! ¿Algo mas que le pueda ofrecer?', en: 'Very good choice! Anything else I can offer you?' };
+    // React to thanks / ending
+    if (lastUserMsg.match(/gracias|nada mas|nada más|eso es todo/))
+      return { es: '¡Perfecto! Son cuatro euros cincuenta. ¡Que aproveche!', en: 'Perfect! That\'s four euros fifty. Enjoy your meal!' };
+    // React to price question
+    if (lastUserMsg.match(/cuanto|cuánto|cuesta|precio/))
+      return { es: 'El cafe con leche cuesta dos euros, los churros uno cincuenta y las tostadas uno setenta y cinco.', en: 'The cafe con leche costs two euros, churros one fifty and toast one seventy-five.' };
+    // Fallback by message count
     if (msgCount <= 1) return { es: '¡Muy bien! ¿Algo mas? Tenemos churros frescos y tostadas.', en: 'Very good! Anything else? We have fresh churros and toast.' };
     if (msgCount === 2) return { es: 'Perfecto. ¿Quiere algo de beber tambien?', en: 'Perfect. Would you like something to drink too?' };
-    if (lastUserMsg.includes('gracias') || lastUserMsg.includes('nada mas')) return { es: '¡Marchando! Gracias a usted. ¡Que aproveche!', en: 'Coming right up! Thank you. Enjoy your meal!' };
     return { es: '¿Algo mas que le pueda servir?', en: 'Anything else I can get you?' };
   }
+
   if (scenario.id === 'presentation-time') {
-    if (msgCount <= 1) return { es: '¡Encantada! ¿De donde eres?', en: 'Nice to meet you! Where are you from?' };
-    if (msgCount === 2) return { es: '¡Que interesante! ¿Y que te gusta hacer en tu tiempo libre?', en: 'How interesting! And what do you like to do in your free time?' };
-    return { es: '¡Genial! A mi tambien me gusta mucho. ¡Ha sido un placer conocerte!', en: 'Great! I really like that too. It\'s been a pleasure meeting you!' };
+    if (lastUserMsg.match(/me llamo|soy |mi nombre/))
+      return { es: '¡Encantada de conocerte! ¿De donde eres? Yo soy de Sevilla.', en: 'Nice to meet you! Where are you from? I\'m from Seville.' };
+    if (lastUserMsg.match(/soy de|vengo de/))
+      return { es: '¡Que interesante! Me encantaria visitar. ¿Y que te gusta hacer en tu tiempo libre?', en: 'How interesting! I\'d love to visit. And what do you like to do in your free time?' };
+    if (lastUserMsg.match(/me gusta|me encanta|me interesa/))
+      return { es: '¡A mi tambien me gusta mucho eso! Es un placer hablar contigo. ¿Vienes mucho a estos eventos?', en: 'I really like that too! It\'s a pleasure talking to you. Do you come to these events often?' };
+    if (msgCount <= 1) return { es: '¡Encantada! Cuentame un poco sobre ti. ¿De donde eres?', en: 'Nice to meet you! Tell me a bit about yourself. Where are you from?' };
+    if (msgCount === 2) return { es: '¡Que bien! ¿Y que te gusta hacer?', en: 'How nice! And what do you like to do?' };
+    return { es: '¡Ha sido un placer conocerte! Espero verte de nuevo pronto.', en: 'It\'s been a pleasure meeting you! I hope to see you again soon.' };
   }
+
   if (scenario.id === 'asking-directions') {
-    if (msgCount <= 1) return { es: 'Claro, la estacion de metro esta cerca. Siga recto por esta calle y luego gire a la derecha.', en: 'Of course, the metro station is nearby. Go straight down this street then turn right.' };
-    if (msgCount === 2) return { es: 'Si, esta a unos cinco minutos caminando. Vera la señal azul del metro.', en: 'Yes, it\'s about five minutes walking. You\'ll see the blue metro sign.' };
-    return { es: '¡De nada! ¡Buen viaje!', en: 'You\'re welcome! Have a good trip!' };
+    if (lastUserMsg.match(/donde|dónde/))
+      return { es: 'Claro, la estacion de metro esta muy cerca. Siga recto por esta calle unos doscientos metros y luego gire a la derecha. La vera enseguida.', en: 'Of course, the metro station is very close. Go straight down this street about two hundred meters then turn right. You\'ll see it right away.' };
+    if (lastUserMsg.match(/gracias|muchas gracias/))
+      return { es: '¡De nada! Si se pierde, pregunte a cualquiera. La gente aqui es muy amable. ¡Buen viaje!', en: 'You\'re welcome! If you get lost, ask anyone. People here are very friendly. Have a good trip!' };
+    if (lastUserMsg.match(/entiendo|comprendo|vale|de acuerdo/))
+      return { es: '¡Perfecto! Esta a unos cinco minutos caminando. Vera la señal azul del metro. ¡Suerte!', en: 'Perfect! It\'s about five minutes walking. You\'ll see the blue metro sign. Good luck!' };
+    if (lastUserMsg.match(/lejos|cerca|minuto|tiempo/))
+      return { es: 'No esta lejos, solo cinco minutos a pie. El camino es muy facil.', en: 'It\'s not far, only five minutes on foot. The way is very easy.' };
+    if (msgCount <= 1) return { es: 'Claro, ¿a donde quiere ir? ¿Al metro, al centro, o a otro lugar?', en: 'Of course, where do you want to go? To the metro, the center, or somewhere else?' };
+    return { es: '¡Espero que encuentre su camino! ¡Hasta luego!', en: 'I hope you find your way! See you later!' };
   }
+
+  // shopping-market
+  if (lastUserMsg.match(/cuanto|cuánto|cuesta|vale|precio/))
+    return { es: 'Las naranjas estan a dos euros el kilo. Las manzanas a uno cincuenta. Y los platanos a uno ochenta. ¿Que le pongo?', en: 'Oranges are two euros per kilo. Apples are one fifty. And bananas are one eighty. What shall I get you?' };
+  if (lastUserMsg.match(/quiero|me da|pongo|llevo|kilo/))
+    return { es: '¡Aqui tiene! Son unas naranjas muy dulces, las mejores de Valencia. ¿Necesita algo mas?', en: 'Here you go! These are very sweet oranges, the best from Valencia. Do you need anything else?' };
+  if (lastUserMsg.match(/pagar|tarjeta|efectivo|cambio/))
+    return { es: 'Si, aceptamos tarjeta y efectivo. Son tres euros cincuenta en total. ¿Le doy una bolsa?', en: 'Yes, we accept card and cash. It\'s three euros fifty in total. Shall I give you a bag?' };
+  if (lastUserMsg.match(/gracias|nada|eso es todo/))
+    return { es: '¡Gracias por su compra! Vuelva cuando quiera. ¡Hasta luego!', en: 'Thanks for your purchase! Come back anytime. See you later!' };
   if (msgCount <= 1) return { es: 'Las naranjas estan a dos euros el kilo. Las manzanas a uno cincuenta. ¿Que le pongo?', en: 'Oranges are two euros per kilo. Apples are one fifty. What shall I get you?' };
   if (msgCount === 2) return { es: 'Aqui tiene. ¿Necesita algo mas?', en: 'Here you go. Do you need anything else?' };
-  if (lastUserMsg.includes('tarjeta') || lastUserMsg.includes('pagar')) return { es: 'Si, aceptamos tarjeta y efectivo. Son tres euros cincuenta en total.', en: 'Yes, we accept card and cash. It\'s three euros fifty in total.' };
   return { es: '¡Gracias por su compra! ¡Hasta luego!', en: 'Thanks for your purchase! See you later!' };
 }
 
@@ -86,7 +137,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
 
   const scenario = scenarios.find(s => s.id === scenarioSlug) || scenarios[0];
   const storageKey = `chat_${user?.id}_${scenario.id}`;
-  const characterAvatar = CHARACTER_AVATARS[scenario.id] || CHARACTER_AVATARS['ordering-cafe'];
+  const charInfo = CHARACTER_INFO[scenario.id] || CHARACTER_INFO['ordering-cafe'];
   const storedAvatar = user?.id ? localStorage.getItem(`avatar_url_${user.id}`) : null;
   const userAvatar = storedAvatar || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
 
@@ -108,6 +159,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
   const [textInput, setTextInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null); // transcript preview
   const [criteriaComplete, setCriteriaComplete] = useState<Set<string>>(new Set());
   const [startTime] = useState(Date.now());
   const [showHelp, setShowHelp] = useState(false);
@@ -127,15 +179,14 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // TTS: speak new AI messages when they first appear
+  // TTS: speak new AI messages when they first appear (gender-matched voice)
   useEffect(() => {
     const lastMsg = messages[messages.length - 1];
     if (lastMsg?.role === 'ai' && !spokenMsgIds.current.has(lastMsg.id)) {
       spokenMsgIds.current.add(lastMsg.id);
-      // Small delay so the message renders first
-      setTimeout(() => speakSpanish(lastMsg.text), 200);
+      setTimeout(() => speakSpanish(lastMsg.text, charInfo.gender), 200);
     }
-  }, [messages]);
+  }, [messages, charInfo.gender]);
 
   // Preload voices
   useEffect(() => {
@@ -206,13 +257,15 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
       alert('Speech recognition is not supported in this browser. Please use Chrome.');
       return;
     }
+    setVoiceTranscript(null);
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-ES';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      sendMessage(transcript, 'voice');
+      // Show transcript for review instead of sending immediately
+      setVoiceTranscript(transcript);
       setIsRecording(false);
     };
     recognition.onerror = () => setIsRecording(false);
@@ -225,6 +278,24 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
   function stopRecording() {
     recognitionRef.current?.stop();
     setIsRecording(false);
+  }
+
+  function discardRecording() {
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+    setVoiceTranscript(null);
+  }
+
+  function sendVoiceTranscript() {
+    if (voiceTranscript) {
+      sendMessage(voiceTranscript, 'voice');
+      setVoiceTranscript(null);
+    }
+  }
+
+  function reRecord() {
+    setVoiceTranscript(null);
+    startRecording();
   }
 
   return (
@@ -304,7 +375,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
                     </div>
                   )
                 ) : (
-                  <img src={characterAvatar} alt="Character" className="w-full h-full object-cover" />
+                  <img src={charInfo.avatar} alt={charInfo.name} className="w-full h-full object-cover" />
                 )}
               </div>
 
@@ -333,7 +404,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
                 {/* Replay audio button for AI messages */}
                 {msg.role === 'ai' && (
                   <button
-                    onClick={() => speakSpanish(msg.text)}
+                    onClick={() => speakSpanish(msg.text, charInfo.gender)}
                     className="flex items-center gap-1 text-[10px] text-white/70 hover:text-white transition-colors mt-0.5"
                   >
                     <Volume2 className="w-3 h-3" />
@@ -348,7 +419,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
           {isTyping && (
             <div className="flex flex-row-reverse items-end gap-2">
               <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
-                <img src={characterAvatar} alt="Character" className="w-full h-full object-cover" />
+                <img src={charInfo.avatar} alt={charInfo.name} className="w-full h-full object-cover" />
               </div>
               <div className="bg-[#FFDD57] rounded-t-2xl rounded-bl-2xl rounded-br-none px-4 py-3">
                 <div className="flex gap-1.5 items-center h-[22px]">
@@ -395,40 +466,74 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
             </button>
           </div>
 
-          <div className="flex-1 flex gap-2">
+          <div className="flex-1 flex flex-col gap-2">
             {inputMode === 'text' ? (
-              <input type="text" value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage(textInput, 'text')}
-                placeholder="Escribe en espanol..."
-                className="flex-1 px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-[14px] text-[#372213] focus:outline-none focus:border-[#FF6200]"
-              />
+              <div className="flex gap-2">
+                <input type="text" value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && sendMessage(textInput, 'text')}
+                  placeholder="Escribe en espanol..."
+                  className="flex-1 px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-[14px] text-[#372213] focus:outline-none focus:border-[#FF6200]"
+                />
+                <button onClick={() => sendMessage(textInput, 'text')}
+                  disabled={!textInput.trim()}
+                  className="w-11 h-11 bg-[#372213] rounded-xl flex items-center justify-center hover:bg-[#2a1a0f] transition-colors shrink-0 disabled:opacity-40">
+                  <Send className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            ) : voiceTranscript ? (
+              /* Transcript preview — user can send, discard, or re-record */
+              <div className="flex flex-col gap-2">
+                <div className="bg-[#FFFDE6] rounded-xl px-4 py-3 border-2 border-[#FF6200]">
+                  <p className="text-[11px] font-semibold text-[#6B7280] mb-1">Your transcript:</p>
+                  <p className="text-[14px] text-[#372213] leading-[22px]">{voiceTranscript}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={discardRecording}
+                    className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 bg-white/80 text-[#EF4444] border border-[#FCA5A5] hover:bg-[#FEE2E2] transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                    <span className="font-medium text-[13px]">Discard</span>
+                  </button>
+                  <button onClick={reRecord}
+                    className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 bg-white/80 text-[#6B7280] border border-[#D1D5DB] hover:bg-gray-100 transition-colors">
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="font-medium text-[13px]">Re-record</span>
+                  </button>
+                  <button onClick={sendVoiceTranscript}
+                    className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 bg-[#372213] text-white hover:bg-[#2a1a0f] transition-colors">
+                    <Send className="w-4 h-4" />
+                    <span className="font-medium text-[13px]">Send</span>
+                  </button>
+                </div>
+              </div>
             ) : (
-              <button
-                onClick={isRecording ? stopRecording : startRecording}
-                className={`flex-1 px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors ${
-                  isRecording ? 'bg-[#FF4D01] text-white' : 'bg-[#FFFDE6] text-[#372213]'
-                }`}>
+              /* Recording / tap to speak */
+              <div className="flex gap-2">
                 {isRecording ? (
                   <>
-                    <Square className="w-4 h-4 fill-current" />
-                    <span className="font-medium text-[14px]">Listening... tap to stop</span>
+                    <button onClick={discardRecording}
+                      className="w-11 h-11 bg-white/80 rounded-xl flex items-center justify-center hover:bg-white transition-colors shrink-0 border border-[#FCA5A5]">
+                      <Trash2 className="w-5 h-5 text-[#EF4444]" />
+                    </button>
+                    <div className="flex-1 px-4 py-3 rounded-xl flex items-center justify-center gap-2 bg-[#FF4D01] text-white">
+                      <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
+                      <span className="font-medium text-[14px]">Listening...</span>
+                    </div>
+                    <button onClick={stopRecording}
+                      className="px-5 py-3 bg-[#FFFDE6] rounded-xl flex items-center justify-center gap-2 hover:bg-white transition-colors shrink-0">
+                      <Check className="w-5 h-5 text-[#22C55E]" />
+                      <span className="font-bold text-[14px] text-[#22C55E]">Done</span>
+                    </button>
                   </>
                 ) : (
-                  <>
+                  <button
+                    onClick={startRecording}
+                    className="flex-1 px-4 py-3 rounded-xl flex items-center justify-center gap-2 bg-[#FFFDE6] text-[#372213] hover:bg-white transition-colors">
                     <Mic className="w-5 h-5 text-[#FF4D01]" />
                     <span className="font-medium text-[14px]">Tap to speak</span>
-                  </>
+                  </button>
                 )}
-              </button>
-            )}
-
-            {inputMode === 'text' && (
-              <button onClick={() => sendMessage(textInput, 'text')}
-                disabled={!textInput.trim()}
-                className="w-11 h-11 bg-[#372213] rounded-xl flex items-center justify-center hover:bg-[#2a1a0f] transition-colors shrink-0 disabled:opacity-40">
-                <Send className="w-5 h-5 text-white" />
-              </button>
+              </div>
             )}
           </div>
         </div>
