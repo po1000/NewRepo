@@ -18,22 +18,25 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(() => {
-    // Try provided userId first, then fall back to cached userId
     const id = userId || localStorage.getItem('last_user_id');
     if (id) {
+      // Try remote URL first, then base64 fallback
       const stored = localStorage.getItem(`avatar_url_${id}`);
       if (stored) return stored;
+      const b64 = localStorage.getItem(`avatar_b64_${id}`);
+      if (b64) return b64;
     }
     return avatarUrl;
   });
-  const [imgKey, setImgKey] = useState(0); // force re-render of <img>
+  const [imgKey, setImgKey] = useState(0);
   const [imgError, setImgError] = useState(false);
 
   // When userId becomes available (auth loaded), cache it and read stored avatar
   useEffect(() => {
     if (!userId) return;
     localStorage.setItem('last_user_id', userId);
-    const stored = localStorage.getItem(`avatar_url_${userId}`);
+    const stored = localStorage.getItem(`avatar_url_${userId}`)
+      || localStorage.getItem(`avatar_b64_${userId}`);
     if (stored) {
       setLocalAvatarUrl(stored);
       setImgError(false);
@@ -87,9 +90,17 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
       data: { avatar_url: urlWithCacheBust },
     });
 
-    // Persist to localStorage so it survives refresh/logout cycles
+    // Persist both the remote URL and a base64 data URL to localStorage
     if (userId) {
       localStorage.setItem(`avatar_url_${userId}`, urlWithCacheBust);
+      // Also store base64 as bulletproof fallback (works offline, no network needed)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) {
+          localStorage.setItem(`avatar_b64_${userId}`, reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
     }
 
     // Swap from blob preview to real URL
@@ -127,7 +138,19 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
             src={displayUrl}
             alt="Profile"
             className="w-[25px] h-[25px] rounded-full object-cover flex-shrink-0"
-            onError={() => setImgError(true)}
+            onError={() => {
+              // If remote URL fails, try base64 fallback before showing initials
+              const id = userId || localStorage.getItem('last_user_id');
+              if (id && !imgError) {
+                const b64 = localStorage.getItem(`avatar_b64_${id}`);
+                if (b64 && localAvatarUrl !== b64) {
+                  setLocalAvatarUrl(b64);
+                  setImgKey(prev => prev + 1);
+                  return;
+                }
+              }
+              setImgError(true);
+            }}
           />
         ) : (
           <div

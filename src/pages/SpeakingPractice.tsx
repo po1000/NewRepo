@@ -60,69 +60,159 @@ function speakSpanish(text: string, gender: 'male' | 'female' = 'female') {
 }
 
 // Contextual AI response generator — reacts to what the user actually said
-function generateAiResponse(scenario: PracticeScenario, userMessages: ChatMessage[]): { es: string; en: string } {
+// Tracks used responses via the usedTexts set to avoid repeating the same line
+function generateAiResponse(scenario: PracticeScenario, userMessages: ChatMessage[], usedTexts: Set<string>): { es: string; en: string } {
   const msgCount = userMessages.filter(m => m.role === 'user').length;
   const lastUserMsg = userMessages[userMessages.length - 1]?.text.toLowerCase() || '';
 
+  // Helper: pick first unused response, fallback to last option if all used
+  function pick(...options: { es: string; en: string }[]): { es: string; en: string } {
+    for (const opt of options) {
+      if (!usedTexts.has(opt.es)) {
+        usedTexts.add(opt.es);
+        return opt;
+      }
+    }
+    // All used — return last option anyway to keep conversation flowing
+    const last = options[options.length - 1];
+    usedTexts.add(last.es);
+    return last;
+  }
+
   if (scenario.id === 'ordering-cafe') {
-    // React to greetings
     if (lastUserMsg.match(/hola|buenos|buenas/))
-      return { es: '¡Hola! Bienvenido a nuestro cafe. ¿Que le apetece hoy? Tenemos churros frescos, tostadas y zumo natural.', en: 'Hello! Welcome to our cafe. What would you like today? We have fresh churros, toast and fresh juice.' };
-    // React to ordering with "me pone"
+      return pick(
+        { es: '¡Hola! Bienvenido a nuestro cafe. ¿Que le apetece hoy? Tenemos churros frescos, tostadas y zumo natural.', en: 'Hello! Welcome to our cafe. What would you like today? We have fresh churros, toast and fresh juice.' },
+        { es: '¡Buenos dias! ¿Que desea tomar? Hoy tenemos cafe recien hecho y zumo de naranja.', en: 'Good morning! What would you like? Today we have fresh coffee and orange juice.' },
+      );
     if (lastUserMsg.includes('me pone'))
-      return { es: '¡Marchando! Excelente eleccion. ¿Quiere algo mas? Tenemos un cafe con leche muy rico.', en: 'Coming right up! Excellent choice. Would you like anything else? We have a very good cafe con leche.' };
-    // React to specific food/drink mentions
+      return pick(
+        { es: '¡Marchando! Excelente eleccion. ¿Quiere algo mas? Tenemos un cafe con leche muy rico.', en: 'Coming right up! Excellent choice. Would you like anything else? We have a very good cafe con leche.' },
+        { es: '¡Perfecto, enseguida! ¿Le apetece algun dulce para acompanar?', en: 'Perfect, right away! Would you like a sweet treat to go with it?' },
+      );
     if (lastUserMsg.match(/cafe|café|churro|tostada|zumo|agua|leche|té|te /))
-      return { es: '¡Muy buena eleccion! ¿Algo mas que le pueda ofrecer?', en: 'Very good choice! Anything else I can offer you?' };
-    // React to thanks / ending
+      return pick(
+        { es: '¡Muy buena eleccion! ¿Algo mas que le pueda ofrecer?', en: 'Very good choice! Anything else I can offer you?' },
+        { es: '¡Excelente gusto! ¿Desea algo mas con eso?', en: 'Excellent taste! Would you like anything else with that?' },
+      );
     if (lastUserMsg.match(/gracias|nada mas|nada más|eso es todo/))
-      return { es: '¡Perfecto! Son cuatro euros cincuenta. ¡Que aproveche!', en: 'Perfect! That\'s four euros fifty. Enjoy your meal!' };
-    // React to price question
+      return pick(
+        { es: '¡Perfecto! Son cuatro euros cincuenta. ¡Que aproveche!', en: 'Perfect! That\'s four euros fifty. Enjoy your meal!' },
+        { es: '¡De nada! Que disfrute de su comida. ¡Vuelva pronto!', en: 'You\'re welcome! Enjoy your food. Come back soon!' },
+      );
     if (lastUserMsg.match(/cuanto|cuánto|cuesta|precio/))
-      return { es: 'El cafe con leche cuesta dos euros, los churros uno cincuenta y las tostadas uno setenta y cinco.', en: 'The cafe con leche costs two euros, churros one fifty and toast one seventy-five.' };
-    // Fallback by message count
-    if (msgCount <= 1) return { es: '¡Muy bien! ¿Algo mas? Tenemos churros frescos y tostadas.', en: 'Very good! Anything else? We have fresh churros and toast.' };
-    if (msgCount === 2) return { es: 'Perfecto. ¿Quiere algo de beber tambien?', en: 'Perfect. Would you like something to drink too?' };
-    return { es: '¿Algo mas que le pueda servir?', en: 'Anything else I can get you?' };
+      return pick(
+        { es: 'El cafe con leche cuesta dos euros, los churros uno cincuenta y las tostadas uno setenta y cinco.', en: 'The cafe con leche costs two euros, churros one fifty and toast one seventy-five.' },
+        { es: 'Veamos... el zumo natural dos euros, el cafe solo uno ochenta. ¿Que le pongo?', en: 'Let\'s see... fresh juice two euros, black coffee one eighty. What can I get you?' },
+      );
+    if (msgCount <= 1) return pick(
+      { es: '¡Muy bien! ¿Algo mas? Tenemos churros frescos y tostadas.', en: 'Very good! Anything else? We have fresh churros and toast.' },
+      { es: 'Digame, ¿que le apetece?', en: 'Tell me, what would you like?' },
+    );
+    if (msgCount === 2) return pick(
+      { es: 'Perfecto. ¿Quiere algo de beber tambien?', en: 'Perfect. Would you like something to drink too?' },
+      { es: '¿Le puedo traer algo de beber?', en: 'Can I bring you something to drink?' },
+    );
+    return pick(
+      { es: '¿Algo mas que le pueda servir?', en: 'Anything else I can get you?' },
+      { es: '¿Necesita algo mas?', en: 'Do you need anything else?' },
+    );
   }
 
   if (scenario.id === 'presentation-time') {
     if (lastUserMsg.match(/me llamo|soy |mi nombre/))
-      return { es: '¡Encantada de conocerte! ¿De donde eres? Yo soy de Sevilla.', en: 'Nice to meet you! Where are you from? I\'m from Seville.' };
+      return pick(
+        { es: '¡Encantada de conocerte! ¿De donde eres? Yo soy de Sevilla.', en: 'Nice to meet you! Where are you from? I\'m from Seville.' },
+        { es: '¡Que nombre mas bonito! ¿Y de donde vienes?', en: 'What a nice name! And where are you from?' },
+      );
     if (lastUserMsg.match(/soy de|vengo de/))
-      return { es: '¡Que interesante! Me encantaria visitar. ¿Y que te gusta hacer en tu tiempo libre?', en: 'How interesting! I\'d love to visit. And what do you like to do in your free time?' };
+      return pick(
+        { es: '¡Que interesante! Me encantaria visitar. ¿Y que te gusta hacer en tu tiempo libre?', en: 'How interesting! I\'d love to visit. And what do you like to do in your free time?' },
+        { es: '¡Que bien! He oido que es un lugar precioso. ¿Que haces para divertirte?', en: 'How nice! I\'ve heard it\'s a beautiful place. What do you do for fun?' },
+      );
     if (lastUserMsg.match(/me gusta|me encanta|me interesa/))
-      return { es: '¡A mi tambien me gusta mucho eso! Es un placer hablar contigo. ¿Vienes mucho a estos eventos?', en: 'I really like that too! It\'s a pleasure talking to you. Do you come to these events often?' };
-    if (msgCount <= 1) return { es: '¡Encantada! Cuentame un poco sobre ti. ¿De donde eres?', en: 'Nice to meet you! Tell me a bit about yourself. Where are you from?' };
-    if (msgCount === 2) return { es: '¡Que bien! ¿Y que te gusta hacer?', en: 'How nice! And what do you like to do?' };
-    return { es: '¡Ha sido un placer conocerte! Espero verte de nuevo pronto.', en: 'It\'s been a pleasure meeting you! I hope to see you again soon.' };
+      return pick(
+        { es: '¡A mi tambien me gusta mucho eso! Es un placer hablar contigo. ¿Vienes mucho a estos eventos?', en: 'I really like that too! It\'s a pleasure talking to you. Do you come to these events often?' },
+        { es: '¡Que interesante! A mi me encanta cocinar. ¿Has probado la comida espanola?', en: 'How interesting! I love cooking. Have you tried Spanish food?' },
+      );
+    if (msgCount <= 1) return pick(
+      { es: '¡Encantada! Cuentame un poco sobre ti. ¿De donde eres?', en: 'Nice to meet you! Tell me a bit about yourself. Where are you from?' },
+      { es: '¡Hola! Me alegro de conocerte. ¿Como te llamas?', en: 'Hi! Glad to meet you. What\'s your name?' },
+    );
+    if (msgCount === 2) return pick(
+      { es: '¡Que bien! ¿Y que te gusta hacer?', en: 'How nice! And what do you like to do?' },
+      { es: '¡Genial! Cuentame mas sobre tus hobbies.', en: 'Great! Tell me more about your hobbies.' },
+    );
+    return pick(
+      { es: '¡Ha sido un placer conocerte! Espero verte de nuevo pronto.', en: 'It\'s been a pleasure meeting you! I hope to see you again soon.' },
+      { es: '¡Me ha encantado hablar contigo! Nos vemos la proxima vez.', en: 'I loved talking to you! See you next time.' },
+    );
   }
 
   if (scenario.id === 'asking-directions') {
     if (lastUserMsg.match(/donde|dónde/))
-      return { es: 'Claro, la estacion de metro esta muy cerca. Siga recto por esta calle unos doscientos metros y luego gire a la derecha. La vera enseguida.', en: 'Of course, the metro station is very close. Go straight down this street about two hundred meters then turn right. You\'ll see it right away.' };
+      return pick(
+        { es: 'Claro, la estacion de metro esta muy cerca. Siga recto por esta calle unos doscientos metros y luego gire a la derecha. La vera enseguida.', en: 'Of course, the metro station is very close. Go straight down this street about two hundred meters then turn right. You\'ll see it right away.' },
+        { es: 'Si, conozco esa zona. Camine dos calles mas y gire a la izquierda. Esta justo ahi.', en: 'Yes, I know that area. Walk two more blocks and turn left. It\'s right there.' },
+      );
     if (lastUserMsg.match(/gracias|muchas gracias/))
-      return { es: '¡De nada! Si se pierde, pregunte a cualquiera. La gente aqui es muy amable. ¡Buen viaje!', en: 'You\'re welcome! If you get lost, ask anyone. People here are very friendly. Have a good trip!' };
+      return pick(
+        { es: '¡De nada! Si se pierde, pregunte a cualquiera. La gente aqui es muy amable. ¡Buen viaje!', en: 'You\'re welcome! If you get lost, ask anyone. People here are very friendly. Have a good trip!' },
+        { es: '¡No hay de que! Espero que disfrute de Madrid. ¡Hasta luego!', en: 'Don\'t mention it! I hope you enjoy Madrid. See you later!' },
+      );
     if (lastUserMsg.match(/entiendo|comprendo|vale|de acuerdo/))
-      return { es: '¡Perfecto! Esta a unos cinco minutos caminando. Vera la señal azul del metro. ¡Suerte!', en: 'Perfect! It\'s about five minutes walking. You\'ll see the blue metro sign. Good luck!' };
+      return pick(
+        { es: '¡Perfecto! Esta a unos cinco minutos caminando. Vera la señal azul del metro. ¡Suerte!', en: 'Perfect! It\'s about five minutes walking. You\'ll see the blue metro sign. Good luck!' },
+        { es: '¡Muy bien! No tiene perdida. Siga las señales y llegara enseguida.', en: 'Very good! You can\'t miss it. Follow the signs and you\'ll get there right away.' },
+      );
     if (lastUserMsg.match(/lejos|cerca|minuto|tiempo/))
-      return { es: 'No esta lejos, solo cinco minutos a pie. El camino es muy facil.', en: 'It\'s not far, only five minutes on foot. The way is very easy.' };
-    if (msgCount <= 1) return { es: 'Claro, ¿a donde quiere ir? ¿Al metro, al centro, o a otro lugar?', en: 'Of course, where do you want to go? To the metro, the center, or somewhere else?' };
-    return { es: '¡Espero que encuentre su camino! ¡Hasta luego!', en: 'I hope you find your way! See you later!' };
+      return pick(
+        { es: 'No esta lejos, solo cinco minutos a pie. El camino es muy facil.', en: 'It\'s not far, only five minutes on foot. The way is very easy.' },
+        { es: 'Esta bastante cerca. En unos tres minutos llega caminando tranquilamente.', en: 'It\'s quite close. You\'ll get there in about three minutes walking calmly.' },
+      );
+    if (msgCount <= 1) return pick(
+      { es: 'Claro, ¿a donde quiere ir? ¿Al metro, al centro, o a otro lugar?', en: 'Of course, where do you want to go? To the metro, the center, or somewhere else?' },
+      { es: 'Por supuesto, digame ¿que esta buscando?', en: 'Of course, tell me what are you looking for?' },
+    );
+    return pick(
+      { es: '¡Espero que encuentre su camino! ¡Hasta luego!', en: 'I hope you find your way! See you later!' },
+      { es: '¡Buen camino! Si necesita mas ayuda, no dude en preguntar.', en: 'Safe travels! If you need more help, don\'t hesitate to ask.' },
+    );
   }
 
   // shopping-market
   if (lastUserMsg.match(/cuanto|cuánto|cuesta|vale|precio/))
-    return { es: 'Las naranjas estan a dos euros el kilo. Las manzanas a uno cincuenta. Y los platanos a uno ochenta. ¿Que le pongo?', en: 'Oranges are two euros per kilo. Apples are one fifty. And bananas are one eighty. What shall I get you?' };
+    return pick(
+      { es: 'Las naranjas estan a dos euros el kilo. Las manzanas a uno cincuenta. Y los platanos a uno ochenta. ¿Que le pongo?', en: 'Oranges are two euros per kilo. Apples are one fifty. And bananas are one eighty. What shall I get you?' },
+      { es: 'Los tomates estan a uno setenta y cinco el kilo. Las fresas a tres euros. ¡Estan muy frescas hoy!', en: 'Tomatoes are one seventy-five per kilo. Strawberries are three euros. They\'re very fresh today!' },
+    );
   if (lastUserMsg.match(/quiero|me da|pongo|llevo|kilo/))
-    return { es: '¡Aqui tiene! Son unas naranjas muy dulces, las mejores de Valencia. ¿Necesita algo mas?', en: 'Here you go! These are very sweet oranges, the best from Valencia. Do you need anything else?' };
+    return pick(
+      { es: '¡Aqui tiene! Son unas naranjas muy dulces, las mejores de Valencia. ¿Necesita algo mas?', en: 'Here you go! These are very sweet oranges, the best from Valencia. Do you need anything else?' },
+      { es: '¡Perfecto! Le he puesto unas muy buenas. ¿Quiere probar algo mas?', en: 'Perfect! I\'ve given you some really good ones. Would you like to try anything else?' },
+    );
   if (lastUserMsg.match(/pagar|tarjeta|efectivo|cambio/))
-    return { es: 'Si, aceptamos tarjeta y efectivo. Son tres euros cincuenta en total. ¿Le doy una bolsa?', en: 'Yes, we accept card and cash. It\'s three euros fifty in total. Shall I give you a bag?' };
+    return pick(
+      { es: 'Si, aceptamos tarjeta y efectivo. Son tres euros cincuenta en total. ¿Le doy una bolsa?', en: 'Yes, we accept card and cash. It\'s three euros fifty in total. Shall I give you a bag?' },
+      { es: '¡Claro! Efectivo o tarjeta, como prefiera. Son cuatro euros justos.', en: 'Of course! Cash or card, whichever you prefer. It\'s exactly four euros.' },
+    );
   if (lastUserMsg.match(/gracias|nada|eso es todo/))
-    return { es: '¡Gracias por su compra! Vuelva cuando quiera. ¡Hasta luego!', en: 'Thanks for your purchase! Come back anytime. See you later!' };
-  if (msgCount <= 1) return { es: 'Las naranjas estan a dos euros el kilo. Las manzanas a uno cincuenta. ¿Que le pongo?', en: 'Oranges are two euros per kilo. Apples are one fifty. What shall I get you?' };
-  if (msgCount === 2) return { es: 'Aqui tiene. ¿Necesita algo mas?', en: 'Here you go. Do you need anything else?' };
-  return { es: '¡Gracias por su compra! ¡Hasta luego!', en: 'Thanks for your purchase! See you later!' };
+    return pick(
+      { es: '¡Gracias por su compra! Vuelva cuando quiera. ¡Hasta luego!', en: 'Thanks for your purchase! Come back anytime. See you later!' },
+      { es: '¡Muchas gracias! Ha sido un placer atenderle. ¡Que tenga buen dia!', en: 'Thank you very much! It\'s been a pleasure serving you. Have a great day!' },
+    );
+  if (msgCount <= 1) return pick(
+    { es: 'Las naranjas estan a dos euros el kilo. Las manzanas a uno cincuenta. ¿Que le pongo?', en: 'Oranges are two euros per kilo. Apples are one fifty. What shall I get you?' },
+    { es: 'Tenemos de todo hoy. ¿Que le apetece? ¿Fruta, verdura?', en: 'We have everything today. What do you fancy? Fruit, vegetables?' },
+  );
+  if (msgCount === 2) return pick(
+    { es: 'Aqui tiene. ¿Necesita algo mas?', en: 'Here you go. Do you need anything else?' },
+    { es: '¡Muy bien! ¿Algo mas para hoy?', en: 'Very good! Anything else for today?' },
+  );
+  return pick(
+    { es: '¡Gracias por su compra! ¡Hasta luego!', en: 'Thanks for your purchase! See you later!' },
+    { es: '¡Vuelva pronto! Siempre tenemos productos frescos.', en: 'Come back soon! We always have fresh produce.' },
+  );
 }
 
 interface SpeakingPracticeProps {
@@ -168,6 +258,8 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const spokenMsgIds = useRef<Set<string>>(new Set());
+  const usedResponses = useRef<Set<string>>(new Set());
+  const gotResultRef = useRef(false);
 
   // Persist messages to localStorage
   useEffect(() => {
@@ -211,8 +303,14 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
           const elapsed = Math.round((Date.now() - startTime) / 1000);
           navigate(`/speak-and-write/${scenario.id}/complete`, {
             state: {
+              scenarioId: scenario.id,
               scenarioTitle: scenario.title,
-              messages: messages.map(m => ({ role: m.role, text: m.text, inputMode: m.inputMode })),
+              messages: messages.map(m => ({
+                role: m.role,
+                text: m.text,
+                translation: m.translation,
+                inputMode: m.inputMode,
+              })),
               elapsed,
               criteriaCount: scenario.criteria.length,
             },
@@ -239,7 +337,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
     // Show typing indicator then respond
     setIsTyping(true);
     setTimeout(() => {
-      const response = generateAiResponse(scenario, updatedMessages);
+      const response = generateAiResponse(scenario, updatedMessages, usedResponses.current);
       setIsTyping(false);
       setMessages(prev => [...prev, {
         id: `ai-${Date.now()}`,
@@ -258,18 +356,29 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
       return;
     }
     setVoiceTranscript(null);
+    gotResultRef.current = false;
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-ES';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onresult = (event: any) => {
+      gotResultRef.current = true;
       const transcript = event.results[0][0].transcript;
       // Show transcript for review instead of sending immediately
       setVoiceTranscript(transcript);
       setIsRecording(false);
     };
-    recognition.onerror = () => setIsRecording(false);
-    recognition.onend = () => setIsRecording(false);
+    recognition.onerror = () => {
+      gotResultRef.current = false;
+      setIsRecording(false);
+    };
+    recognition.onend = () => {
+      // Only reset to idle if we never got a result (e.g. silence timeout)
+      // If onresult already fired, the transcript is showing — don't clobber it
+      if (!gotResultRef.current) {
+        setIsRecording(false);
+      }
+    };
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);

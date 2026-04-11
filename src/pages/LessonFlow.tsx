@@ -504,24 +504,12 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     }, 1500);
   }, [reportText, user, currentTerm, state.subunitId]);
 
-  // ── Render ────────────────────────────────────────────────
-
-  if (loading) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center font-inter"
-        style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
-        <p className="text-[#FFFDE6] text-lg">Loading lesson...</p>
-      </div>
-    );
-  }
-
   // Handle lesson completion: update XP, streak, lessons_completed in DB
   useEffect(() => {
     if (!lessonComplete || lessonCompletionHandled.current || !user) return;
     lessonCompletionHandled.current = true;
 
     async function completeLesson() {
-      // 1. Update total_xp and lessons_completed
       const { data: stats } = await supabase
         .from('user_stats')
         .select('total_xp, lessons_completed, current_streak, longest_streak, updated_at')
@@ -533,7 +521,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       const currentStreak = stats?.current_streak || 0;
       const longestStreak = stats?.longest_streak || 0;
 
-      // 2. Check if streak should increment (new day since last update)
       const lastUpdate = stats?.updated_at ? new Date(stats.updated_at) : null;
       const today = new Date();
       const isNewDay = !lastUpdate ||
@@ -541,12 +528,10 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
       let updatedStreak = currentStreak;
       if (isNewDay) {
-        // Check if it's consecutive (yesterday or first time)
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         const isConsecutive = lastUpdate &&
           lastUpdate.toDateString() === yesterday.toDateString();
-
         updatedStreak = isConsecutive ? currentStreak + 1 : 1;
         setStreakUpdated(true);
       }
@@ -565,7 +550,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
 
-      // 3. Log XP event
       if (sessionXp > 0) {
         await supabase.from('xp_events').insert({
           user_id: user!.id,
@@ -578,6 +562,17 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
     completeLesson();
   }, [lessonComplete, user, sessionXp, state.subunitId]);
+
+  // ── Render ────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center font-inter"
+        style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
+        <p className="text-[#FFFDE6] text-lg">Loading lesson...</p>
+      </div>
+    );
+  }
 
   // End of lesson screen
   if (lessonComplete || !currentTerm) {
