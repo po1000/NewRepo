@@ -13,6 +13,11 @@ import {
   Trophy,
   Flame,
   Mic,
+  BookOpen,
+  Eye,
+  EyeOff,
+  Home,
+  ArrowRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -184,6 +189,11 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const [correctAnswersThisSession, setCorrectAnswersThisSession] = useState(0);
   const [streakUpdated, setStreakUpdated] = useState(false);
   const [newStreak, setNewStreak] = useState(0);
+  const [showWordsPopup, setShowWordsPopup] = useState(false);
+
+  // Track status changes for "graduated words" display on lesson complete
+  const initialStatusRef = useRef<Map<number, string>>(new Map());
+  const [graduatedWords, setGraduatedWords] = useState<{ term: Term; from: string; to: string }[]>([]);
 
   const hasInitialized = useRef(false);
   const lessonCompletionHandled = useRef(false);
@@ -247,6 +257,17 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       }
 
       setProgressMap(pMap);
+
+      // Capture initial statuses for graduated-words tracking
+      for (const [tid, tp] of pMap) {
+        initialStatusRef.current.set(tid, tp.status);
+      }
+      // Also capture not_seen for terms that have no progress yet
+      for (const tid of termIds) {
+        if (!initialStatusRef.current.has(tid)) {
+          initialStatusRef.current.set(tid, 'not_seen');
+        }
+      }
 
       // Try to restore saved session
       const savedRaw = localStorage.getItem(sessionKey(state.subunitId, user.id));
@@ -400,6 +421,20 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       if (state.subunitId && user) {
         localStorage.removeItem(sessionKey(state.subunitId, user.id));
       }
+
+      // Compute graduated words — terms whose status changed during this session
+      const STATUS_ORDER = ['not_seen', 'seen', 'learning', 'reinforced', 'learnt'];
+      const graduated: { term: Term; from: string; to: string }[] = [];
+      for (const [tid, tp] of progressMap) {
+        const initial = initialStatusRef.current.get(tid) || 'not_seen';
+        const current = tp.status;
+        if (STATUS_ORDER.indexOf(current) > STATUS_ORDER.indexOf(initial)) {
+          const term = termsMap.get(tid);
+          if (term) graduated.push({ term, from: initial, to: current });
+        }
+      }
+      setGraduatedWords(graduated);
+
       setLessonComplete(true);
       return;
     }
@@ -734,13 +769,15 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       setNewStreak(updatedStreak);
 
       const newLongest = Math.max(longestStreak, updatedStreak);
+      const newTotalXp = currentXp + sessionXp;
+      const newLessonsCompleted = currentLessons + 1;
 
       await supabase
         .from('user_stats')
         .upsert({
           user_id: user!.id,
-          total_xp: currentXp + sessionXp,
-          lessons_completed: currentLessons + 1,
+          total_xp: newTotalXp,
+          lessons_completed: newLessonsCompleted,
           current_streak: updatedStreak,
           longest_streak: newLongest,
           updated_at: new Date().toISOString(),
@@ -753,6 +790,41 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           source_type: 'lesson',
           source_id: state.subunitId || null,
         });
+      }
+
+      // Check and award badges
+      const { count: correctAnswerCount } = await supabase
+        .from('user_term_progress')
+        .select('term_id', { count: 'exact', head: true })
+        .eq('user_id', user!.id)
+        .in('status', ['learning', 'reinforced', 'learnt']);
+
+      const progressLookup: Record<string, number> = {
+        lessons_completed: newLessonsCompleted,
+        streak_days: updatedStreak,
+        correct_answers: correctAnswerCount || 0,
+      };
+
+      const { data: allBadges } = await supabase
+        .from('badges')
+        .select('badge_id, criteria_type, criteria_value');
+      const { data: earnedBadges } = await supabase
+        .from('user_badges')
+        .select('badge_id')
+        .eq('user_id', user!.id);
+
+      const earnedSet = new Set((earnedBadges || []).map((b: any) => b.badge_id));
+
+      for (const badge of (allBadges || [])) {
+        if (!earnedSet.has(badge.badge_id)) {
+          const progress = progressLookup[badge.criteria_type] || 0;
+          if (progress >= badge.criteria_value) {
+            await supabase.from('user_badges').insert({
+              user_id: user!.id,
+              badge_id: badge.badge_id,
+            });
+          }
+        }
       }
     }
 
@@ -772,8 +844,16 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
   // End of lesson screen
   if (lessonComplete || !currentTerm) {
+    const STATUS_LABELS: Record<string, string> = {
+      not_seen: 'Not Seen',
+      seen: 'Seen',
+      learning: 'Learning',
+      reinforced: 'Reinforced',
+      learnt: 'Learnt',
+    };
+
     return (
-      <div className="min-h-screen w-full flex items-center justify-center font-inter"
+      <div className="min-h-screen w-full flex items-center justify-center font-inter overflow-y-auto py-8"
         style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
         <div className="w-full max-w-[420px] mx-4">
           {/* Trophy */}
@@ -791,26 +871,22 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           </p>
 
           {/* Stats cards */}
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            {/* XP Earned */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
               <Zap className="w-7 h-7 text-[#FFE101] mb-1" />
               <span className="text-[#FFFDE6] text-[24px] font-bold">{sessionXp}</span>
               <span className="text-[#FFFDE6]/70 text-[12px]">XP Earned</span>
             </div>
-            {/* Terms Seen */}
             <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
               <Star className="w-7 h-7 text-[#FFE101] mb-1" />
               <span className="text-[#FFFDE6] text-[24px] font-bold">{termsSeenThisSession}</span>
               <span className="text-[#FFFDE6]/70 text-[12px]">New Terms</span>
             </div>
-            {/* Correct Answers */}
             <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
               <Check className="w-7 h-7 text-[#22C55E] mb-1" />
               <span className="text-[#FFFDE6] text-[24px] font-bold">{correctAnswersThisSession}</span>
               <span className="text-[#FFFDE6]/70 text-[12px]">Correct Answers</span>
             </div>
-            {/* Streak */}
             <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
               <Flame className="w-7 h-7 text-[#FF4D01] mb-1" />
               <span className="text-[#FFFDE6] text-[24px] font-bold">{newStreak}</span>
@@ -820,10 +896,68 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             </div>
           </div>
 
-          <button onClick={onClose}
-            className="w-full py-4 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[16px] hover:bg-white transition-colors shadow-lg">
-            Continue
-          </button>
+          {/* Graduated Words — only words that changed status */}
+          {graduatedWords.length > 0 && (
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 mb-6">
+              <h3 className="text-[#FFFDE6] font-bold text-[15px] mb-3">Words Progressed</h3>
+              <div className="flex flex-col gap-2">
+                {graduatedWords.map(({ term, from, to }) => (
+                  <div key={term.term_id} className="flex items-center justify-between bg-white/10 rounded-lg px-3 py-2">
+                    <div className="flex flex-col min-w-0 mr-2">
+                      <span className="text-[#FFFDE6] font-medium text-[13px] truncate">{term.spanish_text}</span>
+                      <span className="text-[#FFFDE6]/60 text-[11px] truncate">{term.english_text}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[#FFFDE6]/50 text-[11px]">{STATUS_LABELS[from]}</span>
+                      <ArrowRight className="w-3 h-3 text-[#FFFDE6]/50" />
+                      <span className="text-[#FFE101] text-[11px] font-bold">{STATUS_LABELS[to]}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button onClick={onClose}
+              className="flex-1 py-4 bg-white/20 backdrop-blur-sm rounded-xl text-[#FFFDE6] font-bold text-[15px] hover:bg-white/30 transition-colors flex items-center justify-center gap-2">
+              <Home className="w-5 h-5" />
+              Home
+            </button>
+            <button onClick={() => {
+              // Reset state for next lesson batch
+              setLessonComplete(false);
+              lessonCompletionHandled.current = false;
+              setSessionXp(0);
+              setTermsSeenThisSession(0);
+              setCorrectAnswersThisSession(0);
+              setNewFlashcardCount(0);
+              setGraduatedWords([]);
+              setMode('flashcard');
+              setQueueIndex(0);
+
+              // Rebuild queue from current progress
+              const termIds = Array.from(termsMap.keys());
+              const newQueue = buildSessionQueue(termIds, progressMap);
+              setQueue(newQueue);
+
+              // Re-capture initial statuses from current progress
+              initialStatusRef.current = new Map();
+              for (const [tid, tp] of progressMap) {
+                initialStatusRef.current.set(tid, tp.status);
+              }
+              for (const tid of termIds) {
+                if (!initialStatusRef.current.has(tid)) {
+                  initialStatusRef.current.set(tid, 'not_seen');
+                }
+              }
+            }}
+              className="flex-1 py-4 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[15px] hover:bg-white transition-colors shadow-lg flex items-center justify-center gap-2">
+              Next Lesson
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -843,14 +977,87 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
           }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <X className="w-6 h-6 text-[#FFFDE6]" />
           </button>
-          <div className="flex-1 mx-8 h-3 bg-white/30 rounded-full overflow-hidden">
+          <div className="flex-1 mx-4 h-3 bg-white/30 rounded-full overflow-hidden">
             <div className="h-full bg-[#FFFDE6] rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }} />
           </div>
+          <button onClick={() => setShowWordsPopup(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Words & Phrases">
+            <BookOpen className="w-6 h-6 text-[#FFFDE6]" />
+          </button>
           <button onClick={() => setShowReport(!showReport)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <Flag className="w-6 h-6 text-[#FFFDE6]" />
           </button>
         </div>
+
+        {/* Words & Phrases Popup */}
+        {showWordsPopup && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setShowWordsPopup(false)}>
+            <div
+              className="relative w-[90%] max-w-[420px] max-h-[80vh] flex flex-col rounded-[20px] shadow-xl"
+              style={{ background: 'linear-gradient(to bottom, #FFF8E1, #FFFDF5)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowWordsPopup(false)}
+                className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
+              >
+                <X className="w-5 h-5 text-[#6B7280]" />
+              </button>
+              <div className="overflow-y-auto flex-1 px-5 pt-5 pb-5">
+                <h3 className="font-inter font-bold text-[15px] text-[#372213] mb-3">Words & Phrases</h3>
+                <div className="bg-white rounded-[16px] p-4">
+                  <ul className="flex flex-col">
+                    {Array.from(termsMap.values()).map((term, i, arr) => {
+                      const tp = progressMap.get(term.term_id);
+                      const status = tp?.status || 'not_seen';
+                      return (
+                        <li
+                          key={term.term_id}
+                          className={`flex items-center justify-between py-3 px-1 ${
+                            i < arr.length - 1 ? 'border-b border-[#F3F4F6]' : ''
+                          }`}
+                        >
+                          <div className="flex flex-col min-w-0 mr-3">
+                            <span className="font-inter font-medium text-[14px] text-[#372213] truncate">
+                              {term.spanish_text}
+                            </span>
+                            <span className="font-inter text-[12px] text-[#9CA3AF] truncate">
+                              {term.english_text}
+                            </span>
+                          </div>
+                          {/* Status icon */}
+                          {status === 'learnt' ? (
+                            <div className="flex items-end gap-[2px] h-[18px]">
+                              <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
+                              <div className="w-[4px] h-[12px] rounded-[1px] bg-[#F97316]" />
+                              <div className="w-[4px] h-[18px] rounded-[1px] bg-[#F97316]" />
+                            </div>
+                          ) : status === 'reinforced' ? (
+                            <div className="flex items-end gap-[2px] h-[18px]">
+                              <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
+                              <div className="w-[4px] h-[12px] rounded-[1px] bg-[#F97316]" />
+                              <div className="w-[4px] h-[18px] rounded-[1px] bg-[#E5E7EB]" />
+                            </div>
+                          ) : status === 'learning' ? (
+                            <div className="flex items-end gap-[2px] h-[18px]">
+                              <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
+                              <div className="w-[4px] h-[12px] rounded-[1px] bg-[#E5E7EB]" />
+                              <div className="w-[4px] h-[18px] rounded-[1px] bg-[#E5E7EB]" />
+                            </div>
+                          ) : status === 'seen' ? (
+                            <Eye className="w-[18px] h-[18px] text-[#9CA3AF]" />
+                          ) : (
+                            <EyeOff className="w-[18px] h-[18px] text-[#D1D5DB]" />
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* XP Popup Animation */}
         {xpPopup && (

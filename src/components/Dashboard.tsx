@@ -67,13 +67,36 @@ export function Dashboard() {
         return;
       }
 
-      // Fetch user stats
+      // Fetch user stats + update streak on app entry
       if (user) {
         const { data: stats } = await supabase
           .from('user_stats')
-          .select('total_xp, current_streak')
+          .select('total_xp, current_streak, longest_streak, updated_at')
           .eq('user_id', user.id)
           .single();
+
+        let currentStreak = stats?.current_streak || 0;
+        const longestStreak = stats?.longest_streak || 0;
+
+        // Update streak on app entry (counted in days)
+        const lastUpdate = stats?.updated_at ? new Date(stats.updated_at) : null;
+        const today = new Date();
+        const isNewDay = !lastUpdate || lastUpdate.toDateString() !== today.toDateString();
+
+        if (isNewDay) {
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const isConsecutive = lastUpdate && lastUpdate.toDateString() === yesterday.toDateString();
+          currentStreak = isConsecutive ? currentStreak + 1 : 1;
+
+          await supabase.from('user_stats').upsert({
+            user_id: user.id,
+            total_xp: stats?.total_xp || 0,
+            current_streak: currentStreak,
+            longest_streak: Math.max(longestStreak, currentStreak),
+            updated_at: today.toISOString(),
+          }, { onConflict: 'user_id' });
+        }
 
         // Count badges earned
         const { count: badgeCount } = await supabase
@@ -83,7 +106,7 @@ export function Dashboard() {
 
         setUserStats({
           total_xp: stats?.total_xp || 0,
-          current_streak: stats?.current_streak || 0,
+          current_streak: currentStreak,
           badge_count: badgeCount || 0,
         });
       }

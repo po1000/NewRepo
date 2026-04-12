@@ -288,7 +288,7 @@ export function PianoTilesGame() {
         if (topMostY > TILE_HEIGHT * 1.5 && beatIndexRef.current < selectedSong.beats.length) {
           const newRow = spawnRow(beatIndexRef.current);
           if (newRow.length > 0) {
-            setPrompt(newRow[0].prompt);
+            // DON'T change prompt here — prompt only changes on user selection
             beatIndexRef.current++;
             setCurrentBeatIndex(beatIndexRef.current);
             return [...prev, ...newRow];
@@ -322,18 +322,36 @@ export function PianoTilesGame() {
       setHighScore(finalScore);
     }
 
-    // Award XP to database
+    // Award XP + update streak + check badges
     if (user && xp > 0) {
       (async () => {
         const { data: stats } = await supabase
           .from('user_stats')
-          .select('total_xp')
+          .select('total_xp, current_streak, longest_streak, updated_at')
           .eq('user_id', user.id)
           .single();
         const currentXp = stats?.total_xp || 0;
+        const currentStreak = stats?.current_streak || 0;
+        const longestStreak = stats?.longest_streak || 0;
+
+        // Check if this is a new day for streak
+        const lastUpdate = stats?.updated_at ? new Date(stats.updated_at) : null;
+        const today = new Date();
+        const isNewDay = !lastUpdate || lastUpdate.toDateString() !== today.toDateString();
+        let updatedStreak = currentStreak;
+        if (isNewDay) {
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const isConsecutive = lastUpdate && lastUpdate.toDateString() === yesterday.toDateString();
+          updatedStreak = isConsecutive ? currentStreak + 1 : 1;
+        }
+
+        const newTotalXp = currentXp + xp;
         await supabase.from('user_stats').upsert({
           user_id: user.id,
-          total_xp: currentXp + xp,
+          total_xp: newTotalXp,
+          current_streak: updatedStreak,
+          longest_streak: Math.max(longestStreak, updatedStreak),
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
         await supabase.from('xp_events').insert({
@@ -342,6 +360,46 @@ export function PianoTilesGame() {
           source_type: 'game',
           source_id: selectedSong.id,
         });
+
+        // Check and award badges
+        const { count: correctAnswerCount } = await supabase
+          .from('user_term_progress')
+          .select('term_id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .in('status', ['learning', 'reinforced', 'learnt']);
+
+        const { data: lessonsStats } = await supabase
+          .from('user_stats')
+          .select('lessons_completed')
+          .eq('user_id', user.id)
+          .single();
+
+        const progressLookup: Record<string, number> = {
+          lessons_completed: lessonsStats?.lessons_completed || 0,
+          streak_days: updatedStreak,
+          correct_answers: correctAnswerCount || 0,
+        };
+
+        const { data: allBadges } = await supabase
+          .from('badges')
+          .select('badge_id, criteria_type, criteria_value');
+        const { data: earnedBadges } = await supabase
+          .from('user_badges')
+          .select('badge_id')
+          .eq('user_id', user.id);
+
+        const earnedSet = new Set((earnedBadges || []).map((b: any) => b.badge_id));
+        for (const badge of (allBadges || [])) {
+          if (!earnedSet.has(badge.badge_id)) {
+            const progress = progressLookup[badge.criteria_type] || 0;
+            if (progress >= badge.criteria_value) {
+              await supabase.from('user_badges').insert({
+                user_id: user.id,
+                badge_id: badge.badge_id,
+              });
+            }
+          }
+        }
       })();
     }
   }, [user, selectedSong.id]);
@@ -362,12 +420,20 @@ export function PianoTilesGame() {
         setScore(scoreRef.current);
 
         // Mark all tiles in this "row group" as tapped
-        return prev.map(t => {
+        const updated = prev.map(t => {
           if (Math.abs(t.y - tile.y) < 10) {
             return { ...t, tapped: true };
           }
           return t;
         });
+
+        // Update prompt to the NEXT untapped correct tile's prompt
+        const nextCorrect = updated.find(t => t.correct && !t.tapped);
+        if (nextCorrect) {
+          setPrompt(nextCorrect.prompt);
+        }
+
+        return updated;
       } else {
         // Wrong tile — game over
         playWrongSound();
@@ -380,27 +446,27 @@ export function PianoTilesGame() {
   // ── MENU ────────────────────────────────────────────────
   if (gameState === 'menu') {
     return (
-      <PageLayout backgroundColor="#1a1a2e">
+      <PageLayout backgroundColor="#FFF8E1">
         <div className="max-w-[500px] mx-auto px-4 pt-8 pb-20">
           <button onClick={() => navigate('/culture')}
-            className="flex items-center gap-2 text-white/70 hover:text-white mb-8 transition-colors">
+            className="flex items-center gap-2 text-[#6B7280] hover:text-[#372213] mb-8 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span className="text-[14px]">Back to Culture</span>
           </button>
 
-          <h1 className="font-bold text-[28px] text-white text-center mb-2">Word Tiles</h1>
-          <p className="text-white/60 text-center text-[14px] mb-8">Tap the correct translation to the beat!</p>
+          <h1 className="font-bold text-[28px] text-[#372213] text-center mb-2">Word Tiles</h1>
+          <p className="text-[#6B7280] text-center text-[14px] mb-8">Tap the correct translation to the beat!</p>
 
           {/* Song Selection */}
           <div className="mb-6">
-            <p className="text-white/80 text-[13px] font-semibold mb-3">Select a Song</p>
+            <p className="text-[#372213] text-[13px] font-semibold mb-3">Select a Song</p>
             {SONGS.map(song => (
               <button key={song.id}
                 onClick={() => setSelectedSong(song)}
                 className={`w-full p-4 rounded-xl mb-2 flex items-center justify-between transition-all ${
                   selectedSong.id === song.id
                     ? 'bg-gradient-to-r from-[#FF4D01] to-[#FF8C00] text-white shadow-lg'
-                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    : 'bg-white text-[#372213] border border-[#E5E7EB] hover:border-[#FF4D01]'
                 }`}>
                 <div>
                   <p className="font-bold text-[16px]">{song.title}</p>
@@ -413,13 +479,13 @@ export function PianoTilesGame() {
 
           {/* Mode Selection */}
           <div className="mb-8">
-            <p className="text-white/80 text-[13px] font-semibold mb-3">Tile Language</p>
+            <p className="text-[#372213] text-[13px] font-semibold mb-3">Tile Language</p>
             <div className="flex gap-3">
               <button onClick={() => setTileMode('english')}
                 className={`flex-1 py-3 rounded-xl font-bold text-[14px] transition-all ${
                   tileMode === 'english'
                     ? 'bg-[#FF4D01] text-white'
-                    : 'bg-white/10 text-white/60 hover:bg-white/20'
+                    : 'bg-white text-[#6B7280] border border-[#E5E7EB] hover:border-[#FF4D01]'
                 }`}>
                 English Tiles
               </button>
@@ -427,7 +493,7 @@ export function PianoTilesGame() {
                 className={`flex-1 py-3 rounded-xl font-bold text-[14px] transition-all ${
                   tileMode === 'spanish'
                     ? 'bg-[#FF4D01] text-white'
-                    : 'bg-white/10 text-white/60 hover:bg-white/20'
+                    : 'bg-white text-[#6B7280] border border-[#E5E7EB] hover:border-[#FF4D01]'
                 }`}>
                 Spanish Tiles
               </button>
@@ -437,7 +503,7 @@ export function PianoTilesGame() {
           {/* High Score */}
           {highScore > 0 && (
             <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-2 text-[#FFD700]">
+              <div className="flex items-center justify-center gap-2 text-[#FF8C00]">
                 <Trophy className="w-5 h-5" />
                 <span className="font-bold text-[16px]">High Score: {highScore}</span>
               </div>
@@ -458,35 +524,35 @@ export function PianoTilesGame() {
   if (gameState === 'gameover') {
     const isSongComplete = gameOverMsg === 'Song complete!';
     return (
-      <div className="min-h-screen w-full bg-[#1a1a2e] flex items-center justify-center font-inter">
+      <div className="min-h-screen w-full bg-[#FFF8E1] flex items-center justify-center font-inter">
         <div className="w-full max-w-[400px] mx-4 flex flex-col items-center">
           <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${
             isSongComplete ? 'bg-[#22C55E]' : 'bg-[#EF4444]'
           }`}>
             {isSongComplete
               ? <Trophy className="w-10 h-10 text-white" />
-              : <span className="text-[36px]">✗</span>
+              : <span className="text-[36px] text-white">✗</span>
             }
           </div>
 
-          <h2 className="text-white font-bold text-[24px] mb-2">{gameOverMsg}</h2>
-          <p className="text-white/60 text-[14px] mb-6">{selectedSong.title} · {selectedSong.artist}</p>
+          <h2 className="text-[#372213] font-bold text-[24px] mb-2">{gameOverMsg}</h2>
+          <p className="text-[#6B7280] text-[14px] mb-6">{selectedSong.title} · {selectedSong.artist}</p>
 
           <div className="grid grid-cols-2 gap-3 w-full mb-8">
-            <div className="bg-white/10 rounded-xl p-4 flex flex-col items-center">
-              <span className="text-white font-bold text-[28px]">{score}</span>
-              <span className="text-white/50 text-[12px]">Score</span>
+            <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 flex flex-col items-center shadow-sm">
+              <span className="text-[#372213] font-bold text-[28px]">{score}</span>
+              <span className="text-[#9CA3AF] text-[12px]">Score</span>
             </div>
-            <div className="bg-white/10 rounded-xl p-4 flex flex-col items-center">
-              <span className="text-[#FFD700] font-bold text-[28px]">{highScore}</span>
-              <span className="text-white/50 text-[12px]">High Score</span>
+            <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 flex flex-col items-center shadow-sm">
+              <span className="text-[#FF8C00] font-bold text-[28px]">{highScore}</span>
+              <span className="text-[#9CA3AF] text-[12px]">High Score</span>
             </div>
-            <div className="bg-white/10 rounded-xl p-4 flex flex-col items-center col-span-2">
+            <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 flex flex-col items-center col-span-2 shadow-sm">
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-[#FF4D01]" />
                 <span className="text-[#FF4D01] font-bold text-[22px]">+{earnedXp} XP</span>
               </div>
-              <span className="text-white/50 text-[12px]">Earned</span>
+              <span className="text-[#9CA3AF] text-[12px]">Earned</span>
             </div>
           </div>
 
@@ -496,7 +562,7 @@ export function PianoTilesGame() {
               Play Again
             </button>
             <button onClick={() => setGameState('menu')}
-              className="flex-1 py-3 bg-white/10 rounded-xl text-white font-bold text-[16px] hover:bg-white/20 transition-all">
+              className="flex-1 py-3 bg-white rounded-xl text-[#372213] font-bold text-[16px] border border-[#E5E7EB] hover:bg-gray-50 transition-all">
               Menu
             </button>
           </div>
@@ -509,38 +575,38 @@ export function PianoTilesGame() {
   const colWidth = 100 / NUM_COLS;
 
   return (
-    <div className="min-h-screen w-full bg-[#1a1a2e] flex flex-col items-center font-inter select-none"
+    <div className="min-h-screen w-full bg-[#FFF8E1] flex flex-col items-center font-inter select-none"
       style={{ touchAction: 'manipulation' }}>
 
       {/* Top bar */}
       <div className="w-full max-w-[500px] flex items-center justify-between px-4 py-3">
         <button onClick={() => { cancelAnimationFrame(animRef.current); endGame('Quit'); }}
-          className="text-white/60 hover:text-white text-[14px]">
+          className="text-[#9CA3AF] hover:text-[#372213] text-[14px]">
           Quit
         </button>
         <div className="flex items-center gap-4">
-          <span className="text-white/80 text-[14px]">{currentBeatIndex}/{selectedSong.beats.length}</span>
-          <span className="text-[#FFD700] font-bold text-[18px]">{score}</span>
+          <span className="text-[#6B7280] text-[14px]">{currentBeatIndex}/{selectedSong.beats.length}</span>
+          <span className="text-[#FF8C00] font-bold text-[18px]">{score}</span>
         </div>
       </div>
 
       {/* Prompt — the word to translate */}
       <div className="w-full max-w-[500px] px-4 mb-2">
-        <div className="bg-white/10 rounded-xl py-3 px-6 text-center">
-          <p className="text-white/50 text-[11px] mb-1">
+        <div className="bg-white rounded-xl py-3 px-6 text-center border border-[#E5E7EB] shadow-sm">
+          <p className="text-[#9CA3AF] text-[11px] mb-1">
             {tileMode === 'english' ? 'Tap the English translation' : 'Tap the Spanish translation'}
           </p>
-          <p className="text-white font-bold text-[22px]">{prompt}</p>
+          <p className="text-[#372213] font-bold text-[22px]">{prompt}</p>
         </div>
       </div>
 
       {/* Game area */}
       <div className="w-full max-w-[500px] px-4 flex-1">
-        <div className="relative w-full overflow-hidden rounded-xl border border-white/10"
+        <div className="relative w-full overflow-hidden rounded-xl border border-[#E5E7EB] bg-[#FFFDF5]"
           style={{ height: CANVAS_H }}>
           {/* Column dividers */}
           {[1, 2, 3].map(i => (
-            <div key={i} className="absolute top-0 bottom-0 w-px bg-white/5"
+            <div key={i} className="absolute top-0 bottom-0 w-px bg-[#E5E7EB]"
               style={{ left: `${colWidth * i}%` }} />
           ))}
 
@@ -552,10 +618,8 @@ export function PianoTilesGame() {
               disabled={tile.tapped}
               className={`absolute transition-colors rounded-lg flex items-center justify-center text-center leading-tight ${
                 tile.tapped
-                  ? 'bg-[#22C55E]/30 text-white/30'
-                  : tile.correct
-                    ? 'bg-[#1e3a5f] hover:bg-[#264a6f] text-white border border-white/20'
-                    : 'bg-[#1e3a5f] hover:bg-[#264a6f] text-white border border-white/20'
+                  ? 'bg-[#22C55E]/20 text-[#22C55E]/40'
+                  : 'bg-[#FF4D01] hover:bg-[#E8451A] text-white border border-[#FF6B2E] shadow-sm'
               }`}
               style={{
                 left: `${tile.col * colWidth}%`,

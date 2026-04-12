@@ -559,6 +559,28 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
             {showTranslations ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             {showTranslations ? 'Hide English' : 'Show English'}
           </button>
+          <button
+            onClick={() => {
+              // Clear chat messages and reset criteria checklist
+              localStorage.removeItem(storageKey);
+              setCriteriaComplete(new Set());
+              usedResponses.current = new Set();
+              setMessages([{
+                id: 'ai-0',
+                role: 'ai',
+                text: scenario.aiFirstMessage,
+                translation: scenario.aiFirstMessageEn,
+                inputMode: 'text',
+              }]);
+              setTextInput('');
+              setVoiceTranscript(null);
+            }}
+            title="Clear chat"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-white/20 text-[#FFFDE6] hover:bg-white/30 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Clear Chat
+          </button>
         </div>
         <div className="max-w-[600px] mx-auto flex gap-2">
           {/* Mode toggle */}
