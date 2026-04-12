@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Gamepad2 } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
 
@@ -95,6 +96,27 @@ export function Culture() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Games Section */}
+        <div className="max-w-[605px] mx-auto mt-6 pb-20">
+          <h2 className="font-inter font-bold text-[20px] text-[#372213] mb-4">Games</h2>
+          <div
+            onClick={() => navigate('/culture/word-tiles')}
+            className="relative w-full h-[120px] rounded-xl bg-gradient-to-r from-[#1a1a2e] to-[#2d2d5e] overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border border-white/10"
+          >
+            <div className="absolute inset-0 flex items-center px-6 gap-5">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#FF4D01] to-[#FF8C00] rounded-xl flex items-center justify-center shadow-lg shrink-0">
+                <Gamepad2 className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-[17px] text-white mb-0.5">Word Tiles</p>
+                <p className="text-[12px] text-white/60 leading-[18px]">
+                  Piano tiles meets vocabulary! Tap the correct translation as tiles scroll down to play songs like Despacito.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </PageLayout>

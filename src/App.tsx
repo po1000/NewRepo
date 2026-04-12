@@ -26,6 +26,7 @@ import { FoodDrink } from './pages/FoodDrink';
 import { History } from './pages/History';
 import { Community } from './pages/Community';
 import { Badges } from './pages/Badges';
+import { PianoTilesGame } from './pages/PianoTilesGame';
 
 type PageState = 'login' | 'create' | 'reset';
 
@@ -117,6 +118,7 @@ export function App() {
           <Route path="/culture/regions-landmarks" element={<ProtectedRoute><RegionsLandmarks /></ProtectedRoute>} />
           <Route path="/culture/food-drink" element={<ProtectedRoute><FoodDrinkPage /></ProtectedRoute>} />
           <Route path="/culture/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+          <Route path="/culture/word-tiles" element={<ProtectedRoute><PianoTilesGame /></ProtectedRoute>} />
 
           <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
           <Route path="/badges" element={<ProtectedRoute><Badges /></ProtectedRoute>} />

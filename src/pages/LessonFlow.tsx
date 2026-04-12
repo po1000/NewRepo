@@ -12,6 +12,7 @@ import {
   Zap,
   Trophy,
   Flame,
+  Mic,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +25,8 @@ import {
   requeueTerm,
   applyDecay,
   multiChoiceQuality,
+  listenWriteQuality,
+  listenSpeakQuality,
   TermProgress,
   TermStatus,
 } from '../lib/srs';
@@ -45,7 +48,7 @@ interface GrammarHint {
   hint_type: string;
 }
 
-type LessonMode = 'flashcard' | 'multi_choice';
+type LessonMode = 'flashcard' | 'multi_choice' | 'listen_write' | 'listen_speak';
 
 interface LessonFlowProps {
   onClose: () => void;
@@ -69,7 +72,46 @@ function speakSpanish(text: string, slow: boolean) {
 
 // XP constants
 const XP_CORRECT_ANSWER = 10;
-const XP_FLASHCARD_SEEN = 2;
+
+// Max NEW terms to introduce before cycling quizzes
+const MAX_NEW_TERMS_PER_SESSION = 4;
+
+// Sound effects for correct/incorrect answers (Web Audio API — no external files)
+function playCorrectSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    // Two-tone ascending chime
+    osc.frequency.setValueAtTime(523, ctx.currentTime);       // C5
+    osc.frequency.setValueAtTime(659, ctx.currentTime + 0.12); // E5
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.35);
+  } catch {}
+}
+
+function playIncorrectSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    // Descending buzz
+    osc.frequency.setValueAtTime(350, ctx.currentTime);
+    osc.frequency.setValueAtTime(220, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch {}
+}
 
 // Shuffle array helper
 function shuffle<T>(arr: T[]): T[] {
@@ -119,6 +161,20 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const [mcSelectedId, setMcSelectedId] = useState<number | null>(null);
   const [mcAnswered, setMcAnswered] = useState(false);
   const [mcDirection, setMcDirection] = useState<'es_to_en' | 'en_to_es'>('es_to_en');
+
+  // Listen & Write state
+  const [lwAnswer, setLwAnswer] = useState('');
+  const [lwSubmitted, setLwSubmitted] = useState(false);
+  const [lwCorrect, setLwCorrect] = useState(false);
+  const [lwTargetId, setLwTargetId] = useState<number | null>(null);
+
+  // Listen & Speak state
+  const [lsRecording, setLsRecording] = useState(false);
+  const [lsTranscript, setLsTranscript] = useState('');
+  const [lsSubmitted, setLsSubmitted] = useState(false);
+  const [lsCorrect, setLsCorrect] = useState(false);
+  const [lsTargetId, setLsTargetId] = useState<number | null>(null);
+  const lsRecogRef = useRef<any>(null);
 
   // XP & lesson completion state
   const [sessionXp, setSessionXp] = useState(0);
@@ -311,6 +367,31 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     setMode('multi_choice');
   }, [termsMap, seenTermIds]);
 
+  // ── Setup Listen & Write ──────────────────────────────────
+  const setupListenWrite = useCallback((targetTermId: number) => {
+    setLwTargetId(targetTermId);
+    setLwAnswer('');
+    setLwSubmitted(false);
+    setLwCorrect(false);
+    setMode('listen_write');
+    // Auto-play the word
+    const term = termsMap.get(targetTermId);
+    if (term) setTimeout(() => speakSpanish(term.spanish_text, false), 300);
+  }, [termsMap]);
+
+  // ── Setup Listen & Speak ─────────────────────────────────
+  const setupListenSpeak = useCallback((targetTermId: number) => {
+    setLsTargetId(targetTermId);
+    setLsTranscript('');
+    setLsSubmitted(false);
+    setLsCorrect(false);
+    setLsRecording(false);
+    setMode('listen_speak');
+    // Auto-play the word
+    const term = termsMap.get(targetTermId);
+    if (term) setTimeout(() => speakSpanish(term.spanish_text, false), 300);
+  }, [termsMap]);
+
   // ── Handlers ──────────────────────────────────────────────
 
   const advanceQueue = useCallback(() => {
@@ -332,21 +413,49 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
     // After every 2 new flashcards seen, trigger a quiz on a random SEEN term
     if (newFlashcardCount >= 2 && seenTermIds.length >= 2) {
-      // Pick a random seen term to quiz (not necessarily the next in queue)
       const quizCandidates = seenTermIds.filter(id => {
         const tp = progressMap.get(id);
         return tp && tp.status !== 'not_seen';
       });
       if (quizCandidates.length > 0) {
         const randomId = quizCandidates[Math.floor(Math.random() * quizCandidates.length)];
-        setupMultiChoice(randomId);
+        // Pick a random question type — multi_choice, listen_write, or listen_speak
+        const roll = Math.random();
+        if (roll < 0.5) {
+          setupMultiChoice(randomId);
+        } else if (roll < 0.75) {
+          setupListenWrite(randomId);
+        } else {
+          setupListenSpeak(randomId);
+        }
         setNewFlashcardCount(0);
         return;
       }
     }
 
+    // If we've already introduced MAX_NEW_TERMS_PER_SESSION new terms,
+    // force quizzes on seen terms rather than showing more flashcards
+    if (termsSeenThisSession >= MAX_NEW_TERMS_PER_SESSION && seenTermIds.length >= 2) {
+      const quizCandidates = seenTermIds.filter(id => {
+        const tp = progressMap.get(id);
+        return tp && tp.status !== 'not_seen';
+      });
+      if (quizCandidates.length > 0) {
+        const randomId = quizCandidates[Math.floor(Math.random() * quizCandidates.length)];
+        const roll = Math.random();
+        if (roll < 0.5) {
+          setupMultiChoice(randomId);
+        } else if (roll < 0.75) {
+          setupListenWrite(randomId);
+        } else {
+          setupListenSpeak(randomId);
+        }
+        return;
+      }
+    }
+
     setMode('flashcard');
-  }, [queueIndex, queue, state.subunitId, user, progressMap, newFlashcardCount, seenTermIds, setupMultiChoice]);
+  }, [queueIndex, queue, state.subunitId, user, progressMap, newFlashcardCount, seenTermIds, setupMultiChoice, setupListenWrite, setupListenSpeak, termsSeenThisSession]);
 
   // "Got it!" / "Next" — flashcard handler
   // First encounter: only mark as seen (no processAnswer — don't advance status yet)
@@ -382,9 +491,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       });
       setNewFlashcardCount(prev => prev + 1);
       setTermsSeenThisSession(prev => prev + 1);
-      // Small XP for seeing a new term
-      setSessionXp(prev => prev + XP_FLASHCARD_SEEN);
-      setXpPopup({ amount: XP_FLASHCARD_SEEN, key: Date.now() });
     } else {
       // Already-seen term — score as flashcard review (q=4)
       const tp = progressMap.get(currentTerm.term_id);
@@ -472,17 +578,107 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
       });
     }
 
-    // Award XP on correct answer
+    // Sound effects + XP on correct answer
     if (correct) {
+      playCorrectSound();
       setSessionXp(prev => prev + XP_CORRECT_ANSWER);
       setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
       setCorrectAnswersThisSession(prev => prev + 1);
+    } else {
+      playIncorrectSound();
     }
   }, [mcAnswered, mcCorrectId, user, progressMap, queueIndex]);
 
   const handleMcContinue = useCallback(() => {
     advanceQueue();
   }, [advanceQueue]);
+
+  // ── Listen & Write handler ─────────────────────────────
+  const handleLwSubmit = useCallback(async () => {
+    if (lwSubmitted || !lwTargetId || !user) return;
+    const term = termsMap.get(lwTargetId);
+    if (!term) return;
+
+    setLwSubmitted(true);
+    const q = listenWriteQuality(lwAnswer, term.spanish_text, false);
+    const correct = q >= 4;
+    setLwCorrect(correct);
+
+    const tp = progressMap.get(lwTargetId);
+    if (tp) {
+      const result = processAnswer(tp.status, tp.sm2, q, 'listen_write', false);
+      tp.status = result.newStatus;
+      tp.sm2 = result.sm2;
+      await saveTermProgress(user.id, lwTargetId, result.newStatus, result.sm2);
+      if (result.requeue) setQueue(prev => requeueTerm(prev, queueIndex, lwTargetId));
+      setProgressMap(prev => { const n = new Map(prev); n.set(lwTargetId, { ...tp }); return n; });
+    }
+
+    if (correct) {
+      playCorrectSound();
+      setSessionXp(prev => prev + XP_CORRECT_ANSWER);
+      setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
+      setCorrectAnswersThisSession(prev => prev + 1);
+    } else {
+      playIncorrectSound();
+    }
+  }, [lwSubmitted, lwTargetId, lwAnswer, user, progressMap, queueIndex, termsMap]);
+
+  // ── Listen & Speak handler ────────────────────────────
+  const startLsRecording = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert('Speech recognition not supported. Use Chrome.'); return; }
+    const recog = new SR();
+    recog.lang = 'es-ES';
+    recog.interimResults = false;
+    recog.maxAlternatives = 1;
+    let gotResult = false;
+    recog.onresult = (e: any) => {
+      gotResult = true;
+      setLsTranscript(e.results[0][0].transcript);
+      setLsRecording(false);
+    };
+    recog.onerror = () => setLsRecording(false);
+    recog.onend = () => { if (!gotResult) setLsRecording(false); };
+    lsRecogRef.current = recog;
+    recog.start();
+    setLsRecording(true);
+  }, []);
+
+  const handleLsSubmit = useCallback(async () => {
+    if (lsSubmitted || !lsTargetId || !user || !lsTranscript) return;
+    const term = termsMap.get(lsTargetId);
+    if (!term) return;
+
+    setLsSubmitted(true);
+    // Compare transcript to expected — use simple edit-distance based score
+    const norm = (s: string) => s.trim().toLowerCase().replace(/[^a-záéíóúñü\s]/g, '');
+    const expected = norm(term.spanish_text);
+    const got = norm(lsTranscript);
+    const similarity = expected === got ? 100 : (got.length > 0 && expected.includes(got) ? 70 : 40);
+    const q = listenSpeakQuality(similarity, false);
+    const correct = q >= 4;
+    setLsCorrect(correct);
+
+    const tp = progressMap.get(lsTargetId);
+    if (tp) {
+      const result = processAnswer(tp.status, tp.sm2, q, 'listen_speak', false);
+      tp.status = result.newStatus;
+      tp.sm2 = result.sm2;
+      await saveTermProgress(user.id, lsTargetId, result.newStatus, result.sm2);
+      if (result.requeue) setQueue(prev => requeueTerm(prev, queueIndex, lsTargetId));
+      setProgressMap(prev => { const n = new Map(prev); n.set(lsTargetId, { ...tp }); return n; });
+    }
+
+    if (correct) {
+      playCorrectSound();
+      setSessionXp(prev => prev + XP_CORRECT_ANSWER);
+      setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
+      setCorrectAnswersThisSession(prev => prev + 1);
+    } else {
+      playIncorrectSound();
+    }
+  }, [lsSubmitted, lsTargetId, lsTranscript, user, progressMap, queueIndex, termsMap]);
 
   const handlePlayAudio = useCallback(() => {
     if (currentTerm) speakSpanish(currentTerm.spanish_text, slowAudio);
@@ -867,10 +1063,147 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             {/* Feedback + Continue */}
             {mcAnswered && (
               <div className="flex flex-col items-center gap-4">
-                <p className={`font-bold text-[18px] ${mcSelectedId === mcCorrectId ? 'text-[#22C55E]' : 'text-[#FCA5A5]'}`}>
+                <p className={`font-bold text-[18px] ${mcSelectedId === mcCorrectId ? 'text-white' : 'text-[#FCA5A5]'}`}>
                   {mcSelectedId === mcCorrectId ? 'Correct!' : 'Not quite!'}
                 </p>
                 <button onClick={handleMcContinue}
+                  className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
+                  Continue
+                </button>
+              </div>
+            )}
+          </div>
+          );
+        })()}
+
+        {/* ─── LISTEN & WRITE MODE ─── */}
+        {mode === 'listen_write' && lwTargetId && (() => {
+          const lwTerm = termsMap.get(lwTargetId);
+          if (!lwTerm) return null;
+          return (
+          <div className="flex-1 flex flex-col items-center">
+            <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
+              <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
+                Listen &amp; Write
+              </span>
+            </div>
+
+            <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
+              <p className="text-[14px] text-[#6B7280] mb-3">Listen and type what you hear in Spanish</p>
+              <button onClick={() => speakSpanish(lwTerm.spanish_text, slowAudio)}
+                className="w-16 h-16 bg-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform mb-4">
+                <Volume2 className="w-8 h-8 text-white" />
+              </button>
+              <input
+                type="text"
+                value={lwAnswer}
+                onChange={(e) => setLwAnswer(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !lwSubmitted && handleLwSubmit()}
+                disabled={lwSubmitted}
+                placeholder="Type in Spanish..."
+                className="w-full px-4 py-3 bg-white border-2 border-[#E5E7EB] rounded-xl text-[16px] text-[#372213] text-center focus:outline-none focus:border-[#FF4D01] disabled:opacity-60"
+                autoFocus
+              />
+            </div>
+
+            {!lwSubmitted ? (
+              <button onClick={handleLwSubmit} disabled={!lwAnswer.trim()}
+                className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg disabled:opacity-50">
+                Check
+              </button>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <p className={`font-bold text-[18px] ${lwCorrect ? 'text-white' : 'text-[#FCA5A5]'}`}>
+                  {lwCorrect ? 'Correct!' : 'Not quite!'}
+                </p>
+                {!lwCorrect && (
+                  <p className="text-[#FFFDE6] text-[15px]">
+                    Answer: <span className="font-bold">{lwTerm.spanish_text}</span>
+                  </p>
+                )}
+                <button onClick={advanceQueue}
+                  className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
+                  Continue
+                </button>
+              </div>
+            )}
+          </div>
+          );
+        })()}
+
+        {/* ─── LISTEN & SPEAK MODE ─── */}
+        {mode === 'listen_speak' && lsTargetId && (() => {
+          const lsTerm = termsMap.get(lsTargetId);
+          if (!lsTerm) return null;
+          return (
+          <div className="flex-1 flex flex-col items-center">
+            <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
+              <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
+                Listen &amp; Speak
+              </span>
+            </div>
+
+            <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
+              <p className="text-[14px] text-[#6B7280] mb-3">Listen, then repeat what you hear</p>
+              <button onClick={() => speakSpanish(lsTerm.spanish_text, slowAudio)}
+                className="w-16 h-16 bg-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform mb-4">
+                <Volume2 className="w-8 h-8 text-white" />
+              </button>
+
+              {lsTranscript && !lsSubmitted && (
+                <div className="w-full bg-white border-2 border-[#FF4D01] rounded-xl px-4 py-3 mb-3">
+                  <p className="text-[11px] font-semibold text-[#6B7280] mb-1">Your pronunciation:</p>
+                  <p className="text-[16px] text-[#372213] text-center">{lsTranscript}</p>
+                </div>
+              )}
+            </div>
+
+            {!lsSubmitted ? (
+              <div className="flex flex-col items-center gap-3">
+                {!lsTranscript ? (
+                  lsRecording ? (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 px-6 py-3 bg-[#FF4D01] rounded-xl text-white">
+                        <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
+                        <span className="font-medium text-[14px]">Listening...</span>
+                      </div>
+                      <button onClick={() => { lsRecogRef.current?.stop(); setLsRecording(false); }}
+                        className="px-4 py-3 bg-[#FFFDE6] rounded-xl flex items-center gap-2">
+                        <Check className="w-5 h-5 text-[#22C55E]" />
+                        <span className="font-bold text-[14px] text-[#22C55E]">Done</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={startLsRecording}
+                      className="flex items-center gap-2 px-6 py-3 bg-[#FFFDE6] rounded-xl text-[#372213] hover:bg-white transition-colors shadow-lg">
+                      <Mic className="w-5 h-5 text-[#FF4D01]" />
+                      <span className="font-medium text-[14px]">Tap to speak</span>
+                    </button>
+                  )
+                ) : (
+                  <div className="flex gap-3">
+                    <button onClick={() => setLsTranscript('')}
+                      className="px-4 py-3 bg-white/80 rounded-xl text-[#EF4444] border border-[#FCA5A5]">
+                      Re-record
+                    </button>
+                    <button onClick={handleLsSubmit}
+                      className="px-6 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold hover:bg-white transition-colors shadow-lg">
+                      Submit
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <p className={`font-bold text-[18px] ${lsCorrect ? 'text-white' : 'text-[#FCA5A5]'}`}>
+                  {lsCorrect ? 'Correct!' : 'Not quite!'}
+                </p>
+                {!lsCorrect && (
+                  <p className="text-[#FFFDE6] text-[15px]">
+                    Expected: <span className="font-bold">{lsTerm.spanish_text}</span>
+                  </p>
+                )}
+                <button onClick={advanceQueue}
                   className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
                   Continue
                 </button>
