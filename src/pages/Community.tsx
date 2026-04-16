@@ -95,6 +95,7 @@ export function Community() {
   const [newPostBody, setNewPostBody] = useState('');
   const [newPostTopic, setNewPostTopic] = useState('Grammar Help');
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [selectedTopic, setSelectedTopic] = useState<string>('All Topics');
 
   const toggleReply = (id: string) => {
     setExpandedReplies((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -211,14 +212,15 @@ export function Community() {
           />
         </div>
 
-        {/* Forum Sections */}
+        {/* Forum Sections — functional filter */}
         <div className="flex gap-3 overflow-x-auto pb-4 mb-6 no-scrollbar">
           {['All Topics', 'Grammar Help', 'Pronunciation', 'Culture Exchange', 'Study Tips'].map(
-            (section, i) => (
+            (section) => (
               <button
                 key={section}
+                onClick={() => setSelectedTopic(section)}
                 className={`whitespace-nowrap px-5 py-2.5 rounded-full font-inter font-medium text-[14px] transition-colors ${
-                  i === 0
+                  selectedTopic === section
                     ? 'bg-[#372213] text-white'
                     : 'bg-white text-[#4B5563] hover:bg-gray-50 border border-[#E5E7EB]'
                 }`}
@@ -320,7 +322,7 @@ export function Community() {
 
         {/* Forum Posts */}
         <div className="flex flex-col gap-4">
-          {posts.map((post) => (
+          {posts.filter(post => selectedTopic === 'All Topics' || post.topic === selectedTopic).map((post) => (
             <div
               key={post.id}
               className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm overflow-hidden"

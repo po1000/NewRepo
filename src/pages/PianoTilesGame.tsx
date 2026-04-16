@@ -27,28 +27,18 @@ interface Song {
 
 const SONGS: Song[] = [
   {
-    id: 'despacito',
-    title: 'Despacito',
-    artist: 'Luis Fonsi',
+    id: 'everyday-vocab',
+    title: 'Everyday Vocabulary',
+    artist: 'Practice Mode',
     bpm: 89,
     beats: [
       { spanish: 'lento', english: 'slowly' },
       { spanish: 'corazón', english: 'heart' },
       { spanish: 'respirar', english: 'to breathe' },
-      { spanish: 'besar', english: 'to kiss' },
       { spanish: 'paredes', english: 'walls' },
-      { spanish: 'laberinto', english: 'labyrinth' },
       { spanish: 'favorito', english: 'favourite' },
-      { spanish: 'firma', english: 'signature' },
-      { spanish: 'cuello', english: 'neck' },
-      { spanish: 'susurro', english: 'whisper' },
       { spanish: 'bonito', english: 'beautiful' },
-      { spanish: 'pasito', english: 'little step' },
-      { spanish: 'poquito', english: 'a little bit' },
-      { spanish: 'pegado', english: 'stuck' },
       { spanish: 'ritmo', english: 'rhythm' },
-      { spanish: 'oído', english: 'ear' },
-      { spanish: 'locura', english: 'craziness' },
       { spanish: 'suave', english: 'smooth' },
       { spanish: 'subir', english: 'to go up' },
       { spanish: 'bailar', english: 'to dance' },
@@ -58,14 +48,16 @@ const SONGS: Song[] = [
       { spanish: 'cuerpo', english: 'body' },
       { spanish: 'playa', english: 'beach' },
       { spanish: 'noche', english: 'night' },
-      { spanish: 'boca', english: 'mouth' },
-      { spanish: 'grito', english: 'scream' },
       { spanish: 'manos', english: 'hands' },
-      { spanish: 'pelo', english: 'hair' },
       { spanish: 'mirada', english: 'gaze' },
       { spanish: 'momento', english: 'moment' },
+      { spanish: 'ciudad', english: 'city' },
+      { spanish: 'camino', english: 'road' },
+      { spanish: 'tiempo', english: 'time' },
+      { spanish: 'fuerte', english: 'strong' },
+      { spanish: 'mundo', english: 'world' },
     ],
-    // Simplified "Despacito" melody — C major pentatonic feel
+    // C major pentatonic melody
     notes: [
       261, 293, 329, 349, 392, 349, 329, 293,
       261, 293, 329, 349, 392, 440, 392, 349,
@@ -126,6 +118,7 @@ export function PianoTilesGame() {
   const [prompt, setPrompt] = useState('');
   const [gameOverMsg, setGameOverMsg] = useState('');
   const [earnedXp, setEarnedXp] = useState(0);
+  const [showInstructions, setShowInstructions] = useState(true);
 
   const animRef = useRef<number>(0);
   const lastTimeRef = useRef(0);
@@ -455,7 +448,27 @@ export function PianoTilesGame() {
           </button>
 
           <h1 className="font-bold text-[28px] text-[#372213] text-center mb-2">Word Tiles</h1>
-          <p className="text-[#6B7280] text-center text-[14px] mb-8">Tap the correct translation to the beat!</p>
+          <p className="text-[#6B7280] text-center text-[14px] mb-4">Tap the correct translation to the beat!</p>
+
+          {/* How to Play — toggleable */}
+          <button
+            onClick={() => setShowInstructions(!showInstructions)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-white rounded-xl border border-[#E5E7EB] mb-3 hover:bg-gray-50 transition-colors"
+          >
+            <span className="font-semibold text-[14px] text-[#372213]">How to Play</span>
+            <span className="text-[12px] text-[#6B7280]">{showInstructions ? 'Hide' : 'Show'}</span>
+          </button>
+          {showInstructions && (
+            <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 mb-6">
+              <ol className="flex flex-col gap-2 text-[13px] text-[#4B5563] leading-[20px] list-decimal list-inside">
+                <li>A Spanish (or English) word appears at the top as a prompt.</li>
+                <li>Four tiles scroll down — each with a possible translation.</li>
+                <li>Tap the <strong>correct</strong> tile before it reaches the bottom.</li>
+                <li>Correct taps earn points and play a note. Wrong taps or missed tiles end the game.</li>
+                <li>You earn <strong>2 XP per correct tile</strong> — try to beat your high score!</li>
+              </ol>
+            </div>
+          )}
 
           {/* Song Selection */}
           <div className="mb-6">
@@ -596,7 +609,7 @@ export function PianoTilesGame() {
           <p className="text-[#9CA3AF] text-[11px] mb-1">
             {tileMode === 'english' ? 'Tap the English translation' : 'Tap the Spanish translation'}
           </p>
-          <p className="text-[#372213] font-bold text-[22px]">{prompt}</p>
+          <p className="text-[#372213] font-bold text-[22px]" lang={tileMode === 'english' ? 'es' : 'en'}>{prompt}</p>
         </div>
       </div>
 

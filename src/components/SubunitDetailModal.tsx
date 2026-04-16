@@ -45,35 +45,35 @@ interface SubunitDetailModalProps {
 function MasteryIcon({ status }: { status: string }) {
   if (status === 'learnt' || status === 'mastered') {
     return (
-      <div className="flex items-end gap-[2px] h-[18px]">
-        <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
-        <div className="w-[4px] h-[12px] rounded-[1px] bg-[#F97316]" />
-        <div className="w-[4px] h-[18px] rounded-[1px] bg-[#F97316]" />
+      <div className="flex items-end gap-[3px] h-[24px]" title="Mastered">
+        <div className="w-[5px] h-[8px] rounded-[2px] bg-[#22C55E]" />
+        <div className="w-[5px] h-[16px] rounded-[2px] bg-[#22C55E]" />
+        <div className="w-[5px] h-[24px] rounded-[2px] bg-[#22C55E]" />
       </div>
     );
   }
   if (status === 'reinforced') {
     return (
-      <div className="flex items-end gap-[2px] h-[18px]">
-        <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
-        <div className="w-[4px] h-[12px] rounded-[1px] bg-[#F97316]" />
-        <div className="w-[4px] h-[18px] rounded-[1px] bg-[#E5E7EB]" />
+      <div className="flex items-end gap-[3px] h-[24px]" title="Reinforced">
+        <div className="w-[5px] h-[8px] rounded-[2px] bg-[#F97316]" />
+        <div className="w-[5px] h-[16px] rounded-[2px] bg-[#F97316]" />
+        <div className="w-[5px] h-[24px] rounded-[2px] bg-[#D1D5DB]" />
       </div>
     );
   }
   if (status === 'learning') {
     return (
-      <div className="flex items-end gap-[2px] h-[18px]">
-        <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
-        <div className="w-[4px] h-[12px] rounded-[1px] bg-[#E5E7EB]" />
-        <div className="w-[4px] h-[18px] rounded-[1px] bg-[#E5E7EB]" />
+      <div className="flex items-end gap-[3px] h-[24px]" title="Learning">
+        <div className="w-[5px] h-[8px] rounded-[2px] bg-[#FBBF24]" />
+        <div className="w-[5px] h-[16px] rounded-[2px] bg-[#D1D5DB]" />
+        <div className="w-[5px] h-[24px] rounded-[2px] bg-[#D1D5DB]" />
       </div>
     );
   }
   if (status === 'seen') {
-    return <Eye className="w-[18px] h-[18px] text-[#9CA3AF]" />;
+    return <Eye className="w-[22px] h-[22px] text-[#3B82F6]" strokeWidth={2.5} />;
   }
-  return <EyeOff className="w-[18px] h-[18px] text-[#D1D5DB]" />;
+  return <EyeOff className="w-[22px] h-[22px] text-[#9CA3AF]" strokeWidth={2.5} />;
 }
 
 function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
@@ -87,7 +87,7 @@ function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
   return (
     <div className="mt-2 bg-[#FFF8F0] rounded-[10px] p-3">
       <p className="font-inter font-bold text-[13px] text-[#372213] mb-2">
-        {verb.infinitive} — {verb.english}
+        <span lang="es" className="text-[#DC2626]">{verb.infinitive}</span> — <span lang="en" className="text-[#1D4ED8]">{verb.english}</span>
       </p>
 
       {/* Tense tabs */}
@@ -122,8 +122,8 @@ function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
           {currentTense.conjugations.map((c, i) => (
             <div key={i} className="flex justify-between text-[12px] font-inter py-0.5">
-              <span className="text-[#9CA3AF]">{c.pronoun}</span>
-              <span className="text-[#372213] font-medium">{c.form}</span>
+              <span lang="es" className="text-[#9CA3AF]">{c.pronoun}</span>
+              <span lang="es" className="text-[#DC2626] font-medium">{c.form}</span>
             </div>
           ))}
         </div>
@@ -366,10 +366,10 @@ export function SubunitDetailModal({
                     }`}
                   >
                     <div className="flex flex-col min-w-0 mr-3">
-                      <span className="font-inter font-medium text-[14px] text-[#372213] truncate">
+                      <span lang="es" className="font-inter font-medium text-[14px] text-[#DC2626] truncate">
                         {term.spanish_text}
                       </span>
-                      <span className="font-inter text-[12px] text-[#9CA3AF] truncate">
+                      <span lang="en" className="font-inter text-[12px] text-[#1D4ED8] truncate">
                         {term.english_text}
                       </span>
                     </div>

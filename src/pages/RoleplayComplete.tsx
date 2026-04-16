@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Home, Check, Mic, Pencil, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Home, Check, Mic, Pencil, ArrowLeft, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { scenarios } from './SpeakAndWrite';
 
@@ -26,7 +26,7 @@ interface DifficultWord {
 }
 
 interface RoleplayCompleteProps {
-  onBack?: () => void;
+  onBack?: () => void; // kept for potential external use
 }
 
 // Spanish words that should have accents — maps unaccented → correct form
@@ -116,7 +116,7 @@ function analyzeMessages(messages: ReviewMessage[]) {
   };
 }
 
-export function RoleplayComplete({ onBack }: RoleplayCompleteProps) {
+export function RoleplayComplete(_props: RoleplayCompleteProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -219,7 +219,7 @@ export function RoleplayComplete({ onBack }: RoleplayCompleteProps) {
                 {/* Message bubble */}
                 <div className={`flex flex-col ${msg.role === 'user' ? 'items-start' : 'items-end'} gap-1 max-w-[75%]`}>
                   {showTranslations && msg.translation && (
-                    <span className="text-[10px] leading-[14px] text-white/80">
+                    <span lang="en" className="text-[14px] leading-[18px] text-[#1D4ED8]/80 font-medium">
                       {msg.translation}
                     </span>
                   )}
@@ -228,7 +228,7 @@ export function RoleplayComplete({ onBack }: RoleplayCompleteProps) {
                       ? 'bg-[#FFDD57] rounded-t-2xl rounded-bl-2xl rounded-br-none'
                       : 'bg-[#FFFDE6] rounded-t-2xl rounded-br-2xl rounded-bl-none'
                   }`}>
-                    <p className={`text-[13.6px] leading-[22px] ${
+                    <p lang="es" className={`text-[15.6px] leading-[24px] ${
                       msg.role === 'ai' ? 'font-medium text-[#1F2937]' : 'text-[#372213]'
                     }`}>
                       {msg.text}
@@ -247,13 +247,16 @@ export function RoleplayComplete({ onBack }: RoleplayCompleteProps) {
   }
 
   // ============ SUMMARY MODE ============
+  const [writingExpanded, setWritingExpanded] = useState(true);
+  const [speakingExpanded, setSpeakingExpanded] = useState(true);
+
   return (
     <div className="min-h-screen w-full font-inter"
       style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
 
       {/* Home Button */}
       <div className="absolute top-4 left-4 z-20">
-        <button onClick={onBack}
+        <button onClick={() => navigate('/speak-and-write')}
           className="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform">
           <Home className="w-5 h-5 text-[#372213]" />
         </button>
@@ -275,74 +278,94 @@ export function RoleplayComplete({ onBack }: RoleplayCompleteProps) {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards — white with shadow */}
         <div className="w-full max-w-[448px] flex gap-4 mb-6">
-          <div className="flex-1 bg-[#FFFDE6] rounded-xl p-4 flex flex-col items-center justify-center shadow-sm">
+          <div className="flex-1 bg-white rounded-xl p-4 flex flex-col items-center justify-center shadow-md border border-[#E5E7EB]">
             <span className="text-[11.9px] text-[#6B7280] mb-1">XP Earned</span>
             <span className="font-bold text-[17px] text-[#16A34A]">+30 XP</span>
           </div>
-          <div className="flex-1 bg-[#FFFDE6] rounded-xl p-4 flex flex-col items-center justify-center shadow-sm">
+          <div className="flex-1 bg-white rounded-xl p-4 flex flex-col items-center justify-center shadow-md border border-[#E5E7EB]">
             <span className="text-[11.9px] text-[#6B7280] mb-1">Duration</span>
             <span className="font-bold text-[17px] text-[#372213]">{timeStr}</span>
           </div>
         </div>
 
-        {/* Summary Card */}
-        <div className="w-full max-w-[632px] bg-[#FFFDE6] rounded-xl p-6 shadow-sm mb-8">
+        {/* Summary Card — white with border */}
+        <div className="w-full max-w-[632px] bg-white rounded-xl p-6 shadow-md border border-[#E5E7EB] mb-8">
           <h3 className="font-bold text-[18.6px] text-[#372213] mb-6">Summary</h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
-            {/* Writing Column */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+            {/* Writing Column — expandable */}
             {analysis.hasWriting && (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Pencil className="w-4 h-4 text-[#372213]" />
-                  <span className="font-bold text-[15.6px] text-[#372213]">Writing</span>
-                </div>
-                <ScoreRow label="Spelling" score={analysis.writing.spelling} />
-                <ScoreRow label="Punctuation" score={analysis.writing.punctuation} />
-                <ScoreRow label="Accent Characters" score={analysis.writing.accent} />
-                <ScoreRow label="Grammar & Structure" score={analysis.writing.grammar} />
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => setWritingExpanded(!writingExpanded)}
+                  className="flex items-center justify-between w-full py-2 px-3 bg-[#F9FAFB] rounded-lg hover:bg-[#F3F4F6] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Pencil className="w-4 h-4 text-[#372213]" />
+                    <span className="font-bold text-[15.6px] text-[#372213]">Writing</span>
+                  </div>
+                  {writingExpanded ? <ChevronUp className="w-4 h-4 text-[#6B7280]" /> : <ChevronDown className="w-4 h-4 text-[#6B7280]" />}
+                </button>
+                {writingExpanded && (
+                  <div className="flex flex-col gap-3 pl-2 pt-1">
+                    <ScoreRow label="Spelling" score={analysis.writing.spelling} />
+                    <ScoreRow label="Punctuation" score={analysis.writing.punctuation} />
+                    <ScoreRow label="Accent Characters" score={analysis.writing.accent} />
+                    <ScoreRow label="Grammar & Structure" score={analysis.writing.grammar} />
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Speaking Column */}
+            {/* Speaking Column — expandable */}
             {analysis.hasSpeaking && (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Mic className="w-4 h-4 text-[#372213]" />
-                  <span className="font-bold text-[15.6px] text-[#372213]">Speaking</span>
-                </div>
-                <ScoreRow label="Pronunciation" score={analysis.speaking.pronunciation} />
-                <ScoreRow label="Accent" score={analysis.speaking.accent} />
-                <ScoreRow label="Grammar & Structure" score={analysis.speaking.grammar} />
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => setSpeakingExpanded(!speakingExpanded)}
+                  className="flex items-center justify-between w-full py-2 px-3 bg-[#F9FAFB] rounded-lg hover:bg-[#F3F4F6] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Mic className="w-4 h-4 text-[#372213]" />
+                    <span className="font-bold text-[15.6px] text-[#372213]">Speaking</span>
+                  </div>
+                  {speakingExpanded ? <ChevronUp className="w-4 h-4 text-[#6B7280]" /> : <ChevronDown className="w-4 h-4 text-[#6B7280]" />}
+                </button>
+                {speakingExpanded && (
+                  <div className="flex flex-col gap-3 pl-2 pt-1">
+                    <ScoreRow label="Pronunciation" score={analysis.speaking.pronunciation} />
+                    <ScoreRow label="Accent" score={analysis.speaking.accent} />
+                    <ScoreRow label="Grammar & Structure" score={analysis.speaking.grammar} />
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* Difficult Words */}
           {analysis.difficultWords.length > 0 && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 pt-4 border-t border-[#E5E7EB]">
               <h4 className="font-bold text-[15.6px] text-[#372213]">Difficult Words</h4>
               <div className="flex flex-wrap gap-3">
                 {analysis.difficultWords.map((dw, i) => (
                   <div key={i} className="flex flex-col items-center gap-1.5">
-                    <div className="px-4 py-1.5 bg-[#FFE0A7] rounded-full flex items-center gap-2">
+                    <div className="px-4 py-1.5 bg-[#FEF3C7] border border-[#FDE68A] rounded-full flex items-center gap-2">
                       {dw.word !== dw.correct ? (
                         <>
-                          <span className="font-medium text-[15px] text-[#EF4444] line-through">{dw.word}</span>
+                          <span lang="es" className="font-medium text-[15px] text-[#EF4444] line-through">{dw.word}</span>
                           <span className="font-medium text-[13px] text-[#6B7280]">&rarr;</span>
-                          <span className="font-bold text-[15px] text-[#372213]">{dw.correct}</span>
+                          <span lang="es" className="font-bold text-[15px] text-[#DC2626]">{dw.correct}</span>
                         </>
                       ) : (
-                        <span className="font-medium text-[15px] text-[#372213]">{dw.word}</span>
+                        <span lang="es" className="font-medium text-[15px] text-[#DC2626]">{dw.word}</span>
                       )}
                     </div>
-                    <div className="flex gap-1 bg-[#FFE0A7] rounded-full px-2 py-0.5">
+                    <div className="flex gap-1 bg-[#F3F4F6] rounded-full px-2 py-0.5">
                       {dw.type === 'speaking' ? (
-                        <Mic className="w-3.5 h-3.5 text-[#372213]" />
+                        <Mic className="w-3.5 h-3.5 text-[#6B7280]" />
                       ) : (
-                        <Pencil className="w-3.5 h-3.5 text-[#372213]" />
+                        <Pencil className="w-3.5 h-3.5 text-[#6B7280]" />
                       )}
                     </div>
                   </div>
@@ -352,18 +375,18 @@ export function RoleplayComplete({ onBack }: RoleplayCompleteProps) {
           )}
         </div>
 
-        {/* Bottom Actions — 3 buttons */}
+        {/* Bottom Actions — 3 buttons, Next Scenario matches Retry color */}
         <div className="w-full max-w-[632px] flex flex-col sm:flex-row gap-3">
           <button onClick={() => setMode('review')}
-            className="flex-1 py-3 bg-[#FFFDE6] border-2 border-[#FFFDE6] rounded-xl font-bold text-[16px] text-[#FF4D01] hover:bg-white transition-colors">
+            className="flex-1 py-3 bg-white border-2 border-[#FF6200] rounded-xl font-bold text-[16px] text-[#FF6200] hover:bg-[#FFF7ED] transition-colors">
             Review Conversation
           </button>
           <button onClick={handleRetry}
-            className="flex-1 py-3 bg-[#FF6200] border-2 border-[#FFFDE6] rounded-xl font-bold text-[16px] text-[#FFFDE6] hover:bg-[#e55800] transition-colors">
+            className="flex-1 py-3 bg-[#FF6200] border-2 border-[#FF6200] rounded-xl font-bold text-[16px] text-white hover:bg-[#e55800] transition-colors">
             Retry Scenario
           </button>
           <button onClick={handleNextScenario}
-            className="flex-1 py-3 bg-[#372213] border-2 border-[#FFFDE6] rounded-xl font-bold text-[16px] text-[#FFFDE6] hover:bg-[#2a1a0f] transition-colors">
+            className="flex-1 py-3 bg-[#FF6200] border-2 border-[#FF6200] rounded-xl font-bold text-[16px] text-white hover:bg-[#e55800] transition-colors">
             Next Scenario
           </button>
         </div>

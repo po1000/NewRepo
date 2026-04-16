@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   X,
   Flag,
@@ -13,9 +13,6 @@ import {
   Trophy,
   Flame,
   Mic,
-  BookOpen,
-  Eye,
-  EyeOff,
   Home,
   ArrowRight,
 } from 'lucide-react';
@@ -55,9 +52,9 @@ interface GrammarHint {
 
 type LessonMode = 'flashcard' | 'multi_choice' | 'listen_write' | 'listen_speak';
 
-interface LessonFlowProps {
-  onClose: () => void;
-}
+// English = royal blue, Spanish = blood orange
+const ENGLISH_COLOR = '#1D4ED8';
+const SPANISH_COLOR = '#DC2626';
 
 function speakSpanish(text: string, slow: boolean) {
   if (!window.speechSynthesis) return;
@@ -139,8 +136,9 @@ interface SavedSession {
   newFlashcardCount: number;
 }
 
-export function LessonFlow({ onClose }: LessonFlowProps) {
+export function LessonFlow() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const state = (location.state as { subunitId?: number; subunitCode?: string; title?: string }) || {};
 
@@ -189,8 +187,6 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   const [correctAnswersThisSession, setCorrectAnswersThisSession] = useState(0);
   const [streakUpdated, setStreakUpdated] = useState(false);
   const [newStreak, setNewStreak] = useState(0);
-  const [showWordsPopup, setShowWordsPopup] = useState(false);
-
   // Track status changes for "graduated words" display on lesson complete
   const initialStatusRef = useRef<Map<number, string>>(new Map());
   const [graduatedWords, setGraduatedWords] = useState<{ term: Term; from: string; to: string }[]>([]);
@@ -497,7 +493,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
   // Already seen: score q=4 as flashcard review
   const handleNext = useCallback(async () => {
     if (!currentTerm || !user) {
-      onClose();
+      navigate('/dashboard');
       return;
     }
 
@@ -549,7 +545,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
     }
 
     advanceQueue();
-  }, [currentTerm, currentProgress, user, progressMap, queueIndex, advanceQueue, onClose]);
+  }, [currentTerm, currentProgress, user, progressMap, queueIndex, advanceQueue]);
 
   // Thumbs up → mark as known
   const handleKnown = useCallback(async () => {
@@ -870,27 +866,27 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             {state.title || 'Great work!'}
           </p>
 
-          {/* Stats cards */}
+          {/* Stats cards — white for contrast */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
-              <Zap className="w-7 h-7 text-[#FFE101] mb-1" />
-              <span className="text-[#FFFDE6] text-[24px] font-bold">{sessionXp}</span>
-              <span className="text-[#FFFDE6]/70 text-[12px]">XP Earned</span>
+            <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
+              <Zap className="w-7 h-7 text-[#16A34A] fill-[#16A34A] mb-1" />
+              <span className="text-[#372213] text-[24px] font-bold">{sessionXp}</span>
+              <span className="text-[#6B7280] text-[12px]">XP Earned</span>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
-              <Star className="w-7 h-7 text-[#FFE101] mb-1" />
-              <span className="text-[#FFFDE6] text-[24px] font-bold">{termsSeenThisSession}</span>
-              <span className="text-[#FFFDE6]/70 text-[12px]">New Terms</span>
+            <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
+              <Star className="w-7 h-7 text-[#F59E0B] fill-[#F59E0B] mb-1" />
+              <span className="text-[#372213] text-[24px] font-bold">{termsSeenThisSession}</span>
+              <span className="text-[#6B7280] text-[12px]">New Terms</span>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
+            <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Check className="w-7 h-7 text-[#22C55E] mb-1" />
-              <span className="text-[#FFFDE6] text-[24px] font-bold">{correctAnswersThisSession}</span>
-              <span className="text-[#FFFDE6]/70 text-[12px]">Correct Answers</span>
+              <span className="text-[#372213] text-[24px] font-bold">{correctAnswersThisSession}</span>
+              <span className="text-[#6B7280] text-[12px]">Correct Answers</span>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex flex-col items-center">
-              <Flame className="w-7 h-7 text-[#FF4D01] mb-1" />
-              <span className="text-[#FFFDE6] text-[24px] font-bold">{newStreak}</span>
-              <span className="text-[#FFFDE6]/70 text-[12px]">
+            <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
+              <Flame className="w-7 h-7 text-[#FF4D01] fill-[#FF4D01] mb-1" />
+              <span className="text-[#372213] text-[24px] font-bold">{newStreak}</span>
+              <span className="text-[#6B7280] text-[12px]">
                 {streakUpdated ? 'Day Streak!' : 'Day Streak'}
               </span>
             </div>
@@ -898,19 +894,19 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
           {/* Graduated Words — only words that changed status */}
           {graduatedWords.length > 0 && (
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 mb-6">
-              <h3 className="text-[#FFFDE6] font-bold text-[15px] mb-3">Words Progressed</h3>
+            <div className="bg-white rounded-xl p-4 mb-6 shadow-md border border-[#E5E7EB]">
+              <h3 className="text-[#372213] font-bold text-[15px] mb-3">Words Progressed</h3>
               <div className="flex flex-col gap-2">
                 {graduatedWords.map(({ term, from, to }) => (
-                  <div key={term.term_id} className="flex items-center justify-between bg-white/10 rounded-lg px-3 py-2">
+                  <div key={term.term_id} className="flex items-center justify-between bg-[#FFF8E1] rounded-lg px-3 py-2.5">
                     <div className="flex flex-col min-w-0 mr-2">
-                      <span className="text-[#FFFDE6] font-medium text-[13px] truncate">{term.spanish_text}</span>
-                      <span className="text-[#FFFDE6]/60 text-[11px] truncate">{term.english_text}</span>
+                      <span className="font-semibold text-[13px] truncate" lang="es" style={{ color: SPANISH_COLOR }}>{term.spanish_text}</span>
+                      <span className="text-[11px] truncate" lang="en" style={{ color: ENGLISH_COLOR }}>{term.english_text}</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[#FFFDE6]/50 text-[11px]">{STATUS_LABELS[from]}</span>
-                      <ArrowRight className="w-3 h-3 text-[#FFFDE6]/50" />
-                      <span className="text-[#FFE101] text-[11px] font-bold">{STATUS_LABELS[to]}</span>
+                      <span className="text-[#9CA3AF] text-[11px]">{STATUS_LABELS[from]}</span>
+                      <ArrowRight className="w-3 h-3 text-[#9CA3AF]" />
+                      <span className="text-[#16A34A] text-[11px] font-bold">{STATUS_LABELS[to]}</span>
                     </div>
                   </div>
                 ))}
@@ -920,8 +916,8 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <button onClick={onClose}
-              className="flex-1 py-4 bg-white/20 backdrop-blur-sm rounded-xl text-[#FFFDE6] font-bold text-[15px] hover:bg-white/30 transition-colors flex items-center justify-center gap-2">
+            <button onClick={() => navigate('/dashboard')}
+              className="flex-1 py-4 bg-white rounded-xl shadow-md border border-[#E5E7EB] text-[#372213] font-bold text-[15px] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
               <Home className="w-5 h-5" />
               Home
             </button>
@@ -973,7 +969,7 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => {
-            onClose();
+            navigate('/dashboard');
           }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <X className="w-6 h-6 text-[#FFFDE6]" />
           </button>
@@ -981,83 +977,10 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
             <div className="h-full bg-[#FFFDE6] rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }} />
           </div>
-          <button onClick={() => setShowWordsPopup(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Words & Phrases">
-            <BookOpen className="w-6 h-6 text-[#FFFDE6]" />
-          </button>
           <button onClick={() => setShowReport(!showReport)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <Flag className="w-6 h-6 text-[#FFFDE6]" />
           </button>
         </div>
-
-        {/* Words & Phrases Popup */}
-        {showWordsPopup && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setShowWordsPopup(false)}>
-            <div
-              className="relative w-[90%] max-w-[420px] max-h-[80vh] flex flex-col rounded-[20px] shadow-xl"
-              style={{ background: 'linear-gradient(to bottom, #FFF8E1, #FFFDF5)' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setShowWordsPopup(false)}
-                className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
-              >
-                <X className="w-5 h-5 text-[#6B7280]" />
-              </button>
-              <div className="overflow-y-auto flex-1 px-5 pt-5 pb-5">
-                <h3 className="font-inter font-bold text-[15px] text-[#372213] mb-3">Words & Phrases</h3>
-                <div className="bg-white rounded-[16px] p-4">
-                  <ul className="flex flex-col">
-                    {Array.from(termsMap.values()).map((term, i, arr) => {
-                      const tp = progressMap.get(term.term_id);
-                      const status = tp?.status || 'not_seen';
-                      return (
-                        <li
-                          key={term.term_id}
-                          className={`flex items-center justify-between py-3 px-1 ${
-                            i < arr.length - 1 ? 'border-b border-[#F3F4F6]' : ''
-                          }`}
-                        >
-                          <div className="flex flex-col min-w-0 mr-3">
-                            <span className="font-inter font-medium text-[14px] text-[#372213] truncate">
-                              {term.spanish_text}
-                            </span>
-                            <span className="font-inter text-[12px] text-[#9CA3AF] truncate">
-                              {term.english_text}
-                            </span>
-                          </div>
-                          {/* Status icon */}
-                          {status === 'learnt' ? (
-                            <div className="flex items-end gap-[2px] h-[18px]">
-                              <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
-                              <div className="w-[4px] h-[12px] rounded-[1px] bg-[#F97316]" />
-                              <div className="w-[4px] h-[18px] rounded-[1px] bg-[#F97316]" />
-                            </div>
-                          ) : status === 'reinforced' ? (
-                            <div className="flex items-end gap-[2px] h-[18px]">
-                              <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
-                              <div className="w-[4px] h-[12px] rounded-[1px] bg-[#F97316]" />
-                              <div className="w-[4px] h-[18px] rounded-[1px] bg-[#E5E7EB]" />
-                            </div>
-                          ) : status === 'learning' ? (
-                            <div className="flex items-end gap-[2px] h-[18px]">
-                              <div className="w-[4px] h-[6px] rounded-[1px] bg-[#F97316]" />
-                              <div className="w-[4px] h-[12px] rounded-[1px] bg-[#E5E7EB]" />
-                              <div className="w-[4px] h-[18px] rounded-[1px] bg-[#E5E7EB]" />
-                            </div>
-                          ) : status === 'seen' ? (
-                            <Eye className="w-[18px] h-[18px] text-[#9CA3AF]" />
-                          ) : (
-                            <EyeOff className="w-[18px] h-[18px] text-[#D1D5DB]" />
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* XP Popup Animation */}
         {xpPopup && (
@@ -1127,10 +1050,10 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
                   <Volume2 className="w-8 h-8 text-[#FF4D01]" />
                 </button>
 
-                <h2 className="font-bold text-[24px] leading-[48px] text-black mb-1">
+                <h2 className="font-bold text-[24px] leading-[48px] mb-1" lang="es" style={{ color: SPANISH_COLOR }}>
                   {currentTerm.spanish_text}
                 </h2>
-                <span className="font-medium text-[20px] leading-[20px] text-[#FF4D01]">
+                <span className="font-medium text-[20px] leading-[20px]" lang="en" style={{ color: ENGLISH_COLOR }}>
                   {currentTerm.english_text}
                 </span>
 
@@ -1267,12 +1190,19 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
               })}
             </div>
 
-            {/* Feedback + Continue */}
+            {/* Feedback + Continue — always show correct answer */}
             {mcAnswered && (
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-3">
                 <p className={`font-bold text-[18px] ${mcSelectedId === mcCorrectId ? 'text-white' : 'text-[#FCA5A5]'}`}>
                   {mcSelectedId === mcCorrectId ? 'Correct!' : 'Not quite!'}
                 </p>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
+                  <p className="text-[14px] text-[#FFFDE6]">
+                    Correct answer: <span className="font-bold" lang="es" style={{ color: '#FFEB15' }}>{quizzedTerm.spanish_text}</span>
+                    <span className="mx-2 text-white/50">—</span>
+                    <span lang="en" style={{ color: '#93C5FD' }}>{quizzedTerm.english_text}</span>
+                  </p>
+                </div>
                 <button onClick={handleMcContinue}
                   className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
                   Continue
@@ -1323,11 +1253,11 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
                 <p className={`font-bold text-[18px] ${lwCorrect ? 'text-white' : 'text-[#FCA5A5]'}`}>
                   {lwCorrect ? 'Correct!' : 'Not quite!'}
                 </p>
-                {!lwCorrect && (
-                  <p className="text-[#FFFDE6] text-[15px]">
-                    Answer: <span className="font-bold">{lwTerm.spanish_text}</span>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
+                  <p className="text-[14px] text-[#FFFDE6]">
+                    Correct answer: <span className="font-bold" lang="es" style={{ color: '#FFEB15' }}>{lwTerm.spanish_text}</span>
                   </p>
-                )}
+                </div>
                 <button onClick={advanceQueue}
                   className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
                   Continue
@@ -1405,11 +1335,11 @@ export function LessonFlow({ onClose }: LessonFlowProps) {
                 <p className={`font-bold text-[18px] ${lsCorrect ? 'text-white' : 'text-[#FCA5A5]'}`}>
                   {lsCorrect ? 'Correct!' : 'Not quite!'}
                 </p>
-                {!lsCorrect && (
-                  <p className="text-[#FFFDE6] text-[15px]">
-                    Expected: <span className="font-bold">{lsTerm.spanish_text}</span>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
+                  <p className="text-[14px] text-[#FFFDE6]">
+                    Correct answer: <span className="font-bold" lang="es" style={{ color: '#FFEB15' }}>{lsTerm.spanish_text}</span>
                   </p>
-                )}
+                </div>
                 <button onClick={advanceQueue}
                   className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
                   Continue
