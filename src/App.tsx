@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 import { AuthCallback } from './components/AuthCallback';
@@ -40,6 +41,7 @@ export function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <LanguageProvider>
         <React.Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* Public auth routes */}
@@ -82,6 +84,7 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </React.Suspense>
+        </LanguageProvider>
       </AuthProvider>
     </BrowserRouter>
   );

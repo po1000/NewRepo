@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Star, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { loadTermProgress, applyDecay, TermStatus } from '../lib/srs';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Term {
   term_id: number;
@@ -141,6 +142,7 @@ export function SubunitDetailModal({
   onClose,
   onStartLesson,
 }: SubunitDetailModalProps) {
+  const { t } = useLanguage();
   const [terms, setTerms] = useState<Term[]>([]);
   const [grammarHints, setGrammarHints] = useState<GrammarHint[]>([]);
   const [showGrammar, setShowGrammar] = useState(false);
@@ -320,7 +322,7 @@ export function SubunitDetailModal({
           {showGrammar && (
             <div className="mx-5 mb-3 p-3 bg-white/80 rounded-[12px] border border-[#F97316]/20">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-inter font-bold text-[14px] text-[#372213]">Grammar Hints</h3>
+                <h3 className="font-inter font-bold text-[14px] text-[#372213]">{t('grammar.hints')}</h3>
                 <button
                   onClick={() => setShowGrammar(false)}
                   className="text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
@@ -350,7 +352,7 @@ export function SubunitDetailModal({
 
           {/* Words & Phrases */}
           <div className="mx-5 mb-4 bg-white rounded-[16px] p-4">
-            <h3 className="font-inter font-bold text-[15px] text-[#372213] mb-3">Words & Phrases</h3>
+            <h3 className="font-inter font-bold text-[15px] text-[#372213] mb-3">{t('dashboard.wordsAndPhrases')}</h3>
 
             {loading ? (
               <p className="font-inter text-[13px] text-[#9CA3AF] text-center py-4">Loading terms...</p>
@@ -387,7 +389,7 @@ export function SubunitDetailModal({
             onClick={onStartLesson}
             className="w-full py-3 rounded-[12px] bg-[#E8501E] hover:bg-[#D4461A] active:bg-[#C03F17] text-white font-inter font-bold text-[15px] transition-colors shadow-md"
           >
-            Start Lesson
+            {t('dashboard.startLesson')}
           </button>
         </div>
       </div>

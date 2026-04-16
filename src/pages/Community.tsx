@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageLayout } from '../components/PageLayout';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Reply {
   id: string;
@@ -47,6 +48,7 @@ const TOPICS = ['Grammar Help', 'Pronunciation', 'Culture Exchange', 'Study Tips
 
 export function Community() {
   usePageTitle('Community');
+  const { t } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([
     {
       id: 'post-1',
@@ -197,7 +199,7 @@ export function Community() {
         {/* Header */}
         <div className="flex flex-col items-center gap-2 mb-10 text-center">
           <h1 className="font-inter font-bold text-[25.5px] leading-[36px] text-[#372213]">
-            The Community
+            {t('community.title')}
           </h1>
           <p className="font-inter text-[13.6px] leading-[24px] text-[#4B5563]">
             Ask questions, share tips, and learn together with fellow Spanish learners
@@ -209,7 +211,7 @@ export function Community() {
           <Search className="w-5 h-5 text-[#9CA3AF]" />
           <input
             type="text"
-            placeholder="Search topics, questions, or grammar rules..."
+            placeholder={t('community.search')}
             className="flex-1 bg-transparent border-none outline-none font-inter text-[16px] text-[#372213] placeholder:text-[#9CA3AF]"
           />
         </div>
@@ -239,7 +241,7 @@ export function Community() {
           className="w-full bg-[#FF4D01] hover:bg-[#E64401] text-white rounded-xl px-6 py-4 font-inter font-semibold text-[16px] flex items-center justify-center gap-2 shadow-sm transition-colors mb-6"
         >
           <Plus className="w-5 h-5" />
-          Ask a Question
+          {t('community.askQuestion')}
         </button>
 
         {/* New Post Form */}
