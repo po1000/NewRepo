@@ -1,6 +1,7 @@
 import React from 'react';
 import { PageLayout } from '../components/PageLayout';
 import { GrammarBreadcrumb } from '../components/GrammarBreadcrumb';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const PRONOUN_SECTIONS = [
   {
@@ -60,6 +61,7 @@ const TIPS = [
 ];
 
 export function Pronouns() {
+  usePageTitle('Pronouns');
   const crumbs = [
     { label: 'Grammar', to: '/grammar' },
     { label: 'Topics', to: '/grammar' },

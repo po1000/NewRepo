@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { PageLayout } from '../components/PageLayout';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface Badge {
   badge_id: number;
@@ -18,6 +19,7 @@ interface Badge {
 }
 
 export function Badges() {
+  usePageTitle('Badges');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [badges, setBadges] = useState<Badge[]>([]);

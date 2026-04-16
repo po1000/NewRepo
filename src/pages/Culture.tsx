@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Gamepad2 } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface CultureCategory {
   id: string;
@@ -49,6 +50,7 @@ const categories: CultureCategory[] = [
 ];
 
 export function Culture() {
+  usePageTitle('Culture');
   const navigate = useNavigate();
 
   return (

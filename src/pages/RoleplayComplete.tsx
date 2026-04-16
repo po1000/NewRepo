@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Home, Check, Mic, Pencil, ArrowLeft, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { scenarios } from './SpeakAndWrite';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface ReviewMessage {
   role: string;
@@ -117,6 +118,7 @@ function analyzeMessages(messages: ReviewMessage[]) {
 }
 
 export function RoleplayComplete(_props: RoleplayCompleteProps) {
+  usePageTitle('Roleplay Complete');
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();

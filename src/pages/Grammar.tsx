@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { GrammarBreadcrumb } from '../components/GrammarBreadcrumb';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface GrammarItem {
   label: string;
@@ -78,6 +79,7 @@ function editDistance(a: string, b: string): number {
 }
 
 export function Grammar() {
+  usePageTitle('Grammar');
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 

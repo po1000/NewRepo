@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ChevronRightIcon, ChevronLeftIcon, InfoIcon } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface TimelineItem {
   id: string;
@@ -152,6 +153,7 @@ const TIMELINE_DATA: TimelineItem[] = [
 }];
 
 export function History() {
+  usePageTitle('History');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);

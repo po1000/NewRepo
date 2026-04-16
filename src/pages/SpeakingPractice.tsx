@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Flag, Star, Mic, Volume2, Check, Send, Square, Eye, EyeOff, Trash2, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { scenarios, PracticeScenario } from './SpeakAndWrite';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface ChatMessage {
   id: string;
@@ -224,8 +225,8 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
   const { scenarioSlug } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-
   const scenario = scenarios.find(s => s.id === scenarioSlug) || scenarios[0];
+  usePageTitle(scenario.title);
   const storageKey = `chat_${user?.id}_${scenario.id}`;
   const charInfo = CHARACTER_INFO[scenario.id] || CHARACTER_INFO['ordering-cafe'];
   const storedAvatar = user?.id ? localStorage.getItem(`avatar_url_${user.id}`) : null;

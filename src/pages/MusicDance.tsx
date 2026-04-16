@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface DanceEntry {
   title: string;
@@ -89,6 +90,7 @@ const DANCE_ENTRIES: DanceEntry[] = [
 }];
 
 export function MusicDance() {
+  usePageTitle('Music & Dance');
   const [currentPage, setCurrentPage] = useState(0);
   const [isSpanish, setIsSpanish] = useState(false);
   const [direction, setDirection] = useState(1);

@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export interface ScenarioCriteria {
   id: string;
@@ -100,6 +101,7 @@ interface SpeakAndWriteProps {
 export function SpeakAndWrite({
   onScenarioClick,
 }: SpeakAndWriteProps) {
+  usePageTitle('Speak & Write');
   return (
     <PageLayout>
 

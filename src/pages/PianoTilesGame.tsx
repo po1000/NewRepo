@@ -4,6 +4,7 @@ import { ArrowLeft, Play, Trophy, Zap } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // ── Song Data ──────────────────────────────────────────────
 // Each beat has the Spanish word and its English translation.
@@ -104,6 +105,7 @@ interface TileData {
 }
 
 export function PianoTilesGame() {
+  usePageTitle('Word Tiles');
   const navigate = useNavigate();
   const { user } = useAuth();
 

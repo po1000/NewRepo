@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, PlayCircle } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface FoodDrinkProps {
   onNavigateToRegion?: (region: string) => void;
@@ -174,6 +175,7 @@ const MENU_DATA: MenuSection[] = [
 export function FoodDrink({
   onNavigateToRegion
 }: FoodDrinkProps) {
+  usePageTitle('Food & Drink');
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
     {}
   );

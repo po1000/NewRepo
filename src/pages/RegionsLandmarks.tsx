@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface RegionsLandmarksProps {
   initialRegion?: ViewType | null;
@@ -135,6 +136,7 @@ const DETAIL_DATA: Record<ViewType, DetailData> = {
 export function RegionsLandmarks({
   initialRegion = null
 }: RegionsLandmarksProps) {
+  usePageTitle('Regions & Landmarks');
   const [activeView, setActiveView] = useState<ViewType | null>(initialRegion);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [isSpanish, setIsSpanish] = useState(false);

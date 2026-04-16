@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { UnitSection, UnitData } from './UnitSection';
 import { SubunitDetailModal } from './SubunitDetailModal';
 import { PageLayout } from './PageLayout';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface SubunitRow {
   subunit_id: number;
@@ -41,6 +42,7 @@ interface SubunitProgress {
 }
 
 export function Dashboard() {
+  usePageTitle('Dashboard');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [unitsByLevel, setUnitsByLevel] = useState<Record<string, UnitData[]>>({});

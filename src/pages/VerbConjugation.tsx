@@ -3,6 +3,7 @@ import { useParams, useLocation } from 'react-router-dom';
 import { PageLayout } from '../components/PageLayout';
 import { GrammarBreadcrumb } from '../components/GrammarBreadcrumb';
 import { supabase } from '../lib/supabase';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface TenseInfo {
   tense_id: number;
@@ -40,6 +41,7 @@ const SINGULAR_PRONOUNS = ['1st singular', '2nd singular', '3rd singular'];
 const PLURAL_PRONOUNS = ['1st plural', '2nd plural', '3rd plural'];
 
 export function VerbConjugation() {
+  usePageTitle('Verb Conjugation');
   const { verb: verbSlug } = useParams<{ verb: string }>();
   const location = useLocation();
   // Extract category from URL path: /grammar/er-verbs/ser → 'er'

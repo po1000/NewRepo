@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageLayout } from '../components/PageLayout';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface Reply {
   id: string;
@@ -45,6 +46,7 @@ interface Post {
 const TOPICS = ['Grammar Help', 'Pronunciation', 'Culture Exchange', 'Study Tips'];
 
 export function Community() {
+  usePageTitle('Community');
   const [posts, setPosts] = useState<Post[]>([
     {
       id: 'post-1',

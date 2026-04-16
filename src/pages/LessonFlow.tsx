@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { usePageTitle } from '../hooks/usePageTitle';
 import {
   X,
   Flag,
@@ -137,6 +138,7 @@ interface SavedSession {
 }
 
 export function LessonFlow() {
+  usePageTitle('Lesson');
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
