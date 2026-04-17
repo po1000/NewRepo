@@ -17,7 +17,6 @@ export function PageLayout({ children, stats, backgroundColor = '#FFEF74', navOv
   const navigate = useNavigate();
 
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
-  // Priority: localStorage cache > Supabase user_metadata > Google picture
   const storedAvatar = user?.id ? localStorage.getItem(`avatar_url_${user.id}`) : null;
   const avatarUrl = storedAvatar || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
 

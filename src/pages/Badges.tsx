@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { PageLayout } from '../components/PageLayout';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Badge {
   badge_id: number;
@@ -21,7 +21,7 @@ interface Badge {
 export function Badges() {
   usePageTitle('Badges');
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { t, showInstructions } = useLanguage();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -87,6 +87,13 @@ export function Badges() {
     <PageLayout>
       <main className="max-w-[632px] mx-auto px-4 pb-12">
         <h1 className="font-inter font-bold text-[22px] text-[#372213] mb-4">My Badges</h1>
+        {showInstructions && (
+          <div className="bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#F97316]/20 mb-4">
+            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+              {t('instructions.badges')}
+            </p>
+          </div>
+        )}
         {loading ? (
           <p className="text-center text-[#9CA3AF] py-8">Loading badges...</p>
         ) : badges.length === 0 ? (
@@ -103,25 +110,32 @@ export function Badges() {
                   key={badge.badge_id}
                   className={`flex flex-col items-center p-5 rounded-[16px] shadow-sm transition-all ${
                     badge.earned
-                      ? 'bg-white border-2 border-[#F97316]'
+                      ? 'bg-gradient-to-b from-[#FFF8F0] to-white border-2 border-[#22C55E]'
                       : 'bg-white border border-gray-200'
                   }`}
                 >
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 ${
-                    badge.earned ? 'bg-[#FFF3E0]' : 'bg-gray-100'
-                  }`}>
-                    {badge.icon_url ? (
-                      <img
-                        src={badge.icon_url}
-                        alt={badge.label}
-                        className={`w-10 h-10 object-contain ${badge.earned ? '' : 'opacity-40 grayscale'}`}
-                      />
-                    ) : (
-                      <img
-                        src="/badges-icon.svg"
-                        alt={badge.label}
-                        className={`w-10 h-10 object-contain ${badge.earned ? '' : 'opacity-40 grayscale'}`}
-                      />
+                  <div className="relative">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 ${
+                      badge.earned ? 'bg-[#FFF3E0]' : 'bg-gray-100'
+                    }`}>
+                      {badge.icon_url ? (
+                        <img
+                          src={badge.icon_url}
+                          alt={badge.label}
+                          className={`w-10 h-10 object-contain ${badge.earned ? '' : 'opacity-40 grayscale'}`}
+                        />
+                      ) : (
+                        <img
+                          src="/badges-icon.svg"
+                          alt={badge.label}
+                          className={`w-10 h-10 object-contain ${badge.earned ? '' : 'opacity-40 grayscale'}`}
+                        />
+                      )}
+                    </div>
+                    {badge.earned && (
+                      <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#22C55E] flex items-center justify-center shadow">
+                        <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                      </div>
                     )}
                   </div>
                   <h3 className="font-inter font-bold text-[14px] text-[#372213] text-center">
@@ -131,25 +145,36 @@ export function Badges() {
                     {badge.description}
                   </p>
 
-                  {/* Progress bar */}
+                  {/* Progress bar or green tick */}
                   <div className="w-full mt-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-inter text-[11px] font-semibold text-[#6B7280]">
-                        {badge.earned ? 'Completed' : `${badge.current_progress} / ${badge.criteria_value}`}
-                      </span>
-                      <span className="font-inter text-[11px] font-semibold text-[#6B7280]">
-                        {pct}%
-                      </span>
-                    </div>
-                    <div className="w-full h-[6px] bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor: badge.earned ? '#22C55E' : '#F97316',
-                        }}
-                      />
-                    </div>
+                    {badge.earned ? (
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Check className="w-4 h-4 text-[#22C55E]" strokeWidth={3} />
+                        <span className="font-inter text-[12px] font-bold text-[#22C55E]">
+                          Completed!
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-inter text-[11px] font-semibold text-[#6B7280]">
+                            {badge.current_progress} / {badge.criteria_value}
+                          </span>
+                          <span className="font-inter text-[11px] font-semibold text-[#6B7280]">
+                            {pct}%
+                          </span>
+                        </div>
+                        <div className="w-full h-[6px] bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: '#F97316',
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {badge.earned && badge.earned_at && (

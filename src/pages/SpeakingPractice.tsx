@@ -4,6 +4,7 @@ import { ArrowLeft, Flag, Star, Mic, Volume2, Check, Send, Square, Eye, EyeOff, 
 import { useAuth } from '../context/AuthContext';
 import { scenarios, PracticeScenario } from './SpeakAndWrite';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ChatMessage {
   id: string;
@@ -227,6 +228,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
   const { user } = useAuth();
   const scenario = scenarios.find(s => s.id === scenarioSlug) || scenarios[0];
   usePageTitle(scenario.title);
+  const { t } = useLanguage();
   const storageKey = `chat_${user?.id}_${scenario.id}`;
   const charInfo = CHARACTER_INFO[scenario.id] || CHARACTER_INFO['ordering-cafe'];
   const storedAvatar = user?.id ? localStorage.getItem(`avatar_url_${user.id}`) : null;
@@ -457,7 +459,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
           <button onClick={() => setShowHelp(!showHelp)}
             className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6200] border border-[#FFFDE6] rounded-full hover:bg-[#e55800] transition-colors">
             <Star className="w-3 h-3 text-[#FFFDE6]" />
-            <span className="font-bold text-[13px] text-[#FFFDE6]">Help</span>
+            <span className="font-bold text-[13px] text-[#FFFDE6]">{t('speakWrite.help')}</span>
           </button>
         </div>
 
@@ -558,11 +560,10 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
             }`}
           >
             {showTranslations ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {showTranslations ? 'Hide English' : 'Show English'}
+            {showTranslations ? t('speakWrite.hideEnglish') : t('speakWrite.showEnglish')}
           </button>
           <button
             onClick={() => {
-              // Clear chat messages and reset criteria checklist
               localStorage.removeItem(storageKey);
               setCriteriaComplete(new Set());
               usedResponses.current = new Set();
@@ -580,7 +581,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
             className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-semibold bg-white/20 text-[#FFFDE6] hover:bg-white/30 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
-            Clear Chat
+            {t('speakWrite.clearChat')}
           </button>
         </div>
         <div className="max-w-[600px] mx-auto flex gap-2">
@@ -649,7 +650,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
                     </button>
                     <div className="flex-1 px-4 py-3 rounded-xl flex items-center justify-center gap-2 bg-[#FF4D01] text-white">
                       <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
-                      <span className="font-medium text-[16px]">Listening...</span>
+                      <span className="font-medium text-[16px]">{t('speakWrite.listening')}</span>
                     </div>
                     <button onClick={stopRecording}
                       className="px-5 py-3 bg-[#FFFDE6] rounded-xl flex items-center justify-center gap-2 hover:bg-white transition-colors shrink-0">
@@ -662,7 +663,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
                     onClick={startRecording}
                     className="flex-1 px-4 py-3 rounded-xl flex items-center justify-center gap-2 bg-[#FFFDE6] text-[#372213] hover:bg-white transition-colors">
                     <Mic className="w-5 h-5 text-[#FF4D01]" />
-                    <span className="font-medium text-[16px]">Tap to speak</span>
+                    <span className="font-medium text-[16px]">{t('speakWrite.tapToSpeak')}</span>
                   </button>
                 )}
               </div>

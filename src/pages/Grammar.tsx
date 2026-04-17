@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { GrammarBreadcrumb } from '../components/GrammarBreadcrumb';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLanguage } from '../context/LanguageContext';
 
 interface GrammarItem {
   label: string;
@@ -81,6 +82,7 @@ function editDistance(a: string, b: string): number {
 export function Grammar() {
   usePageTitle('Grammar');
   const navigate = useNavigate();
+  const { t, showInstructions } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
 
   const crumbs = [{ label: 'Grammar' }];
@@ -96,6 +98,13 @@ export function Grammar() {
 
       <div className="max-w-[620px] mx-auto px-4 sm:px-6 pt-8 pb-20 relative z-10">
         <GrammarBreadcrumb crumbs={crumbs} />
+        {showInstructions && (
+          <div className="bg-white/90 rounded-[12px] px-4 py-3 shadow-sm border border-white/30 mb-4">
+            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+              {t('instructions.grammar')}
+            </p>
+          </div>
+        )}
 
         {/* Header & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">

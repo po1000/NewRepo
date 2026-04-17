@@ -4,6 +4,7 @@ import { Home, Check, Mic, Pencil, ArrowLeft, Eye, EyeOff, ChevronDown, ChevronU
 import { useAuth } from '../context/AuthContext';
 import { scenarios } from './SpeakAndWrite';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ReviewMessage {
   role: string;
@@ -119,6 +120,7 @@ function analyzeMessages(messages: ReviewMessage[]) {
 
 export function RoleplayComplete(_props: RoleplayCompleteProps) {
   usePageTitle('Roleplay Complete');
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -272,7 +274,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
           </div>
           <div className="text-center">
             <h1 className="font-bold text-[24px] leading-[36px] text-[#FFFDE6]">
-              Roleplay Complete!
+              {t('roleplay.complete')}
             </h1>
             <p className="font-medium text-[18px] leading-[36px] text-[#FFFDE6]">
               {data.scenarioTitle}
@@ -283,18 +285,18 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
         {/* Stats Cards — white with shadow */}
         <div className="w-full max-w-[448px] flex gap-4 mb-6">
           <div className="flex-1 bg-white rounded-xl p-4 flex flex-col items-center justify-center shadow-md border border-[#E5E7EB]">
-            <span className="text-[11.9px] text-[#6B7280] mb-1">XP Earned</span>
+            <span className="text-[11.9px] text-[#6B7280] mb-1">{t('roleplay.xpEarned')}</span>
             <span className="font-bold text-[17px] text-[#16A34A]">+30 XP</span>
           </div>
           <div className="flex-1 bg-white rounded-xl p-4 flex flex-col items-center justify-center shadow-md border border-[#E5E7EB]">
-            <span className="text-[11.9px] text-[#6B7280] mb-1">Duration</span>
+            <span className="text-[11.9px] text-[#6B7280] mb-1">{t('roleplay.duration')}</span>
             <span className="font-bold text-[17px] text-[#372213]">{timeStr}</span>
           </div>
         </div>
 
         {/* Summary Card — white with border */}
         <div className="w-full max-w-[632px] bg-white rounded-xl p-6 shadow-md border border-[#E5E7EB] mb-8">
-          <h3 className="font-bold text-[18.6px] text-[#372213] mb-6">Summary</h3>
+          <h3 className="font-bold text-[18.6px] text-[#372213] mb-6">{t('roleplay.summary')}</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
             {/* Writing Column — expandable */}
@@ -348,7 +350,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
           {/* Difficult Words */}
           {analysis.difficultWords.length > 0 && (
             <div className="flex flex-col gap-3 pt-4 border-t border-[#E5E7EB]">
-              <h4 className="font-bold text-[15.6px] text-[#372213]">Difficult Words</h4>
+              <h4 className="font-bold text-[15.6px] text-[#372213]">{t('roleplay.difficultWords')}</h4>
               <div className="flex flex-wrap gap-3">
                 {analysis.difficultWords.map((dw, i) => (
                   <div key={i} className="flex flex-col items-center gap-1.5">
@@ -381,15 +383,15 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
         <div className="w-full max-w-[632px] flex flex-col sm:flex-row gap-3">
           <button onClick={() => setMode('review')}
             className="flex-1 py-3 bg-white border-2 border-[#FF6200] rounded-xl font-bold text-[16px] text-[#FF6200] hover:bg-[#FFF7ED] transition-colors">
-            Review Conversation
+            {t('roleplay.reviewConversation')}
           </button>
           <button onClick={handleRetry}
             className="flex-1 py-3 bg-[#FF6200] border-2 border-[#FF6200] rounded-xl font-bold text-[16px] text-white hover:bg-[#e55800] transition-colors">
-            Retry Scenario
+            {t('roleplay.retryScenario')}
           </button>
           <button onClick={handleNextScenario}
             className="flex-1 py-3 bg-[#FF6200] border-2 border-[#FF6200] rounded-xl font-bold text-[16px] text-white hover:bg-[#e55800] transition-colors">
-            Next Scenario
+            {t('roleplay.nextScenario')}
           </button>
         </div>
       </div>

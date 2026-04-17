@@ -4,6 +4,7 @@ import { Gamepad2 } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CultureCategory {
   id: string;
@@ -52,6 +53,7 @@ const categories: CultureCategory[] = [
 export function Culture() {
   usePageTitle('Culture');
   const navigate = useNavigate();
+  const { t, showInstructions } = useLanguage();
 
   return (
     <PageLayout backgroundColor="#E2F4FF">
@@ -68,6 +70,13 @@ export function Culture() {
             Discover the richness of Spanish traditions
           </p>
         </div>
+        {showInstructions && (
+          <div className="max-w-[605px] mx-auto bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#0088E9]/20 mb-6">
+            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+              {t('instructions.culture')}
+            </p>
+          </div>
+        )}
 
         {/* Culture Categories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[605px] mx-auto pb-20">

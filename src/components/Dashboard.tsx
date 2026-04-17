@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { supabase } from '../lib/supabase';
 import { UnitSection, UnitData } from './UnitSection';
 import { SubunitDetailModal } from './SubunitDetailModal';
@@ -44,6 +45,7 @@ interface SubunitProgress {
 export function Dashboard() {
   usePageTitle('Dashboard');
   const { user, signOut } = useAuth();
+  const { t, showInstructions } = useLanguage();
   const navigate = useNavigate();
   const [unitsByLevel, setUnitsByLevel] = useState<Record<string, UnitData[]>>({});
   const [loading, setLoading] = useState(true);
@@ -73,31 +75,36 @@ export function Dashboard() {
       if (user) {
         const { data: stats } = await supabase
           .from('user_stats')
-          .select('total_xp, current_streak, longest_streak, updated_at')
+          .select('total_xp, current_streak, longest_streak, lessons_completed, updated_at')
           .eq('user_id', user.id)
           .single();
 
         let currentStreak = stats?.current_streak || 0;
         const longestStreak = stats?.longest_streak || 0;
 
-        // Update streak on app entry (counted in days)
         const lastUpdate = stats?.updated_at ? new Date(stats.updated_at) : null;
-        const today = new Date();
-        const isNewDay = !lastUpdate || lastUpdate.toDateString() !== today.toDateString();
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('en-CA');
+        const lastStr = lastUpdate ? lastUpdate.toLocaleDateString('en-CA') : null;
+        const isNewDay = !lastStr || lastStr !== todayStr;
 
         if (isNewDay) {
-          const yesterday = new Date(today);
+          const yesterday = new Date(now);
           yesterday.setDate(yesterday.getDate() - 1);
-          const isConsecutive = lastUpdate && lastUpdate.toDateString() === yesterday.toDateString();
+          const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+          const isConsecutive = lastStr === yesterdayStr;
           currentStreak = isConsecutive ? currentStreak + 1 : 1;
 
-          await supabase.from('user_stats').upsert({
+          const { error: upsertErr } = await supabase.from('user_stats').upsert({
             user_id: user.id,
             total_xp: stats?.total_xp || 0,
             current_streak: currentStreak,
             longest_streak: Math.max(longestStreak, currentStreak),
-            updated_at: today.toISOString(),
+            lessons_completed: stats?.lessons_completed || 0,
+            updated_at: now.toISOString(),
           }, { onConflict: 'user_id' });
+
+          if (upsertErr) console.error('Streak upsert error:', upsertErr);
         }
 
         // Count badges earned
@@ -183,7 +190,7 @@ export function Dashboard() {
       (units as UnitRow[])?.forEach((unit) => {
         const cefrCode = unit.cefr_levels?.code || 'A1';
         const cefrName = unit.cefr_levels?.title || 'Beginner';
-        const levelKey = `${cefrCode}: ${cefrName}`;
+        const levelKey = `${cefrCode}:${cefrName}`;
 
         if (!grouped[levelKey]) grouped[levelKey] = [];
 
@@ -191,7 +198,7 @@ export function Dashboard() {
 
         grouped[levelKey].push({
           id: `unit-${unit.unit_id}`,
-          title: `Unit ${unit.unit_number}: ${unit.title}`,
+          title: `${t('label.unit')} ${unit.unit_number}: ${t(`unit.${unit.title}`)}`,
           lessons: sortedSubunits.map((sub) => {
             const prog = progressMap[sub.subunit_id];
             const total = prog?.totalTerms || 0;
@@ -204,7 +211,7 @@ export function Dashboard() {
 
             return {
               unitNumber: sub.subunit_code,
-              title: sub.title,
+              title: t(`sub.${sub.title}`),
               color: SUBUNIT_COLORS[`${cefrCode}:${sub.subunit_code}`] || '#D9D9D9',
               imageUrl: sub.image_url || '',
               status,
@@ -239,6 +246,13 @@ export function Dashboard() {
     >
       {/* Main Content */}
       <main className="flex flex-col items-center gap-6 px-4 pb-12">
+        {showInstructions && (
+          <div className="w-full max-w-[632px] mx-auto bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#F97316]/20">
+            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+              {t('instructions.dashboard')}
+            </p>
+          </div>
+        )}
         {loading ? (
           <div className="w-full max-w-[632px] mx-auto bg-white rounded-[16px] p-8 text-center shadow-sm">
             <p className="font-inter text-[13.6px] text-[#6B7280]">Loading lessons...</p>
@@ -253,15 +267,19 @@ export function Dashboard() {
             </p>
           </div>
         ) : (
-          Object.entries(unitsByLevel).map(([levelKey, units]) => (
-            <UnitSection
-              key={levelKey}
-              level={levelKey}
-              currentUnit=""
-              units={units}
-              defaultExpanded={levelKey.startsWith('A1')}
-            />
-          ))
+          Object.entries(unitsByLevel).map(([levelKey, units]) => {
+            const [code, name] = levelKey.split(':');
+            const displayLevel = `${code}: ${t(`cefr.${name}`)}`;
+            return (
+              <UnitSection
+                key={levelKey}
+                level={displayLevel}
+                currentUnit=""
+                units={units}
+                defaultExpanded={levelKey.startsWith('A1')}
+              />
+            );
+          })
         )}
 
         {/* Sign Out */}
