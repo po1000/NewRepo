@@ -33,6 +33,7 @@ import {
   TermProgress,
   TermStatus,
 } from '../lib/srs';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Term {
   term_id: number;
@@ -142,6 +143,7 @@ export function LessonFlow() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const state = (location.state as { subunitId?: number; subunitCode?: string; title?: string }) || {};
 
   const [termsMap, setTermsMap] = useState<Map<number, Term>>(new Map());
@@ -874,22 +876,22 @@ export function LessonFlow() {
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Zap className="w-7 h-7 text-[#16A34A] fill-[#16A34A] mb-1" />
               <span className="text-[#372213] text-[24px] font-bold">{sessionXp}</span>
-              <span className="text-[#6B7280] text-[12px]">XP Earned</span>
+              <span className="text-[#372213] text-[12px]">XP Earned</span>
             </div>
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Star className="w-7 h-7 text-[#F59E0B] fill-[#F59E0B] mb-1" />
               <span className="text-[#372213] text-[24px] font-bold">{termsSeenThisSession}</span>
-              <span className="text-[#6B7280] text-[12px]">New Terms</span>
+              <span className="text-[#372213] text-[12px]">New Terms</span>
             </div>
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Check className="w-7 h-7 text-[#22C55E] mb-1" />
               <span className="text-[#372213] text-[24px] font-bold">{correctAnswersThisSession}</span>
-              <span className="text-[#6B7280] text-[12px]">Correct Answers</span>
+              <span className="text-[#372213] text-[12px]">Correct Answers</span>
             </div>
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Flame className="w-7 h-7 text-[#FF4D01] fill-[#FF4D01] mb-1" />
               <span className="text-[#372213] text-[24px] font-bold">{newStreak}</span>
-              <span className="text-[#6B7280] text-[12px]">
+              <span className="text-[#372213] text-[12px]">
                 {streakUpdated ? 'Day Streak!' : 'Day Streak'}
               </span>
             </div>
@@ -907,8 +909,8 @@ export function LessonFlow() {
                       <span className="text-[11px] truncate" lang="en" style={{ color: ENGLISH_COLOR }}>{term.english_text}</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[#9CA3AF] text-[11px]">{STATUS_LABELS[from]}</span>
-                      <ArrowRight className="w-3 h-3 text-[#9CA3AF]" />
+                      <span className="text-[#372213] text-[11px]">{STATUS_LABELS[from]}</span>
+                      <ArrowRight className="w-3 h-3 text-[#372213]" />
                       <span className="text-[#16A34A] text-[11px] font-bold">{STATUS_LABELS[to]}</span>
                     </div>
                   </div>
@@ -1034,7 +1036,7 @@ export function LessonFlow() {
             <div className="flex-1 flex flex-col items-center">
               <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
                 <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
-                  Flashcard
+                  {t('lesson.flashcard')}
                 </span>
               </div>
 
@@ -1138,13 +1140,13 @@ export function LessonFlow() {
           <div className="flex-1 flex flex-col items-center">
             <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
               <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
-                Quiz
+                {t('lesson.quiz')}
               </span>
             </div>
 
             {/* Question prompt */}
             <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
-              <p className="text-[14px] text-[#6B7280] mb-2">
+              <p className="text-[14px] text-[#372213] mb-2">
                 {mcDirection === 'es_to_en' ? 'What does this mean?' : 'How do you say this in Spanish?'}
               </p>
               <h2 className="font-bold text-[24px] leading-[36px] text-[#372213] text-center">
@@ -1168,7 +1170,7 @@ export function LessonFlow() {
                   } else if (opt.termId === mcSelectedId && opt.termId !== mcCorrectId) {
                     optClass = 'bg-[#FEE2E2] border-2 border-[#EF4444] text-[#991B1B]';
                   } else {
-                    optClass = 'bg-white/50 border-2 border-white/30 text-[#9CA3AF]';
+                    optClass = 'bg-white/50 border-2 border-white/30 text-[#372213]';
                   }
                 }
 
@@ -1201,9 +1203,9 @@ export function LessonFlow() {
                 </p>
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
                   <p className="text-[14px] text-[#FFFDE6]">
-                    Correct answer: <span className="font-bold" lang="es" style={{ color: '#FFEB15' }}>{quizzedTerm.spanish_text}</span>
-                    <span className="mx-2 text-white/50">—</span>
-                    <span lang="en" style={{ color: '#93C5FD' }}>{quizzedTerm.english_text}</span>
+                    Correct answer: <span className="font-bold" lang="es" style={{ color: 'white' }}>{quizzedTerm.spanish_text}</span>
+                    <span className="mx-2 text-white/50">-</span>
+                    <span lang="en" style={{ color: 'white' }}>{quizzedTerm.english_text}</span>
                   </p>
                 </div>
                 <button onClick={handleMcContinue}
@@ -1224,12 +1226,12 @@ export function LessonFlow() {
           <div className="flex-1 flex flex-col items-center">
             <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
               <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
-                Listen &amp; Write
+                {t('lesson.listenWrite')}
               </span>
             </div>
 
             <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
-              <p className="text-[14px] text-[#6B7280] mb-3">Listen and type what you hear in Spanish</p>
+              <p className="text-[14px] text-[#372213] mb-3">Listen and type what you hear in Spanish</p>
               <button onClick={() => speakSpanish(lwTerm.spanish_text, slowAudio)}
                 className="w-16 h-16 bg-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform mb-4">
                 <Volume2 className="w-8 h-8 text-white" />
@@ -1258,7 +1260,7 @@ export function LessonFlow() {
                 </p>
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
                   <p className="text-[14px] text-[#FFFDE6]">
-                    Correct answer: <span className="font-bold" lang="es" style={{ color: '#FFEB15' }}>{lwTerm.spanish_text}</span>
+                    Correct answer: <span className="font-bold" lang="es" style={{ color: 'white' }}>{lwTerm.spanish_text}</span>
                   </p>
                 </div>
                 <button onClick={advanceQueue}
@@ -1279,12 +1281,12 @@ export function LessonFlow() {
           <div className="flex-1 flex flex-col items-center">
             <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
               <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
-                Listen &amp; Speak
+                {t('lesson.listenSpeak')}
               </span>
             </div>
 
             <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
-              <p className="text-[14px] text-[#6B7280] mb-3">Listen, then repeat what you hear</p>
+              <p className="text-[14px] text-[#372213] mb-3">Listen, then repeat what you hear</p>
               <button onClick={() => speakSpanish(lsTerm.spanish_text, slowAudio)}
                 className="w-16 h-16 bg-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform mb-4">
                 <Volume2 className="w-8 h-8 text-white" />
@@ -1292,7 +1294,7 @@ export function LessonFlow() {
 
               {lsTranscript && !lsSubmitted && (
                 <div className="w-full bg-white border-2 border-[#FF4D01] rounded-xl px-4 py-3 mb-3">
-                  <p className="text-[11px] font-semibold text-[#6B7280] mb-1">Your pronunciation:</p>
+                  <p className="text-[11px] font-semibold text-[#372213] mb-1">Your pronunciation:</p>
                   <p className="text-[16px] text-[#372213] text-center">{lsTranscript}</p>
                 </div>
               )}
@@ -1340,7 +1342,7 @@ export function LessonFlow() {
                 </p>
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
                   <p className="text-[14px] text-[#FFFDE6]">
-                    Correct answer: <span className="font-bold" lang="es" style={{ color: '#FFEB15' }}>{lsTerm.spanish_text}</span>
+                    Correct answer: <span className="font-bold" lang="es" style={{ color: 'white' }}>{lsTerm.spanish_text}</span>
                   </p>
                 </div>
                 <button onClick={advanceQueue}

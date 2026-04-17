@@ -34,7 +34,7 @@ export function ResetPasswordCard({ onNavigate }: ResetPasswordCardProps) {
         <h1 id="reset-title" className="text-[20.4px] font-bold text-[#111827] leading-8">
           Reset Password
         </h1>
-        <p className="text-[13.6px] text-[#6B7280] leading-6">
+        <p className="text-[13.6px] text-[#372213] leading-6">
           Enter your email and we'll send you a reset link
         </p>
       </div>
@@ -94,7 +94,7 @@ export function ResetPasswordCard({ onNavigate }: ResetPasswordCardProps) {
           <button
             type="button"
             onClick={() => onNavigate('login')}
-            className="text-[11.9px] font-semibold text-[#4B5563] hover:text-[#111827] leading-5 transition-colors flex items-center justify-center gap-1 mx-auto">
+            className="text-[11.9px] font-semibold text-[#372213] hover:text-[#111827] leading-5 transition-colors flex items-center justify-center gap-1 mx-auto">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>

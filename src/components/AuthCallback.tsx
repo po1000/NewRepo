@@ -26,7 +26,7 @@ export function AuthCallback() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-[#6B7280]">Signing you in...</p>
+      <p className="text-[#372213]">Signing you in...</p>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -99,10 +100,9 @@ interface SpeakAndWriteProps {
   onCommunityClick?: () => void;
 }
 
-export function SpeakAndWrite({
-  onScenarioClick,
-}: SpeakAndWriteProps) {
+export function SpeakAndWrite({}: SpeakAndWriteProps) {
   usePageTitle('Speak & Write');
+  const navigate = useNavigate();
   const { t, showInstructions } = useLanguage();
   return (
     <PageLayout>
@@ -110,15 +110,15 @@ export function SpeakAndWrite({
       <div className="max-w-[684px] mx-auto px-8 pt-4 pb-20">
         <div className="flex flex-col gap-2 mb-6 text-center">
           <h1 className="font-bold text-[25.5px] leading-[36px] text-[#372213]">
-            Practice Speaking and Writing
+            {t('page.speakWrite')}
           </h1>
-          <p className="text-[13.6px] leading-[24px] text-[#6B7280]">
-            Practise real-world conversations with interactive scenarios.
+          <p className="text-[13.6px] leading-[24px] text-[#372213]">
+            {t('page.speakWriteSubtitle')}
           </p>
         </div>
         {showInstructions && (
           <div className="bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#F97316]/20 mb-6">
-            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+            <p className="font-inter text-[13px] leading-[20px] text-[#372213]">
               {t('instructions.speakWrite')}
             </p>
           </div>
@@ -128,7 +128,7 @@ export function SpeakAndWrite({
           {scenarios.map((scenario) => (
             <div key={scenario.id}
               className="bg-white rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => onScenarioClick?.(scenario.id)}>
+              onClick={() => navigate(`/speak-and-write/practice/${scenario.id}`)}>
 
               <div className="w-full h-[138px] relative" style={{ backgroundColor: scenario.color }}>
                 <img src={scenario.imageUrl} alt={scenario.title}
@@ -142,21 +142,21 @@ export function SpeakAndWrite({
                   </span>
                 </div>
                 <h3 className="font-bold text-[15.3px] leading-[28px] text-[#372213]">{scenario.title}</h3>
-                <p className="text-[11.9px] leading-[20px] text-[#4B5563]">{scenario.description}</p>
+                <p className="text-[11.9px] leading-[20px] text-[#372213]">{scenario.description}</p>
 
                 {/* Criteria preview */}
                 <div className="flex flex-col gap-1">
                   {scenario.criteria.map(c => (
                     <div key={c.id} className="flex items-center gap-1.5">
                       <div className="w-3.5 h-3.5 rounded-full border-2 border-[#D1D5DB]" />
-                      <span className="text-[10.5px] text-[#6B7280]">{c.text}</span>
+                      <span className="text-[10.5px] text-[#372213]">{c.text}</span>
                     </div>
                   ))}
                 </div>
 
                 <button className="flex flex-row items-center gap-2 mt-2 group">
                   <span className="font-medium text-[11.9px] leading-[20px] text-[#FF4D01] group-hover:underline">
-                    Start Practice
+                    {t('page.startPractice')}
                   </span>
                   <ArrowRight className="w-4 h-4 text-[#FF4D01]" />
                 </button>

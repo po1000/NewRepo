@@ -83,7 +83,7 @@ export function LessonTile({
               style={{ width: `${progressPercent}%`, backgroundColor: color }}
             />
           </div>
-          <span className="font-inter font-semibold text-[11px] text-[#6B7280] shrink-0">
+          <span className="font-inter font-semibold text-[11px] text-[#372213] shrink-0">
             {progressPercent}%
           </span>
         </div>

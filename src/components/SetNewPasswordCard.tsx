@@ -40,7 +40,7 @@ export function SetNewPasswordCard() {
       <section className="w-full max-w-[448px] bg-white rounded-xl border border-[#E5E7EB] p-8 flex flex-col gap-8 shadow-sm">
         <div className="text-center flex flex-col gap-1">
           <h1 className="text-[20.4px] font-bold text-[#111827] leading-8">Set New Password</h1>
-          <p className="text-[13.6px] text-[#6B7280] leading-6">Enter your new password below</p>
+          <p className="text-[13.6px] text-[#372213] leading-6">Enter your new password below</p>
         </div>
 
         {error && (

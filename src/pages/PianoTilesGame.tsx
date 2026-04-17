@@ -444,13 +444,13 @@ export function PianoTilesGame() {
       <PageLayout backgroundColor="#FFF8E1">
         <div className="max-w-[500px] mx-auto px-4 pt-8 pb-20">
           <button onClick={() => navigate('/culture')}
-            className="flex items-center gap-2 text-[#6B7280] hover:text-[#372213] mb-8 transition-colors">
+            className="flex items-center gap-2 text-[#372213] hover:text-[#372213] mb-8 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span className="text-[14px]">Back to Culture</span>
           </button>
 
           <h1 className="font-bold text-[28px] text-[#372213] text-center mb-2">Word Tiles</h1>
-          <p className="text-[#6B7280] text-center text-[14px] mb-4">Tap the correct translation to the beat!</p>
+          <p className="text-[#372213] text-center text-[14px] mb-4">Tap the correct translation to the beat!</p>
 
           {/* How to Play — toggleable */}
           <button
@@ -458,16 +458,16 @@ export function PianoTilesGame() {
             className="w-full flex items-center justify-between px-4 py-2.5 bg-white rounded-xl border border-[#E5E7EB] mb-3 hover:bg-gray-50 transition-colors"
           >
             <span className="font-semibold text-[14px] text-[#372213]">How to Play</span>
-            <span className="text-[12px] text-[#6B7280]">{showInstructions ? 'Hide' : 'Show'}</span>
+            <span className="text-[12px] text-[#372213]">{showInstructions ? 'Hide' : 'Show'}</span>
           </button>
           {showInstructions && (
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 mb-6">
-              <ol className="flex flex-col gap-2 text-[13px] text-[#4B5563] leading-[20px] list-decimal list-inside">
+              <ol className="flex flex-col gap-2 text-[13px] text-[#372213] leading-[20px] list-decimal list-inside">
                 <li>A Spanish (or English) word appears at the top as a prompt.</li>
-                <li>Four tiles scroll down — each with a possible translation.</li>
+                <li>Four tiles scroll down, each with a possible translation.</li>
                 <li>Tap the <strong>correct</strong> tile before it reaches the bottom.</li>
                 <li>Correct taps earn points and play a note. Wrong taps or missed tiles end the game.</li>
-                <li>You earn <strong>2 XP per correct tile</strong> — try to beat your high score!</li>
+                <li>You earn <strong>2 XP per correct tile</strong> - try to beat your high score!</li>
               </ol>
             </div>
           )}
@@ -500,7 +500,7 @@ export function PianoTilesGame() {
                 className={`flex-1 py-3 rounded-xl font-bold text-[14px] transition-all ${
                   tileMode === 'english'
                     ? 'bg-[#FF4D01] text-white'
-                    : 'bg-white text-[#6B7280] border border-[#E5E7EB] hover:border-[#FF4D01]'
+                    : 'bg-white text-[#372213] border border-[#E5E7EB] hover:border-[#FF4D01]'
                 }`}>
                 English Tiles
               </button>
@@ -508,7 +508,7 @@ export function PianoTilesGame() {
                 className={`flex-1 py-3 rounded-xl font-bold text-[14px] transition-all ${
                   tileMode === 'spanish'
                     ? 'bg-[#FF4D01] text-white'
-                    : 'bg-white text-[#6B7280] border border-[#E5E7EB] hover:border-[#FF4D01]'
+                    : 'bg-white text-[#372213] border border-[#E5E7EB] hover:border-[#FF4D01]'
                 }`}>
                 Spanish Tiles
               </button>
@@ -551,23 +551,23 @@ export function PianoTilesGame() {
           </div>
 
           <h2 className="text-[#372213] font-bold text-[24px] mb-2">{gameOverMsg}</h2>
-          <p className="text-[#6B7280] text-[14px] mb-6">{selectedSong.title} · {selectedSong.artist}</p>
+          <p className="text-[#372213] text-[14px] mb-6">{selectedSong.title} · {selectedSong.artist}</p>
 
           <div className="grid grid-cols-2 gap-3 w-full mb-8">
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 flex flex-col items-center shadow-sm">
               <span className="text-[#372213] font-bold text-[28px]">{score}</span>
-              <span className="text-[#9CA3AF] text-[12px]">Score</span>
+              <span className="text-[#372213] text-[12px]">Score</span>
             </div>
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 flex flex-col items-center shadow-sm">
               <span className="text-[#FF8C00] font-bold text-[28px]">{highScore}</span>
-              <span className="text-[#9CA3AF] text-[12px]">High Score</span>
+              <span className="text-[#372213] text-[12px]">High Score</span>
             </div>
             <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 flex flex-col items-center col-span-2 shadow-sm">
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-[#FF4D01]" />
                 <span className="text-[#FF4D01] font-bold text-[22px]">+{earnedXp} XP</span>
               </div>
-              <span className="text-[#9CA3AF] text-[12px]">Earned</span>
+              <span className="text-[#372213] text-[12px]">Earned</span>
             </div>
           </div>
 
@@ -596,11 +596,11 @@ export function PianoTilesGame() {
       {/* Top bar */}
       <div className="w-full max-w-[500px] flex items-center justify-between px-4 py-3">
         <button onClick={() => { cancelAnimationFrame(animRef.current); endGame('Quit'); }}
-          className="text-[#9CA3AF] hover:text-[#372213] text-[14px]">
+          className="text-[#372213] hover:text-[#372213] text-[14px]">
           Quit
         </button>
         <div className="flex items-center gap-4">
-          <span className="text-[#6B7280] text-[14px]">{currentBeatIndex}/{selectedSong.beats.length}</span>
+          <span className="text-[#372213] text-[14px]">{currentBeatIndex}/{selectedSong.beats.length}</span>
           <span className="text-[#FF8C00] font-bold text-[18px]">{score}</span>
         </div>
       </div>
@@ -608,7 +608,7 @@ export function PianoTilesGame() {
       {/* Prompt — the word to translate */}
       <div className="w-full max-w-[500px] px-4 mb-2">
         <div className="bg-white rounded-xl py-3 px-6 text-center border border-[#E5E7EB] shadow-sm">
-          <p className="text-[#9CA3AF] text-[11px] mb-1">
+          <p className="text-[#372213] text-[11px] mb-1">
             {tileMode === 'english' ? 'Tap the English translation' : 'Tap the Spanish translation'}
           </p>
           <p className="text-[#372213] font-bold text-[22px]" lang={tileMode === 'english' ? 'es' : 'en'}>{prompt}</p>

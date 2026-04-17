@@ -510,7 +510,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
                     {msg.text}
                   </p>
                   {msg.role === 'user' && msg.inputMode === 'voice' && (
-                    <span className="text-[9px] text-[#9CA3AF] mt-1 block">🎙 spoken</span>
+                    <span className="text-[9px] text-[#372213] mt-1 block">🎙 spoken</span>
                   )}
                 </div>
                 {/* Replay audio button for AI messages */}
@@ -618,7 +618,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
               /* Transcript preview — user can send, discard, or re-record */
               <div className="flex flex-col gap-2">
                 <div className="bg-[#FFFDE6] rounded-xl px-4 py-3 border-2 border-[#FF6200]">
-                  <p className="text-[13px] font-semibold text-[#6B7280] mb-1">Your transcript:</p>
+                  <p className="text-[13px] font-semibold text-[#372213] mb-1">Your transcript:</p>
                   <p lang="es" className="text-[16px] text-[#372213] leading-[24px]">{voiceTranscript}</p>
                 </div>
                 <div className="flex gap-2">
@@ -628,7 +628,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
                     <span className="font-medium text-[13px]">Discard</span>
                   </button>
                   <button onClick={reRecord}
-                    className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 bg-white/80 text-[#6B7280] border border-[#D1D5DB] hover:bg-gray-100 transition-colors">
+                    className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 bg-white/80 text-[#372213] border border-[#D1D5DB] hover:bg-gray-100 transition-colors">
                     <RotateCcw className="w-4 h-4" />
                     <span className="font-medium text-[13px]">Re-record</span>
                   </button>

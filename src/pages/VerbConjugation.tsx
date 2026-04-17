@@ -4,6 +4,7 @@ import { PageLayout } from '../components/PageLayout';
 import { GrammarBreadcrumb } from '../components/GrammarBreadcrumb';
 import { supabase } from '../lib/supabase';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLanguage } from '../context/LanguageContext';
 
 interface TenseInfo {
   tense_id: number;
@@ -42,6 +43,7 @@ const PLURAL_PRONOUNS = ['1st plural', '2nd plural', '3rd plural'];
 
 export function VerbConjugation() {
   usePageTitle('Verb Conjugation');
+  const { t } = useLanguage();
   const { verb: verbSlug } = useParams<{ verb: string }>();
   const location = useLocation();
   // Extract category from URL path: /grammar/er-verbs/ser → 'er'
@@ -137,7 +139,7 @@ export function VerbConjugation() {
   const pluralRows = rows.filter(r => PLURAL_PRONOUNS.includes(r.person_group));
 
   return (
-    <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-[#FFFDE6] [&_button]:text-[#FFFDE6] [&_svg]:text-[#FFFDE6]">
+    <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-white [&_button]:text-white [&_svg]:text-white">
       <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#FF7032] origin-top-left -skew-y-3 pointer-events-none" />
 
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
@@ -157,7 +159,7 @@ export function VerbConjugation() {
                 </h1>
                 {verb.is_irregular && (
                   <span className="inline-block mt-2 px-3 py-0.5 bg-white/20 rounded-full text-[12px] font-semibold text-white">
-                    Irregular
+                    {t('grammar.irregular')}
                   </span>
                 )}
               </div>
@@ -170,7 +172,7 @@ export function VerbConjugation() {
                   <div className="flex mb-4 ml-[45px] min-w-fit">
                     <div className="w-[100px] flex justify-center shrink-0">
                       <span className="font-inter font-medium text-[14px] leading-[28px] text-white">
-                        Pronouns
+                        {t('grammar.pronounsCol')}
                       </span>
                     </div>
                     {activeTenses.map(t => (
@@ -202,7 +204,7 @@ export function VerbConjugation() {
                           style={{ height: `${singularRows.length * 70 + (singularRows.length - 1) * 8}px` }}
                         >
                           <span className="font-inter font-semibold text-[15px] text-white -rotate-90 whitespace-nowrap">
-                            Singular
+                            {t('grammar.singular')}
                           </span>
                         </div>
                       )}
@@ -212,7 +214,7 @@ export function VerbConjugation() {
                           style={{ height: `${pluralRows.length * 70 + (pluralRows.length - 1) * 8}px` }}
                         >
                           <span className="font-inter font-semibold text-[15px] text-white -rotate-90 whitespace-nowrap">
-                            Plural
+                            {t('grammar.plural')}
                           </span>
                         </div>
                       )}
@@ -247,7 +249,7 @@ export function VerbConjugation() {
                           {singularRows.map(r => (
                             <div key={r.pronoun_text} className="w-full h-[68px] bg-white rounded-lg flex items-center justify-center p-2">
                               <span className="font-inter font-semibold text-[16px] leading-[20px] text-[#372213]">
-                                {r.forms[t.name] || '—'}
+                                {r.forms[t.name] || '-'}
                               </span>
                             </div>
                           ))}
@@ -256,7 +258,7 @@ export function VerbConjugation() {
                           {pluralRows.map(r => (
                             <div key={r.pronoun_text} className="w-full h-[68px] bg-white rounded-lg flex items-center justify-center p-2">
                               <span className="font-inter font-semibold text-[16px] leading-[20px] text-[#372213]">
-                                {r.forms[t.name] || '—'}
+                                {r.forms[t.name] || '-'}
                               </span>
                             </div>
                           ))}

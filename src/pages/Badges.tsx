@@ -86,18 +86,18 @@ export function Badges() {
   return (
     <PageLayout>
       <main className="max-w-[632px] mx-auto px-4 pb-12">
-        <h1 className="font-inter font-bold text-[22px] text-[#372213] mb-4">My Badges</h1>
+        <h1 className="font-inter font-bold text-[22px] text-[#372213] mb-4">{t('ui.myBadges')}</h1>
         {showInstructions && (
           <div className="bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#F97316]/20 mb-4">
-            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+            <p className="font-inter text-[13px] leading-[20px] text-[#372213]">
               {t('instructions.badges')}
             </p>
           </div>
         )}
         {loading ? (
-          <p className="text-center text-[#9CA3AF] py-8">Loading badges...</p>
+          <p className="text-center text-[#372213] py-8">Loading badges...</p>
         ) : badges.length === 0 ? (
-          <p className="text-center text-[#9CA3AF] py-8">No badges available yet.</p>
+          <p className="text-center text-[#372213] py-8">No badges available yet.</p>
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {badges.map((badge) => {
@@ -141,7 +141,7 @@ export function Badges() {
                   <h3 className="font-inter font-bold text-[14px] text-[#372213] text-center">
                     {badge.label}
                   </h3>
-                  <p className="font-inter text-[12px] text-[#6B7280] text-center mt-1">
+                  <p className="font-inter text-[12px] text-[#372213] text-center mt-1">
                     {badge.description}
                   </p>
 
@@ -151,16 +151,16 @@ export function Badges() {
                       <div className="flex items-center justify-center gap-1.5">
                         <Check className="w-4 h-4 text-[#22C55E]" strokeWidth={3} />
                         <span className="font-inter text-[12px] font-bold text-[#22C55E]">
-                          Completed!
+                          {t('ui.completed')}
                         </span>
                       </div>
                     ) : (
                       <>
                         <div className="flex justify-between items-center mb-1">
-                          <span className="font-inter text-[11px] font-semibold text-[#6B7280]">
+                          <span className="font-inter text-[11px] font-semibold text-[#372213]">
                             {badge.current_progress} / {badge.criteria_value}
                           </span>
-                          <span className="font-inter text-[11px] font-semibold text-[#6B7280]">
+                          <span className="font-inter text-[11px] font-semibold text-[#372213]">
                             {pct}%
                           </span>
                         </div>
@@ -179,7 +179,7 @@ export function Badges() {
 
                   {badge.earned && badge.earned_at && (
                     <span className="font-inter text-[11px] text-[#22C55E] mt-2 font-medium">
-                      Earned {new Date(badge.earned_at).toLocaleDateString()}
+                      {t('ui.earned')} {new Date(badge.earned_at).toLocaleDateString()}
                     </span>
                   )}
                 </div>

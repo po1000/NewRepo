@@ -21,15 +21,15 @@ export function LessonCard({
           <h2 className="font-inter font-bold text-[15.3px] leading-[28px] text-[#372213]">
             {title}
           </h2>
-          <p className="font-inter text-[11.9px] leading-[20px] text-[#6B7280]">
+          <p className="font-inter text-[11.9px] leading-[20px] text-[#372213]">
             {subtitle}
           </p>
         </div>
         <div className="flex flex-col items-end">
-          <span className="font-inter text-[12px] leading-[16px] text-[#9CA3AF]">
+          <span className="font-inter text-[12px] leading-[16px] text-[#372213]">
             +{xpReward} XP Reward
           </span>
-          <span className="font-inter font-medium text-[12px] leading-[20px] text-[#6B7280]">
+          <span className="font-inter font-medium text-[12px] leading-[20px] text-[#372213]">
             "{goalText}"
           </span>
         </div>

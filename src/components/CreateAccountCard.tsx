@@ -53,11 +53,11 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
             </svg>
           </div>
           <h2 className="text-[20.4px] font-bold text-[#111827]">Check Your Email</h2>
-          <p className="text-[13.6px] text-[#6B7280] text-center">
+          <p className="text-[13.6px] text-[#372213] text-center">
             We've sent a confirmation link to<br />
             <span className="font-semibold text-[#111827]">{email}</span>
           </p>
-          <p className="text-[11.9px] text-[#9CA3AF] text-center">
+          <p className="text-[11.9px] text-[#372213] text-center">
             Click the link in the email to activate your account, then you'll be redirected to the dashboard.
           </p>
           <button
@@ -81,7 +81,7 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
         <h1 id="create-account-title" className="text-[20.4px] font-bold text-[#111827] leading-8">
           Create Account
         </h1>
-        <p className="text-[13.6px] text-[#6B7280] leading-6">Start learning Spanish today</p>
+        <p className="text-[13.6px] text-[#372213] leading-6">Start learning Spanish today</p>
       </div>
 
       {/* Error */}
@@ -193,7 +193,7 @@ export function CreateAccountCard({ onNavigate }: CreateAccountCardProps) {
         </div>
 
         <div className="text-center">
-          <span className="text-[11.9px] text-[#4B5563] leading-5">Already have an account?</span>
+          <span className="text-[11.9px] text-[#372213] leading-5">Already have an account?</span>
           <button
             type="button"
             onClick={() => onNavigate('login')}

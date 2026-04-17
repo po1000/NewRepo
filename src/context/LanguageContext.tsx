@@ -18,6 +18,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   // Lesson flow
   'lesson.flashcard': { en: 'Flashcard', es: 'Tarjeta' },
+  'lesson.quiz': { en: 'Quiz', es: 'Prueba' },
   'lesson.listening': { en: 'Listening', es: 'Escuchar' },
   'lesson.speaking': { en: 'Speaking', es: 'Hablar' },
   'lesson.writing': { en: 'Writing', es: 'Escritura' },
@@ -27,6 +28,70 @@ const translations: Record<string, Record<Language, string>> = {
   'lesson.complete': { en: 'Lesson Complete!', es: '¡Lección Completada!' },
   'lesson.home': { en: 'Home', es: 'Inicio' },
   'lesson.nextLesson': { en: 'Next Lesson', es: 'Siguiente Lección' },
+  'lesson.correct': { en: 'Correct!', es: '¡Correcto!' },
+  'lesson.notQuite': { en: 'Not quite!', es: '¡Casi!' },
+  'lesson.correctAnswer': { en: 'Correct answer:', es: 'Respuesta correcta:' },
+  'lesson.continue': { en: 'Continue', es: 'Continuar' },
+  'lesson.gotIt': { en: 'Got it!', es: '¡Entendido!' },
+  'lesson.iKnowThis': { en: 'I know this', es: 'Ya lo sé' },
+  'lesson.listenType': { en: 'Listen and type what you hear in Spanish', es: 'Escucha y escribe lo que oyes en español' },
+  'lesson.listenRepeat': { en: 'Listen, then repeat what you hear', es: 'Escucha y repite lo que oyes' },
+  'lesson.typeAnswer': { en: 'Type your answer...', es: 'Escribe tu respuesta...' },
+  'lesson.submit': { en: 'Submit', es: 'Enviar' },
+  'lesson.xpEarned': { en: 'XP Earned', es: 'XP Ganado' },
+  'lesson.newTerms': { en: 'New Terms', es: 'Nuevos Términos' },
+  'lesson.correctAnswers': { en: 'Correct Answers', es: 'Respuestas Correctas' },
+  'lesson.dayStreak': { en: 'Day Streak', es: 'Racha de Días' },
+  'lesson.wordsProgressed': { en: 'Words Progressed', es: 'Palabras Progresadas' },
+  'lesson.loading': { en: 'Loading lessons...', es: 'Cargando lecciones...' },
+
+  // Lesson statuses
+  'status.notSeen': { en: 'Not Seen', es: 'No Visto' },
+  'status.seen': { en: 'Seen', es: 'Visto' },
+  'status.learning': { en: 'Learning', es: 'Aprendiendo' },
+  'status.reinforced': { en: 'Reinforced', es: 'Reforzado' },
+  'status.learnt': { en: 'Learnt', es: 'Aprendido' },
+
+  // General UI
+  'ui.signOut': { en: 'Sign Out', es: 'Cerrar Sesión' },
+  'ui.search': { en: 'Search', es: 'Buscar' },
+  'ui.loading': { en: 'Loading...', es: 'Cargando...' },
+  'ui.back': { en: 'Back', es: 'Volver' },
+  'ui.close': { en: 'Close', es: 'Cerrar' },
+  'ui.welcome': { en: 'Welcome', es: 'Bienvenido' },
+  'ui.myBadges': { en: 'My Badges', es: 'Mis Insignias' },
+  'ui.changePhoto': { en: 'Change Profile Photo', es: 'Cambiar Foto de Perfil' },
+  'ui.uploading': { en: 'Uploading...', es: 'Subiendo...' },
+  'ui.completed': { en: 'Completed!', es: '¡Completado!' },
+  'ui.earned': { en: 'Earned', es: 'Ganado' },
+
+  // Page headings
+  'page.grammar': { en: 'Grammar', es: 'Gramática' },
+  'page.culture': { en: 'Culture Area', es: 'Área Cultural' },
+  'page.cultureSubtitle': { en: 'Discover the richness of Spanish traditions', es: 'Descubre la riqueza de las tradiciones españolas' },
+  'page.speakWrite': { en: 'Practice Speaking and Writing', es: 'Practica Hablar y Escribir' },
+  'page.speakWriteSubtitle': { en: 'Practise real-world conversations with interactive scenarios.', es: 'Practica conversaciones del mundo real con escenarios interactivos.' },
+  'page.communitySubtitle': { en: 'Ask questions, share tips, and learn together with fellow Spanish learners', es: 'Haz preguntas, comparte consejos y aprende junto con otros estudiantes de español' },
+  'page.startPractice': { en: 'Start Practice', es: 'Iniciar Práctica' },
+
+  // Grammar page
+  'grammar.conjugations': { en: 'Conjugations', es: 'Conjugaciones' },
+  'grammar.topics': { en: 'Topics', es: 'Temas' },
+  'grammar.searchTopics': { en: 'Search topics...', es: 'Buscar temas...' },
+  'grammar.irregular': { en: 'Irregular', es: 'Irregular' },
+  'grammar.singular': { en: 'Singular', es: 'Singular' },
+  'grammar.plural': { en: 'Plural', es: 'Plural' },
+  'grammar.pronounsCol': { en: 'Pronouns', es: 'Pronombres' },
+  'grammar.searchVerbs': { en: 'Search verbs...', es: 'Buscar verbos...' },
+
+  // SubunitDetailModal
+  'modal.goal': { en: 'Goal:', es: 'Objetivo:' },
+  'modal.noGrammarHints': { en: 'No grammar hints yet for this subunit.', es: 'Aún no hay consejos gramaticales para esta sublección.' },
+  'modal.loadingTerms': { en: 'Loading terms...', es: 'Cargando términos...' },
+  'modal.noTerms': { en: 'No terms found.', es: 'No se encontraron términos.' },
+
+  // Badge labels
+  'badge.completed': { en: 'Completed', es: 'Completado' },
 
   // Speak & Write
   'speakWrite.title': { en: 'Speak & Write', es: 'Hablar y Escribir' },

@@ -17,7 +17,7 @@ const DANCE_ENTRIES: DanceEntry[] = [
   number: 1,
   videoUrl: 'https://www.youtube.com/embed/fv9RtLZ5NsA?start=627',
   descriptionEn:
-  <p className="font-inter text-[13.6px] leading-[26px] text-[#4B5563] mb-6">
+  <p className="font-inter text-[13.6px] leading-[26px] text-[#372213] mb-6">
         A style of passionate traditional <strong>singing</strong>, playing
         guitar and dance originating in Andalusia. Performances feature{' '}
         <strong>el/la cantaor/a (singer)</strong>,{' '}
@@ -29,7 +29,7 @@ const DANCE_ENTRIES: DanceEntry[] = [
       </p>,
 
   descriptionEs:
-  <p className="font-inter text-[13.6px] leading-[26px] text-[#4B5563] mb-6">
+  <p className="font-inter text-[13.6px] leading-[26px] text-[#372213] mb-6">
         Un estilo de <strong>canto</strong> tradicional apasionado, toque de
         guitarra y baile originario de Andalucía. Las actuaciones cuentan con{' '}
         <strong>el/la cantaor/a</strong>,{' '}
@@ -46,7 +46,7 @@ const DANCE_ENTRIES: DanceEntry[] = [
   number: 2,
   videoUrl: 'https://www.youtube.com/embed/CxZx2r9bfJw',
   descriptionEn:
-  <p className="font-inter text-[13.6px] leading-[26px] text-[#4B5563] mb-6">
+  <p className="font-inter text-[13.6px] leading-[26px] text-[#372213] mb-6">
         Means <strong>'two-step'</strong>. A dramatic Spanish dance originating
         in Spain that mimics a bullfight. The male dancer represents{' '}
         <strong>el torero (bullfighter)</strong> while{' '}
@@ -56,7 +56,7 @@ const DANCE_ENTRIES: DanceEntry[] = [
       </p>,
 
   descriptionEs:
-  <p className="font-inter text-[13.6px] leading-[26px] text-[#4B5563] mb-6">
+  <p className="font-inter text-[13.6px] leading-[26px] text-[#372213] mb-6">
         Significa <strong>'dos pasos'</strong>. Un baile español dramático
         originario de España que imita una corrida de toros. El bailarín
         masculino representa a <strong>el torero</strong> mientras que{' '}
@@ -70,7 +70,7 @@ const DANCE_ENTRIES: DanceEntry[] = [
   number: 3,
   videoUrl: 'https://www.youtube.com/embed/kJQP7kiw5Fk',
   descriptionEn:
-  <p className="font-inter text-[13.6px] leading-[26px] text-[#4B5563] mb-6">
+  <p className="font-inter text-[13.6px] leading-[26px] text-[#372213] mb-6">
         Latin music derived from Jamaican dancehall music but born in{' '}
         <strong>Panamá</strong>, known for its distinctive{' '}
         <strong>el dembow (dembow beat)</strong>. Top artists include:{' '}
@@ -79,7 +79,7 @@ const DANCE_ENTRIES: DanceEntry[] = [
       </p>,
 
   descriptionEs:
-  <p className="font-inter text-[13.6px] leading-[26px] text-[#4B5563] mb-6">
+  <p className="font-inter text-[13.6px] leading-[26px] text-[#372213] mb-6">
         Música latina derivada del dancehall jamaicano pero nacida en{' '}
         <strong>Panamá</strong>, conocida por su distintivo{' '}
         <strong>el dembow (ritmo dembow)</strong>. Los artistas más destacados
@@ -139,7 +139,7 @@ export function MusicDance() {
               Music & Dance
             </h1>
             <p className="font-inter text-[13.6px] leading-[24px] text-[#372213]">
-              Music and dance are at the heart of Spanish culture — from the
+              Music and dance are at the heart of Spanish culture - from the
               passionate rhythms of flamenco to the vibrant beats of reggaeton.
               Watch, read, and immerse yourself in the sounds of Spain.
             </p>

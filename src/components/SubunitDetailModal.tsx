@@ -88,7 +88,7 @@ function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
   return (
     <div className="mt-2 bg-[#FFF8F0] rounded-[10px] p-3">
       <p className="font-inter font-bold text-[13px] text-[#372213] mb-2">
-        <span lang="es" className="text-[#DC2626]">{verb.infinitive}</span> — <span lang="en" className="text-[#1D4ED8]">{verb.english}</span>
+        <span lang="es" className="text-[#DC2626]">{verb.infinitive}</span> - <span lang="en" className="text-[#1D4ED8]">{verb.english}</span>
       </p>
 
       {/* Tense tabs */}
@@ -102,7 +102,7 @@ function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
               className={`px-2 py-0.5 rounded-full text-[11px] font-inter font-medium transition-colors ${
                 selectedTense === i
                   ? 'bg-[#F97316] text-white'
-                  : 'bg-white text-[#6B7280] hover:bg-gray-100'
+                  : 'bg-white text-[#372213] hover:bg-gray-100'
               }`}
             >
               {tense.english_name}
@@ -123,7 +123,7 @@ function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
           {currentTense.conjugations.map((c, i) => (
             <div key={i} className="flex justify-between text-[12px] font-inter py-0.5">
-              <span lang="es" className="text-[#9CA3AF]">{c.pronoun}</span>
+              <span lang="es" className="text-[#372213]">{c.pronoun}</span>
               <span lang="es" className="text-[#DC2626] font-medium">{c.form}</span>
             </div>
           ))}
@@ -308,12 +308,12 @@ export function SubunitDetailModal({
                 }`}
               >
                 <Star className={`w-3.5 h-3.5 ${showGrammar ? 'fill-white text-white' : 'fill-[#F97316] text-[#F97316]'}`} />
-                Grammar
+                {t('page.grammar')}
               </button>
             </div>
             {goalText && (
-              <p className="font-inter italic text-[13px] leading-[20px] text-[#6B7280] mt-2">
-                Goal: {goalText}
+              <p className="font-inter italic text-[13px] leading-[20px] text-[#372213] mt-2">
+                {t('modal.goal')} {goalText}
               </p>
             )}
           </div>
@@ -337,7 +337,7 @@ export function SubunitDetailModal({
                       <p className="font-inter font-bold text-[13px] text-[#F97316] mb-0.5">
                         {hint.hint_title}
                       </p>
-                      <p className="font-inter text-[13px] text-[#4B5563] leading-[18px] whitespace-pre-line">
+                      <p className="font-inter text-[13px] text-[#372213] leading-[18px] whitespace-pre-line">
                         {hint.hint_text}
                       </p>
                       {hint.verb && <ConjugationTable verb={hint.verb} />}
@@ -345,7 +345,7 @@ export function SubunitDetailModal({
                   ))}
                 </ol>
               ) : (
-                <p className="font-inter text-[13px] text-[#9CA3AF]">No grammar hints yet for this subunit.</p>
+                <p className="font-inter text-[13px] text-[#372213]">{t('modal.noGrammarHints')}</p>
               )}
             </div>
           )}
@@ -355,9 +355,9 @@ export function SubunitDetailModal({
             <h3 className="font-inter font-bold text-[15px] text-[#372213] mb-3">{t('dashboard.wordsAndPhrases')}</h3>
 
             {loading ? (
-              <p className="font-inter text-[13px] text-[#9CA3AF] text-center py-4">Loading terms...</p>
+              <p className="font-inter text-[13px] text-[#372213] text-center py-4">{t('modal.loadingTerms')}</p>
             ) : terms.length === 0 ? (
-              <p className="font-inter text-[13px] text-[#9CA3AF] text-center py-4">No terms found.</p>
+              <p className="font-inter text-[13px] text-[#372213] text-center py-4">{t('modal.noTerms')}</p>
             ) : (
               <ul className="flex flex-col">
                 {terms.map((term, i) => (

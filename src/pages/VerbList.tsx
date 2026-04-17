@@ -4,6 +4,7 @@ import { PageLayout } from '../components/PageLayout';
 import { GrammarBreadcrumb } from '../components/GrammarBreadcrumb';
 import { Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../context/LanguageContext';
 
 interface VerbItem {
   verb_id: number;
@@ -30,6 +31,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export function VerbList({ categoryFilter }: VerbListProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [verbs, setVerbs] = useState<VerbItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -78,7 +80,7 @@ export function VerbList({ categoryFilter }: VerbListProps) {
   ];
 
   return (
-    <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-[#FFFDE6] [&_button]:text-[#FFFDE6] [&_svg]:text-[#FFFDE6]">
+    <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-white [&_button]:text-white [&_svg]:text-white">
       <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#FF7032] origin-top-left -skew-y-3 pointer-events-none" />
 
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
@@ -95,7 +97,7 @@ export function VerbList({ categoryFilter }: VerbListProps) {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search verbs..."
+                placeholder={t('grammar.searchVerbs')}
                 className="flex-1 bg-transparent border-none outline-none font-inter text-[16px] leading-[24px] text-[#372213] placeholder:text-[#B1B1B1]"
               />
             </div>

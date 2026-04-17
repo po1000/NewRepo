@@ -191,7 +191,7 @@ export function History() {
               Modern Spanish culture is a blend of Roman, Arab, and Christian
               influences.
             </h1>
-            <p className="font-inter text-[14px] leading-[24px] text-[#4B5563]">
+            <p className="font-inter text-[14px] leading-[24px] text-[#372213]">
               Travel through time and learn about the fascinating origins of
               Spain and the Castilian language.
             </p>
@@ -200,7 +200,7 @@ export function History() {
 
         {/* Drag to explore hint */}
         <div className="max-w-[690px] mx-auto mb-0 flex items-center justify-center">
-          <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-5 py-2 rounded-full shadow-sm text-[#4B5563] font-inter font-medium text-[13px]">
+          <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-5 py-2 rounded-full shadow-sm text-[#372213] font-inter font-medium text-[13px]">
             <ChevronLeftIcon className="w-4 h-4 animate-pulse" />
             <span>Drag to explore the timeline</span>
             <ChevronRightIcon className="w-4 h-4 animate-pulse" />
@@ -299,7 +299,7 @@ export function History() {
 
                         {item.title}
                       </h3>
-                      <div className="font-inter text-[12.5px] leading-[20px] text-[#4B5563]">
+                      <div className="font-inter text-[12.5px] leading-[20px] text-[#372213]">
                         {item.content}
                       </div>
                     </div>
