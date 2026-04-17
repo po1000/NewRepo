@@ -48,7 +48,7 @@ const TOPICS = ['Grammar Help', 'Pronunciation', 'Culture Exchange', 'Study Tips
 
 export function Community() {
   usePageTitle('Community');
-  const { t } = useLanguage();
+  const { t, showInstructions } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([
     {
       id: 'post-1',
@@ -205,6 +205,13 @@ export function Community() {
             Ask questions, share tips, and learn together with fellow Spanish learners
           </p>
         </div>
+        {showInstructions && (
+          <div className="bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#E879F9]/30 mb-6">
+            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+              {t('instructions.community')}
+            </p>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="w-full bg-white rounded-xl border border-[#E5E7EB] flex items-center px-4 py-3 gap-3 shadow-sm mb-8">

@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface ScenarioCriteria {
   id: string;
@@ -102,6 +103,7 @@ export function SpeakAndWrite({
   onScenarioClick,
 }: SpeakAndWriteProps) {
   usePageTitle('Speak & Write');
+  const { t, showInstructions } = useLanguage();
   return (
     <PageLayout>
 
@@ -114,6 +116,13 @@ export function SpeakAndWrite({
             Practise real-world conversations with interactive scenarios.
           </p>
         </div>
+        {showInstructions && (
+          <div className="bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#F97316]/20 mb-6">
+            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+              {t('instructions.speakWrite')}
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {scenarios.map((scenario) => (

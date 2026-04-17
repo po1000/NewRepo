@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Globe, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface UserProfileProps {
   username: string;
@@ -14,6 +15,7 @@ interface UserProfileProps {
 export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: UserProfileProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { language, toggleLanguage, t, showInstructions, setShowInstructions } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -171,11 +173,10 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden">
+          <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden">
             <button
               onClick={() => {
                 fileInputRef.current?.click();
-                // Don't close menu yet — let handleFileChange close it after file is picked
               }}
               className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#372213] hover:bg-gray-50 transition-colors"
             >
@@ -190,6 +191,41 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
             >
               My Badges
             </button>
+
+            {/* Interface Language */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-[#FF4D01]" />
+                <span className="font-inter font-medium text-[13px] text-[#372213]">{t('settings.language')}</span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLanguage();
+                }}
+                className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold bg-[#FF4D01] text-white hover:bg-[#E8451A] transition-colors"
+              >
+                {language === 'en' ? '🇬🇧 EN' : '🇪🇸 ES'}
+              </button>
+            </div>
+
+            {/* Show Instructions */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-50">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-[#FF4D01]" />
+                <span className="font-inter font-medium text-[13px] text-[#372213]">{t('settings.instructions')}</span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowInstructions(!showInstructions);
+                }}
+                className={`relative w-9 h-5 rounded-full transition-colors ${showInstructions ? 'bg-[#22C55E]' : 'bg-[#D1D5DB]'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${showInstructions ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+
             <button
               onClick={() => {
                 signOut();

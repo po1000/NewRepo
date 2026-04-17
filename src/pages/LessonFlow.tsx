@@ -751,16 +751,17 @@ export function LessonFlow() {
       const longestStreak = stats?.longest_streak || 0;
 
       const lastUpdate = stats?.updated_at ? new Date(stats.updated_at) : null;
-      const today = new Date();
-      const isNewDay = !lastUpdate ||
-        lastUpdate.toDateString() !== today.toDateString();
+      const now = new Date();
+      const todayStr = now.toLocaleDateString('en-CA');
+      const lastStr = lastUpdate ? lastUpdate.toLocaleDateString('en-CA') : null;
+      const isNewDay = !lastStr || lastStr !== todayStr;
 
       let updatedStreak = currentStreak;
       if (isNewDay) {
-        const yesterday = new Date(today);
+        const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        const isConsecutive = lastUpdate &&
-          lastUpdate.toDateString() === yesterday.toDateString();
+        const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+        const isConsecutive = lastStr === yesterdayStr;
         updatedStreak = isConsecutive ? currentStreak + 1 : 1;
         setStreakUpdated(true);
       }

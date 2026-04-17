@@ -77,6 +77,47 @@ const translations: Record<string, Record<Language, string>> = {
   'settings.language': { en: 'Interface Language', es: 'Idioma de Interfaz' },
   'settings.instructions': { en: 'Show Instructions', es: 'Mostrar Instrucciones' },
   'settings.instructionsHint': { en: 'Toggle off to hide helpful tips on all pages. You can re-enable this anytime in Settings.', es: 'Desactiva para ocultar consejos útiles en todas las páginas. Puedes reactivar esto en cualquier momento en Ajustes.' },
+
+  // CEFR Levels
+  'cefr.Beginner': { en: 'Beginner', es: 'Principiante' },
+  'cefr.Elementary': { en: 'Elementary', es: 'Elemental' },
+
+  // Structural labels
+  'label.unit': { en: 'Unit', es: 'Unidad' },
+
+  // A1 Unit titles
+  'unit.First Impressions': { en: 'First Impressions', es: 'Primeras Impresiones' },
+  'unit.Asking for Help': { en: 'Asking for Help', es: 'Pidiendo Ayuda' },
+  'unit.Getting What You Need': { en: 'Getting What You Need', es: 'Consiguiendo Lo Que Necesitas' },
+  'unit.Getting Around': { en: 'Getting Around', es: 'Moviéndote' },
+
+  // A2 Unit titles
+  'unit.Preferences & Who You Know': { en: 'Preferences & Who You Know', es: 'Preferencias y a Quién Conoces' },
+  'unit.Your Routine': { en: 'Your Routine', es: 'Tu Rutina' },
+  'unit.Plans and The Past': { en: 'Plans and The Past', es: 'Planes y el Pasado' },
+  'unit.Life Admin': { en: 'Life Admin', es: 'Trámites' },
+
+  // A1 Subunit titles
+  'sub.Hola, How\'s It Going?': { en: 'Hola, How\'s It Going?', es: '¡Hola! ¿Cómo te va?' },
+  'sub.Putting Names to Faces': { en: 'Putting Names to Faces', es: 'Poniendo Nombres a las Caras' },
+  'sub.Lost in Translation': { en: 'Lost in Translation', es: 'Perdido en la Traducción' },
+  'sub.Help is on the Way': { en: 'Help is on the Way', es: 'La Ayuda Viene en Camino' },
+  'sub.Day at the Café': { en: 'Day at the Café', es: 'Un Día en el Café' },
+  'sub.Map Mode': { en: 'Map Mode', es: 'Modo Mapa' },
+
+  // A2 Subunit titles
+  'sub.Relative Truths: Family': { en: 'Relative Truths: Family', es: 'Verdades Relativas: Familia' },
+  'sub.Clock In, Clock Out': { en: 'Clock In, Clock Out', es: 'Fichar Entrada, Fichar Salida' },
+  'sub.Last Weekend': { en: 'Last Weekend', es: 'El Fin de Semana Pasado' },
+  'sub.Pay Up': { en: 'Pay Up', es: 'A Pagar' },
+
+  // Instructions / helper text
+  'instructions.dashboard': { en: 'Tap any lesson tile to preview its vocabulary, then hit "Start Lesson" to begin. Complete all lessons in a unit to unlock the next level!', es: '¡Toca cualquier lección para ver su vocabulario, luego presiona "Iniciar Lección" para empezar. ¡Completa todas las lecciones en una unidad para desbloquear el siguiente nivel!' },
+  'instructions.speakWrite': { en: 'Choose a scenario and practice having a real conversation in Spanish. Tap the microphone to speak, or type your response. The AI will respond naturally and help you improve.', es: 'Elige un escenario y practica una conversación real en español. Toca el micrófono para hablar o escribe tu respuesta. La IA responderá naturalmente y te ayudará a mejorar.' },
+  'instructions.grammar': { en: 'Browse grammar topics organized by level. Tap any topic to see rules, examples, and conjugation tables. Practice what you learn in the lessons!', es: 'Explora temas de gramática organizados por nivel. Toca cualquier tema para ver reglas, ejemplos y tablas de conjugación. ¡Practica lo que aprendes en las lecciones!' },
+  'instructions.culture': { en: 'Explore Spanish culture through articles, games, and fun facts. Play Word Tiles to practice vocabulary in a fun way!', es: '¡Explora la cultura española a través de artículos, juegos y datos curiosos. ¡Juega Azulejos de Palabras para practicar vocabulario de forma divertida!' },
+  'instructions.community': { en: 'Ask questions, share tips, and connect with other Spanish learners. Filter by topic to find discussions that interest you.', es: 'Haz preguntas, comparte consejos y conéctate con otros estudiantes de español. Filtra por tema para encontrar discusiones que te interesen.' },
+  'instructions.badges': { en: 'Earn badges by completing lessons, building streaks, and answering questions correctly. Track your progress toward each badge here!', es: '¡Gana insignias completando lecciones, manteniendo rachas y respondiendo preguntas correctamente. ¡Sigue tu progreso hacia cada insignia aquí!' },
 };
 
 interface LanguageContextType {
