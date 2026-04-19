@@ -6,7 +6,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 const PRONOUN_SECTIONS = [
   {
     title: 'Subject Pronouns (Pronombres Personales)',
-    description: 'Used as the subject of a sentence — who is performing the action.',
+    description: 'Used as the subject of a sentence - who is performing the action.',
     rows: [
       { spanish: 'yo', english: 'I', person: '1st singular', example: 'Yo hablo espanol.' },
       { spanish: 'tu', english: 'you (informal)', person: '2nd singular', example: 'Tu hablas muy bien.' },
@@ -42,7 +42,7 @@ const PRONOUN_SECTIONS = [
   },
   {
     title: 'Reflexive Pronouns',
-    description: 'Used when the subject and object are the same person — the action reflects back.',
+    description: 'Used when the subject and object are the same person - the action reflects back.',
     rows: [
       { spanish: 'me', english: 'myself', person: '1st singular', example: 'Yo me llamo Ana. (I call myself Ana.)' },
       { spanish: 'te', english: 'yourself', person: '2nd singular', example: 'Tu te duchas. (You shower yourself.)' },
@@ -110,10 +110,10 @@ export function Pronouns() {
                     <span className="font-inter font-semibold text-[14px] text-[#FF4D01]">
                       {row.spanish}
                     </span>
-                    <span className="font-inter text-[13px] text-[#4B5563]">
+                    <span className="font-inter text-[13px] text-[#372213]">
                       {row.english}
                     </span>
-                    <span className="font-inter italic text-[13px] text-[#6B7280]">
+                    <span className="font-inter italic text-[13px] text-[#372213]">
                       {row.example}
                     </span>
                   </div>

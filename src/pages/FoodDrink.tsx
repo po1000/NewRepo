@@ -276,11 +276,11 @@ export function FoodDrink({
                               </div>
                         }
                           </div>
-                          <p className="font-inter text-[13px] sm:text-[14px] leading-[20px] text-[#4B5563] mt-1.5">
+                          <p className="font-inter text-[13px] sm:text-[14px] leading-[20px] text-[#372213] mt-1.5">
                             {item.description}
                           </p>
                           {item.origin &&
-                      <p className="font-inter text-[12px] text-[#9CA3AF] mt-1 italic">
+                      <p className="font-inter text-[12px] text-[#372213] mt-1 italic">
                               From{' '}
                               {item.originRegion ?
                         <button
@@ -366,7 +366,7 @@ export function FoodDrink({
                                           {item.ingredients.map((ing, i) =>
                                 <li
                                   key={i}
-                                  className="font-inter text-[13px] text-[#4B5563] flex items-start gap-2">
+                                  className="font-inter text-[13px] text-[#372213] flex items-start gap-2">
 
                                               <span className="text-[#D97706] mt-0.5">
                                                 •

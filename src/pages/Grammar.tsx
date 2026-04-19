@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { PageLayout } from '../components/PageLayout';
-import { GrammarBreadcrumb } from '../components/GrammarBreadcrumb';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -85,22 +84,19 @@ export function Grammar() {
   const { t, showInstructions } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const crumbs = [{ label: 'Grammar' }];
-
   const filteredItems = searchQuery.trim()
     ? grammarItems.filter(item => fuzzyMatch(searchQuery, item))
     : [];
 
   return (
-    <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-[#FFFDE6] [&_button]:text-[#FFFDE6] [&_svg]:text-[#FFFDE6]">
+    <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-white [&_button]:text-white [&_svg]:text-white">
       {/* Diagonal Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#FF7032] origin-top-left -skew-y-3 pointer-events-none" />
 
       <div className="max-w-[620px] mx-auto px-4 sm:px-6 pt-8 pb-20 relative z-10">
-        <GrammarBreadcrumb crumbs={crumbs} />
         {showInstructions && (
           <div className="bg-white/90 rounded-[12px] px-4 py-3 shadow-sm border border-white/30 mb-4">
-            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+            <p className="font-inter text-[13px] leading-[20px] text-[#372213]">
               {t('instructions.grammar')}
             </p>
           </div>
@@ -109,13 +105,13 @@ export function Grammar() {
         {/* Header & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h1 className="font-inter font-bold text-[25.5px] leading-[36px] text-white">
-            Grammar
+            {t('page.grammar')}
           </h1>
           <div className="w-full sm:w-[256px] h-[42px] bg-white rounded-lg border border-[#E5E7EB] flex items-center px-4 gap-3 shadow-sm">
             <Search className="w-4.5 h-4.5 text-[#B1B1B1]" />
             <input
               type="text"
-              placeholder="Search topics..."
+              placeholder={t('grammar.searchTopics')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 bg-transparent border-none outline-none font-inter text-[16px] leading-[24px] text-[#372213] placeholder:text-[#B1B1B1]" />
@@ -153,7 +149,7 @@ export function Grammar() {
             {/* Conjugations Card */}
             <div className="w-full md:w-[219px] bg-[#FFE43C] rounded-xl p-6 flex flex-col gap-6">
               <h2 className="font-inter font-bold text-[16.3px] leading-[28px] text-[#372213]">
-                Conjugations
+                {t('grammar.conjugations')}
               </h2>
               <div className="flex flex-col gap-2">
                 <button
@@ -183,7 +179,7 @@ export function Grammar() {
             {/* Topics Card */}
             <div className="flex-1 bg-[#FFE43C] rounded-xl p-6 flex flex-col gap-6">
               <h2 className="font-inter font-bold text-[16.3px] leading-[28px] text-[#372213]">
-                Topics
+                {t('grammar.topics')}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button

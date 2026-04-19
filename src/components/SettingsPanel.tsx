@@ -56,7 +56,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${showInstructions ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
           </div>
-          <p className="text-[11px] text-[#9CA3AF] leading-[16px] -mt-2">
+          <p className="text-[11px] text-[#372213] leading-[16px] -mt-2">
             {t('settings.instructionsHint')}
           </p>
         </div>

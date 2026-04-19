@@ -238,7 +238,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
                       {msg.text}
                     </p>
                     {msg.role === 'user' && msg.inputMode === 'voice' && (
-                      <span className="text-[9px] text-[#9CA3AF] mt-1 block">🎙 spoken</span>
+                      <span className="text-[9px] text-[#372213] mt-1 block">🎙 spoken</span>
                     )}
                   </div>
                 </div>
@@ -285,11 +285,11 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
         {/* Stats Cards — white with shadow */}
         <div className="w-full max-w-[448px] flex gap-4 mb-6">
           <div className="flex-1 bg-white rounded-xl p-4 flex flex-col items-center justify-center shadow-md border border-[#E5E7EB]">
-            <span className="text-[11.9px] text-[#6B7280] mb-1">{t('roleplay.xpEarned')}</span>
+            <span className="text-[11.9px] text-[#372213] mb-1">{t('roleplay.xpEarned')}</span>
             <span className="font-bold text-[17px] text-[#16A34A]">+30 XP</span>
           </div>
           <div className="flex-1 bg-white rounded-xl p-4 flex flex-col items-center justify-center shadow-md border border-[#E5E7EB]">
-            <span className="text-[11.9px] text-[#6B7280] mb-1">{t('roleplay.duration')}</span>
+            <span className="text-[11.9px] text-[#372213] mb-1">{t('roleplay.duration')}</span>
             <span className="font-bold text-[17px] text-[#372213]">{timeStr}</span>
           </div>
         </div>
@@ -358,7 +358,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
                       {dw.word !== dw.correct ? (
                         <>
                           <span lang="es" className="font-medium text-[15px] text-[#EF4444] line-through">{dw.word}</span>
-                          <span className="font-medium text-[13px] text-[#6B7280]">&rarr;</span>
+                          <span className="font-medium text-[13px] text-[#372213]">&rarr;</span>
                           <span lang="es" className="font-bold text-[15px] text-[#DC2626]">{dw.correct}</span>
                         </>
                       ) : (
@@ -404,7 +404,7 @@ function ScoreRow({ label, score }: { label: string; score: number | null }) {
     return (
       <div className="flex items-center justify-between">
         <span className="font-medium text-[14px] text-[#372213]">{label}</span>
-        <span className="font-bold text-[14px] text-[#9CA3AF]">N/A</span>
+        <span className="font-bold text-[14px] text-[#372213]">N/A</span>
       </div>
     );
   }

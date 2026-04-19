@@ -39,7 +39,7 @@ export function LoginCard({ onNavigate }: LoginCardProps) {
         <h1 id="login-title" className="text-[20.4px] font-bold text-[#111827] leading-8">
           Welcome Back
         </h1>
-        <p className="text-[13.6px] text-[#6B7280] leading-6">
+        <p className="text-[13.6px] text-[#372213] leading-6">
           Log in to continue learning Spanish
         </p>
       </div>
@@ -122,7 +122,7 @@ export function LoginCard({ onNavigate }: LoginCardProps) {
         </div>
 
         <div className="text-center">
-          <span className="text-[11.9px] text-[#4B5563] leading-5">Don't have an account?</span>
+          <span className="text-[11.9px] text-[#372213] leading-5">Don't have an account?</span>
           <button
             type="button"
             onClick={() => onNavigate('create')}

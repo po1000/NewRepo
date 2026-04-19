@@ -248,21 +248,21 @@ export function Dashboard() {
       <main className="flex flex-col items-center gap-6 px-4 pb-12">
         {showInstructions && (
           <div className="w-full max-w-[632px] mx-auto bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#F97316]/20">
-            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+            <p className="font-inter text-[13px] leading-[20px] text-[#372213]">
               {t('instructions.dashboard')}
             </p>
           </div>
         )}
         {loading ? (
           <div className="w-full max-w-[632px] mx-auto bg-white rounded-[16px] p-8 text-center shadow-sm">
-            <p className="font-inter text-[13.6px] text-[#6B7280]">Loading lessons...</p>
+            <p className="font-inter text-[13.6px] text-[#372213]">{t('lesson.loading')}</p>
           </div>
         ) : Object.keys(unitsByLevel).length === 0 ? (
           <div className="w-full max-w-[632px] mx-auto bg-white rounded-[16px] p-8 text-center shadow-sm">
             <h2 className="font-inter font-bold text-[20.4px] leading-[32px] text-[#372213] mb-2">
-              Welcome, {username}!
+              {t('ui.welcome')}, {username}!
             </h2>
-            <p className="font-inter text-[13.6px] leading-[24px] text-[#6B7280]">
+            <p className="font-inter text-[13.6px] leading-[24px] text-[#372213]">
               Your lessons will appear here once content is added to the database.
             </p>
           </div>
@@ -287,8 +287,8 @@ export function Dashboard() {
           <button
             type="button"
             onClick={signOut}
-            className="text-[13px] text-[#9CA3AF] hover:text-[#6B7280] transition-colors underline">
-            Sign Out
+            className="text-[13px] text-[#372213] hover:text-[#372213] transition-colors underline">
+            {t('ui.signOut')}
           </button>
         </div>
       </main>

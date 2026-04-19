@@ -159,7 +159,7 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
             className="w-[25px] h-[25px] rounded-full bg-[#D9D9D9] flex items-center justify-center flex-shrink-0"
             aria-hidden="true"
           >
-            <span className="font-inter font-bold text-[11px] text-[#6B7280]">
+            <span className="font-inter font-bold text-[11px] text-[#372213]">
               {username.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -180,7 +180,7 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
               }}
               className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#372213] hover:bg-gray-50 transition-colors"
             >
-              {uploading ? 'Uploading...' : 'Change Profile Photo'}
+              {uploading ? t('ui.uploading') : t('ui.changePhoto')}
             </button>
             <button
               onClick={() => {
@@ -189,7 +189,7 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
               }}
               className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#372213] hover:bg-gray-50 transition-colors border-t border-gray-50"
             >
-              My Badges
+              {t('ui.myBadges')}
             </button>
 
             {/* Interface Language */}
@@ -233,7 +233,7 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
               }}
               className="w-full text-left px-4 py-2.5 text-[13px] font-inter text-[#E53E3E] hover:bg-red-50 transition-colors border-t border-gray-100"
             >
-              Sign Out
+              {t('ui.signOut')}
             </button>
           </div>
         </>

@@ -64,15 +64,15 @@ export function Culture() {
         {/* Header */}
         <div className="flex flex-col items-center gap-2 mt-8 mb-12">
           <h1 className="font-inter font-bold text-[25.5px] leading-[36px] text-[#372213] text-center">
-            Culture Area
+            {t('page.culture')}
           </h1>
-          <p className="font-inter text-[13.6px] leading-[24px] text-[#4B5563] text-center">
-            Discover the richness of Spanish traditions
+          <p className="font-inter text-[13.6px] leading-[24px] text-[#372213] text-center">
+            {t('page.cultureSubtitle')}
           </p>
         </div>
         {showInstructions && (
           <div className="max-w-[605px] mx-auto bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#0088E9]/20 mb-6">
-            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+            <p className="font-inter text-[13px] leading-[20px] text-[#372213]">
               {t('instructions.culture')}
             </p>
           </div>
@@ -111,9 +111,9 @@ export function Culture() {
 
         {/* Games Section */}
         <div className="max-w-[605px] mx-auto mt-6 pb-20">
-          <h2 className="font-inter font-bold text-[20px] text-[#372213] mb-4">Games</h2>
+          <h2 className="font-inter font-bold text-[20px] text-[#372213] mb-4">{t('culture.games')}</h2>
           <div
-            onClick={() => navigate('/culture/word-tiles')}
+            onClick={() => navigate('/culture/games/piano-tiles')}
             className="relative w-full h-[120px] rounded-xl bg-gradient-to-r from-[#1a1a2e] to-[#2d2d5e] overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border border-white/10"
           >
             <div className="absolute inset-0 flex items-center px-6 gap-5">

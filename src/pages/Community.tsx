@@ -201,13 +201,13 @@ export function Community() {
           <h1 className="font-inter font-bold text-[25.5px] leading-[36px] text-[#372213]">
             {t('community.title')}
           </h1>
-          <p className="font-inter text-[13.6px] leading-[24px] text-[#4B5563]">
-            Ask questions, share tips, and learn together with fellow Spanish learners
+          <p className="font-inter text-[13.6px] leading-[24px] text-[#372213]">
+            {t('page.communitySubtitle')}
           </p>
         </div>
         {showInstructions && (
           <div className="bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#E879F9]/30 mb-6">
-            <p className="font-inter text-[13px] leading-[20px] text-[#6B7280]">
+            <p className="font-inter text-[13px] leading-[20px] text-[#372213]">
               {t('instructions.community')}
             </p>
           </div>
@@ -233,7 +233,7 @@ export function Community() {
                 className={`whitespace-nowrap px-5 py-2.5 rounded-full font-inter font-medium text-[14px] transition-colors ${
                   selectedTopic === section
                     ? 'bg-[#372213] text-white'
-                    : 'bg-white text-[#4B5563] hover:bg-gray-50 border border-[#E5E7EB]'
+                    : 'bg-white text-[#372213] hover:bg-gray-50 border border-[#E5E7EB]'
                 }`}
               >
                 {section}
@@ -314,7 +314,7 @@ export function Community() {
                 <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => setShowNewPostForm(false)}
-                    className="px-6 py-2.5 border border-[#E5E7EB] rounded-lg font-inter font-medium text-[14px] text-[#4B5563] hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2.5 border border-[#E5E7EB] rounded-lg font-inter font-medium text-[14px] text-[#372213] hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
@@ -367,18 +367,18 @@ export function Community() {
                       <div className="w-6 h-6 bg-[#FFDFFC] rounded-full flex items-center justify-center">
                         <User className="w-3.5 h-3.5 text-[#FF4D01]" />
                       </div>
-                      <span className="font-inter font-medium text-[13px] text-[#4B5563]">{post.author}</span>
-                      <span className="font-inter text-[13px] text-[#9CA3AF]">• {post.timeAgo}</span>
-                      <span className="px-2 py-0.5 bg-[#F3F4F6] rounded text-[11px] font-medium text-[#4B5563] ml-auto">
+                      <span className="font-inter font-medium text-[13px] text-[#372213]">{post.author}</span>
+                      <span className="font-inter text-[13px] text-[#372213]">• {post.timeAgo}</span>
+                      <span className="px-2 py-0.5 bg-[#F3F4F6] rounded text-[11px] font-medium text-[#372213] ml-auto">
                         {post.topic}
                       </span>
                     </div>
                     <h2 className="font-inter font-bold text-[18px] leading-[26px] text-[#372213]">{post.title}</h2>
                     {post.body && (
-                      <p className="font-inter text-[14px] leading-[22px] text-[#4B5563] mt-1">{post.body}</p>
+                      <p className="font-inter text-[14px] leading-[22px] text-[#372213] mt-1">{post.body}</p>
                     )}
                     <div className="flex items-center gap-4 mt-2">
-                      <div className="flex items-center gap-1.5 text-[#6B7280]">
+                      <div className="flex items-center gap-1.5 text-[#372213]">
                         <MessageSquare className="w-4 h-4" />
                         <span className="font-inter font-medium text-[13px]">
                           {post.comments.length} {post.comments.length === 1 ? 'Comment' : 'Comments'}
@@ -418,9 +418,9 @@ export function Community() {
                             <div className="flex-1 flex flex-col gap-2">
                               <div className="flex items-center gap-2">
                                 <span className="font-inter font-medium text-[13px] text-[#372213]">{comment.author}</span>
-                                <span className="font-inter text-[12px] text-[#9CA3AF]">• {comment.timeAgo}</span>
+                                <span className="font-inter text-[12px] text-[#372213]">• {comment.timeAgo}</span>
                               </div>
-                              <p className="font-inter text-[14px] leading-[22px] text-[#4B5563]">{comment.text}</p>
+                              <p className="font-inter text-[14px] leading-[22px] text-[#372213]">{comment.text}</p>
                               {comment.replies.length > 0 && (
                                 <>
                                   <button
@@ -445,9 +445,9 @@ export function Community() {
                                           <div className="flex-1 flex flex-col gap-1">
                                             <div className="flex items-center gap-2">
                                               <span className="font-inter font-medium text-[13px] text-[#372213]">{reply.author}</span>
-                                              <span className="font-inter text-[12px] text-[#9CA3AF]">• {reply.timeAgo}</span>
+                                              <span className="font-inter text-[12px] text-[#372213]">• {reply.timeAgo}</span>
                                             </div>
-                                            <p className="font-inter text-[14px] leading-[22px] text-[#4B5563]">{reply.text}</p>
+                                            <p className="font-inter text-[14px] leading-[22px] text-[#372213]">{reply.text}</p>
                                           </div>
                                         </div>
                                       ))}
