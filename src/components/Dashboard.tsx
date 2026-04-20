@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Play } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { supabase } from '../lib/supabase';
@@ -47,10 +48,12 @@ export function Dashboard() {
   const { user, signOut } = useAuth();
   const { t, showInstructions } = useLanguage();
   const navigate = useNavigate();
-  const [unitsByLevel, setUnitsByLevel] = useState<Record<string, UnitData[]>>({});
+  const [rawUnits, setRawUnits] = useState<UnitRow[]>([]);
+  const [subunitProgressMap, setSubunitProgressMap] = useState<Record<number, SubunitProgress>>({});
   const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState({ total_xp: 0, badge_count: 0, current_streak: 0 });
   const [selectedSubunit, setSelectedSubunit] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string } | null>(null);
+  const [lastLesson, setLastLesson] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string; vocabPreview: string; progressPercent: number } | null>(null);
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
   useEffect(() => {
@@ -107,11 +110,12 @@ export function Dashboard() {
           if (upsertErr) console.error('Streak upsert error:', upsertErr);
         }
 
-        // Count badges earned
-        const { count: badgeCount } = await supabase
+        // Count badges earned (only count those matching real badges)
+        const { data: earnedBadges } = await supabase
           .from('user_badges')
-          .select('*', { count: 'exact', head: true })
+          .select('badge_id, badges ( badge_id )')
           .eq('user_id', user.id);
+        const badgeCount = (earnedBadges || []).filter((b: any) => b.badges).length;
 
         setUserStats({
           total_xp: stats?.total_xp || 0,
@@ -184,57 +188,79 @@ export function Dashboard() {
         }
       }
 
-      // Group units by CEFR level
-      const grouped: Record<string, UnitData[]> = {};
+      setRawUnits((units as UnitRow[]) || []);
+      setSubunitProgressMap(progressMap);
 
-      (units as UnitRow[])?.forEach((unit) => {
-        const cefrCode = unit.cefr_levels?.code || 'A1';
-        const cefrName = unit.cefr_levels?.title || 'Beginner';
-        const levelKey = `${cefrCode}:${cefrName}`;
-
-        if (!grouped[levelKey]) grouped[levelKey] = [];
-
-        const sortedSubunits = (unit.subunits || []).sort((a, b) => a.sort_order - b.sort_order);
-
-        grouped[levelKey].push({
-          id: `unit-${unit.unit_id}`,
-          title: `${t('label.unit')} ${unit.unit_number}: ${t(`unit.${unit.title}`)}`,
-          lessons: sortedSubunits.map((sub) => {
-            const prog = progressMap[sub.subunit_id];
+      // Load last lesson for "Continue Lesson" card
+      if (user) {
+        try {
+          const raw = localStorage.getItem(`last_lesson_${user.id}`);
+          if (raw) {
+            const saved = JSON.parse(raw);
+            const prog = progressMap[saved.subunitId];
             const total = prog?.totalTerms || 0;
             const seen = prog?.seenTerms || 0;
             const pct = total > 0 ? Math.round((seen / total) * 100) : 0;
+            if (pct < 100) {
+              setLastLesson({
+                subunitId: saved.subunitId,
+                subunitCode: saved.subunitCode,
+                title: saved.title,
+                goalText: saved.goalText || '',
+                vocabPreview: saved.vocabPreview || '',
+                progressPercent: pct,
+              });
+            }
+          }
+        } catch {}
+      }
 
-            let status: 'completed' | 'in-progress' | 'locked' = 'locked';
-            if (pct >= 100) status = 'completed';
-            else if (seen > 0) status = 'in-progress';
-
-            return {
-              unitNumber: sub.subunit_code,
-              title: t(`sub.${sub.title}`),
-              color: SUBUNIT_COLORS[`${cefrCode}:${sub.subunit_code}`] || '#D9D9D9',
-              imageUrl: sub.image_url || '',
-              status,
-              progressPercent: pct,
-              subunitId: sub.subunit_id,
-              goalText: sub.goal_text || '',
-              onClick: () => setSelectedSubunit({
-                subunitId: sub.subunit_id,
-                subunitCode: sub.subunit_code,
-                title: sub.title,
-                goalText: sub.goal_text || '',
-              }),
-            };
-          }),
-        });
-      });
-
-      setUnitsByLevel(grouped);
       setLoading(false);
     }
 
     fetchData();
   }, [user]);
+
+  const unitsByLevel = useMemo(() => {
+    const grouped: Record<string, UnitData[]> = {};
+    rawUnits.forEach((unit) => {
+      const cefrCode = unit.cefr_levels?.code || 'A1';
+      const cefrName = unit.cefr_levels?.title || 'Beginner';
+      const levelKey = `${cefrCode}:${cefrName}`;
+      if (!grouped[levelKey]) grouped[levelKey] = [];
+      const sortedSubunits = (unit.subunits || []).sort((a, b) => a.sort_order - b.sort_order);
+      grouped[levelKey].push({
+        id: `unit-${unit.unit_id}`,
+        title: `${t('label.unit')} ${unit.unit_number}: ${t(`unit.${unit.title}`)}`,
+        lessons: sortedSubunits.map((sub) => {
+          const prog = subunitProgressMap[sub.subunit_id];
+          const total = prog?.totalTerms || 0;
+          const seen = prog?.seenTerms || 0;
+          const pct = total > 0 ? Math.round((seen / total) * 100) : 0;
+          let status: 'completed' | 'in-progress' | 'locked' = 'locked';
+          if (pct >= 100) status = 'completed';
+          else if (seen > 0) status = 'in-progress';
+          return {
+            unitNumber: sub.subunit_code,
+            title: t(`sub.${sub.title}`),
+            color: SUBUNIT_COLORS[`${cefrCode}:${sub.subunit_code}`] || '#D9D9D9',
+            imageUrl: sub.image_url || '',
+            status,
+            progressPercent: pct,
+            subunitId: sub.subunit_id,
+            goalText: sub.goal_text || '',
+            onClick: () => setSelectedSubunit({
+              subunitId: sub.subunit_id,
+              subunitCode: sub.subunit_code,
+              title: sub.title,
+              goalText: sub.goal_text || '',
+            }),
+          };
+        }),
+      });
+    });
+    return grouped;
+  }, [rawUnits, subunitProgressMap, t]);
 
   return (
     <PageLayout
@@ -253,6 +279,44 @@ export function Dashboard() {
             </p>
           </div>
         )}
+        {/* Continue Lesson Card */}
+        {!loading && lastLesson && (
+          <div className="w-full max-w-[632px] mx-auto bg-[#FFFDF5] rounded-[16px] p-5 shadow-sm border-2 border-[#FFE082]">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="font-inter font-bold text-[17px] text-[#372213]">
+                  {t('label.unit')} {lastLesson.subunitCode}: {t(`sub.${lastLesson.title}`)}
+                </h3>
+                <p className="font-inter text-[13px] text-[#372213] mt-1">
+                  {t('resume.vocab')} {lastLesson.vocabPreview}....
+                </p>
+              </div>
+              <div className="text-right shrink-0 ml-4">
+                <p className="font-inter font-semibold text-[13px] text-[#FF4D01]">+20 {t('resume.xpReward')}</p>
+                {lastLesson.goalText && (
+                  <p className="font-inter italic text-[12px] text-[#372213] mt-0.5">"{lastLesson.goalText}"</p>
+                )}
+              </div>
+            </div>
+            {/* Progress bar */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex-1 h-[8px] bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500 bg-[#FF4D01]"
+                  style={{ width: `${lastLesson.progressPercent}%` }}
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/lesson', { state: { subunitId: lastLesson.subunitId, subunitCode: lastLesson.subunitCode, title: lastLesson.title, goalText: lastLesson.goalText } })}
+              className="w-full py-3 rounded-[12px] bg-[#E8501E] hover:bg-[#D4461A] active:bg-[#C03F17] text-white font-inter font-bold text-[15px] transition-colors shadow-md flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              {t('resume.continueLesson')}
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="w-full max-w-[632px] mx-auto bg-white rounded-[16px] p-8 text-center shadow-sm">
             <p className="font-inter text-[13.6px] text-[#372213]">{t('lesson.loading')}</p>
@@ -304,7 +368,7 @@ export function Dashboard() {
           onClose={() => setSelectedSubunit(null)}
           onStartLesson={() => {
             setSelectedSubunit(null);
-            navigate('/lesson', { state: { subunitId: selectedSubunit.subunitId, subunitCode: selectedSubunit.subunitCode, title: selectedSubunit.title } });
+            navigate('/lesson', { state: { subunitId: selectedSubunit.subunitId, subunitCode: selectedSubunit.subunitCode, title: selectedSubunit.title, goalText: selectedSubunit.goalText } });
           }}
         />
       )}

@@ -12,7 +12,7 @@ interface PageLayoutProps {
   navOverrideClass?: string;
 }
 
-export function PageLayout({ children, stats, backgroundColor = '#FFEF74', navOverrideClass }: PageLayoutProps) {
+export function PageLayout({ children, stats, backgroundColor = '#FFFBD3', navOverrideClass }: PageLayoutProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
 

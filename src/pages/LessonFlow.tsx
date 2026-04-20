@@ -63,7 +63,7 @@ function speakSpanish(text: string, slow: boolean) {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
-  utterance.rate = slow ? 0.5 : 0.92;
+  utterance.rate = slow ? 0.3 : 0.92;
   utterance.pitch = 1.05;
   const voices = window.speechSynthesis.getVoices();
   const preferred = ['Google español', 'Paulina', 'Monica', 'Jorge', 'Lucia', 'Microsoft Helena', 'Microsoft Sabina'];
@@ -144,7 +144,7 @@ export function LessonFlow() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const state = (location.state as { subunitId?: number; subunitCode?: string; title?: string }) || {};
+  const state = (location.state as { subunitId?: number; subunitCode?: string; title?: string; goalText?: string }) || {};
 
   const [termsMap, setTermsMap] = useState<Map<number, Term>>(new Map());
   const [queue, setQueue] = useState<number[]>([]);
@@ -300,6 +300,17 @@ export function LessonFlow() {
         if (tp.status === 'learnt') done++;
       }
       setCompletedCount(done);
+
+      // Save last lesson info for "Continue Lesson" card on dashboard
+      const vocabPreview = Array.from(tMap.values()).slice(0, 4).map(t => t.spanish_text).join(', ');
+      localStorage.setItem(`last_lesson_${user.id}`, JSON.stringify({
+        subunitId: state.subunitId,
+        subunitCode: state.subunitCode || '',
+        title: state.title || '',
+        goalText: state.goalText || '',
+        vocabPreview,
+        timestamp: Date.now(),
+      }));
 
       setLoading(false);
     }
@@ -575,10 +586,6 @@ export function LessonFlow() {
     });
 
     setCompletedCount(prev => prev + 1);
-    // Award XP for marking as known
-    setSessionXp(prev => prev + XP_CORRECT_ANSWER);
-    setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
-    setCorrectAnswersThisSession(prev => prev + 1);
     advanceQueue();
   }, [currentTerm, user, progressMap, advanceQueue]);
 

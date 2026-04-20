@@ -84,6 +84,11 @@ const translations: Record<string, Record<Language, string>> = {
   'grammar.pronounsCol': { en: 'Pronouns', es: 'Pronombres' },
   'grammar.searchVerbs': { en: 'Search verbs...', es: 'Buscar verbos...' },
 
+  // Continue Lesson card
+  'resume.continueLesson': { en: 'Continue Lesson', es: 'Continuar Lección' },
+  'resume.xpReward': { en: 'XP Reward', es: 'Recompensa XP' },
+  'resume.vocab': { en: 'Vocab:', es: 'Vocab:' },
+
   // SubunitDetailModal
   'modal.goal': { en: 'Goal:', es: 'Objetivo:' },
   'modal.noGrammarHints': { en: 'No grammar hints yet for this subunit.', es: 'Aún no hay consejos gramaticales para esta sublección.' },
@@ -146,6 +151,7 @@ const translations: Record<string, Record<Language, string>> = {
   // CEFR Levels
   'cefr.Beginner': { en: 'Beginner', es: 'Principiante' },
   'cefr.Elementary': { en: 'Elementary', es: 'Elemental' },
+  'cefr.Pre-Intermediate': { en: 'Pre-Intermediate', es: 'Pre-Intermedio' },
 
   // Structural labels
   'label.unit': { en: 'Unit', es: 'Unidad' },
@@ -177,7 +183,7 @@ const translations: Record<string, Record<Language, string>> = {
   'sub.Pay Up': { en: 'Pay Up', es: 'A Pagar' },
 
   // Instructions / helper text
-  'instructions.dashboard': { en: 'Tap any lesson tile to preview its vocabulary, then hit "Start Lesson" to begin. Complete all lessons in a unit to unlock the next level!', es: '¡Toca cualquier lección para ver su vocabulario, luego presiona "Iniciar Lección" para empezar. ¡Completa todas las lecciones en una unidad para desbloquear el siguiente nivel!' },
+  'instructions.dashboard': { en: 'Tap any lesson tile to preview its vocabulary, then hit "Start Lesson" to begin. Lessons and units can be taken in any order!', es: '¡Toca cualquier lección para ver su vocabulario, luego presiona "Iniciar Lección" para empezar. ¡Las lecciones y unidades se pueden tomar en cualquier orden!' },
   'instructions.speakWrite': { en: 'Choose a scenario and practice having a real conversation in Spanish. Tap the microphone to speak, or type your response. The AI will respond naturally and help you improve.', es: 'Elige un escenario y practica una conversación real en español. Toca el micrófono para hablar o escribe tu respuesta. La IA responderá naturalmente y te ayudará a mejorar.' },
   'instructions.grammar': { en: 'Browse grammar topics organized by level. Tap any topic to see rules, examples, and conjugation tables. Practice what you learn in the lessons!', es: 'Explora temas de gramática organizados por nivel. Toca cualquier tema para ver reglas, ejemplos y tablas de conjugación. ¡Practica lo que aprendes en las lecciones!' },
   'instructions.culture': { en: 'Explore Spanish culture through articles, games, and fun facts. Play Word Tiles to practice vocabulary in a fun way!', es: '¡Explora la cultura española a través de artículos, juegos y datos curiosos. ¡Juega Azulejos de Palabras para practicar vocabulario de forma divertida!' },

@@ -283,7 +283,7 @@ export async function saveTermProgress(
   status: TermStatus,
   sm2: SM2Data
 ): Promise<void> {
-  await Promise.all([
+  const [progressResult, sm2Result] = await Promise.all([
     supabase.from('user_term_progress').upsert(
       {
         user_id: userId,
@@ -311,6 +311,8 @@ export async function saveTermProgress(
       { onConflict: 'user_id,term_id' }
     ),
   ]);
+  if (progressResult.error) console.error('Failed to save term progress:', progressResult.error);
+  if (sm2Result.error) console.error('Failed to save SM2 data:', sm2Result.error);
 }
 
 /**
@@ -326,7 +328,7 @@ export async function markSeen(userId: string, termId: number): Promise<void> {
     .single();
 
   if (!data || data.status === 'not_seen') {
-    await supabase.from('user_term_progress').upsert(
+    const { error } = await supabase.from('user_term_progress').upsert(
       {
         user_id: userId,
         term_id: termId,
@@ -336,6 +338,7 @@ export async function markSeen(userId: string, termId: number): Promise<void> {
       },
       { onConflict: 'user_id,term_id' }
     );
+    if (error) console.error('Failed to mark seen:', error);
   }
 }
 
