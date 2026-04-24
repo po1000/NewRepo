@@ -78,7 +78,7 @@ function speakSpanish(text: string, slow: boolean) {
 const XP_CORRECT_ANSWER = 10;
 
 // Max NEW terms to introduce before cycling quizzes
-const MAX_NEW_TERMS_PER_SESSION = 4;
+const MAX_NEW_TERMS_PER_SESSION = 3;
 
 // Sound effects for correct/incorrect answers (Web Audio API — no external files)
 function playCorrectSound() {
@@ -157,8 +157,6 @@ export function LessonFlow() {
   const [showReport, setShowReport] = useState(false);
   const [reportText, setReportText] = useState('');
   const [reportSent, setReportSent] = useState(false);
-  const [totalTermCount, setTotalTermCount] = useState(0);
-  const [completedCount, setCompletedCount] = useState(0);
 
   // Question mode state
   const [mode, setMode] = useState<LessonMode>('flashcard');
@@ -194,6 +192,8 @@ export function LessonFlow() {
   // Track status changes for "graduated words" display on lesson complete
   const initialStatusRef = useRef<Map<number, string>>(new Map());
   const [graduatedWords, setGraduatedWords] = useState<{ term: Term; from: string; to: string }[]>([]);
+  const [showCompletionDelay, setShowCompletionDelay] = useState(false);
+  const [confettiPieces, setConfettiPieces] = useState<{ id: number; left: number; delay: number; color: string; size: number }[]>([]);
 
   const hasInitialized = useRef(false);
   const lessonCompletionHandled = useRef(false);
@@ -239,7 +239,6 @@ export function LessonFlow() {
       });
 
       setTermsMap(tMap);
-      setTotalTermCount(termIds.length);
 
       // Load existing progress
       const pMap = await loadTermProgress(user.id, termIds);
@@ -293,13 +292,6 @@ export function LessonFlow() {
         const sessionQueue = buildSessionQueue(termIds, pMap);
         setQueue(sessionQueue);
       }
-
-      // Count already completed
-      let done = 0;
-      for (const tp of pMap.values()) {
-        if (tp.status === 'learnt') done++;
-      }
-      setCompletedCount(done);
 
       // Save last lesson info for "Continue Lesson" card on dashboard
       const vocabPreview = Array.from(tMap.values()).slice(0, 4).map(t => t.spanish_text).join(', ');
@@ -364,9 +356,9 @@ export function LessonFlow() {
     return ids;
   }, [progressMap]);
 
-  // Progress bar
-  const progressPercent = totalTermCount > 0
-    ? Math.min(((completedCount + queueIndex) / totalTermCount) * 100, 100)
+  // Progress bar — based on queue position so it reaches 100% when lesson ends
+  const progressPercent = queue.length > 0
+    ? Math.min((queueIndex / queue.length) * 100, 100)
     : 0;
 
   // ── Setup multiple choice question ──────────────────────────
@@ -446,7 +438,20 @@ export function LessonFlow() {
       }
       setGraduatedWords(graduated);
 
-      setLessonComplete(true);
+      // Show delay screen (progress bar at 100%) then transition to complete
+      setShowCompletionDelay(true);
+      const pieces = Array.from({ length: 50 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        delay: Math.random() * 2,
+        color: ['#FF4D01', '#FFD905', '#22C55E', '#3B82F6', '#A855F7', '#EC4899'][Math.floor(Math.random() * 6)],
+        size: 6 + Math.random() * 8,
+      }));
+      setTimeout(() => {
+        setConfettiPieces(pieces);
+        setLessonComplete(true);
+        setShowCompletionDelay(false);
+      }, 1500);
       return;
     }
 
@@ -457,8 +462,8 @@ export function LessonFlow() {
     setReportText('');
     setReportSent(false);
 
-    // After every 2 new flashcards seen, trigger a quiz on a random SEEN term
-    if (newFlashcardCount >= 2 && seenTermIds.length >= 2) {
+    // After every new flashcard, trigger a quiz on a random SEEN term
+    if (newFlashcardCount >= 1 && seenTermIds.length >= 1) {
       const quizCandidates = seenTermIds.filter(id => {
         const tp = progressMap.get(id);
         return tp && tp.status !== 'not_seen';
@@ -585,7 +590,6 @@ export function LessonFlow() {
       return next;
     });
 
-    setCompletedCount(prev => prev + 1);
     advanceQueue();
   }, [currentTerm, user, progressMap, advanceQueue]);
 
@@ -693,11 +697,25 @@ export function LessonFlow() {
     if (!term) return;
 
     setLsSubmitted(true);
-    // Compare transcript to expected — use simple edit-distance based score
     const norm = (s: string) => s.trim().toLowerCase().replace(/[^a-záéíóúñü\s]/g, '');
     const expected = norm(term.spanish_text);
     const got = norm(lsTranscript);
-    const similarity = expected === got ? 100 : (got.length > 0 && expected.includes(got) ? 70 : 40);
+
+    // Levenshtein distance for better similarity scoring
+    function levenshtein(a: string, b: string): number {
+      const m = a.length, n = b.length;
+      const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) dp[i][0] = i;
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++)
+        for (let j = 1; j <= n; j++)
+          dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + (a[i-1] !== b[j-1] ? 1 : 0));
+      return dp[m][n];
+    }
+
+    const maxLen = Math.max(expected.length, got.length) || 1;
+    const dist = levenshtein(expected, got);
+    const similarity = Math.round((1 - dist / maxLen) * 100);
     const q = listenSpeakQuality(similarity, false);
     const correct = q >= 4;
     setLsCorrect(correct);
@@ -780,7 +798,7 @@ export function LessonFlow() {
       const newTotalXp = currentXp + sessionXp;
       const newLessonsCompleted = currentLessons + 1;
 
-      await supabase
+      const { error: statsErr } = await supabase
         .from('user_stats')
         .upsert({
           user_id: user!.id,
@@ -791,13 +809,16 @@ export function LessonFlow() {
           updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
 
+      if (statsErr) console.error('XP stats save error:', statsErr);
+
       if (sessionXp > 0) {
-        await supabase.from('xp_events').insert({
+        const { error: xpErr } = await supabase.from('xp_events').insert({
           user_id: user!.id,
           xp_amount: sessionXp,
           source_type: 'lesson',
           source_id: state.subunitId || null,
         });
+        if (xpErr) console.error('XP event save error:', xpErr);
       }
 
       // Check and award badges
@@ -827,10 +848,11 @@ export function LessonFlow() {
         if (!earnedSet.has(badge.badge_id)) {
           const progress = progressLookup[badge.criteria_type] || 0;
           if (progress >= badge.criteria_value) {
-            await supabase.from('user_badges').insert({
+            const { error: badgeErr } = await supabase.from('user_badges').insert({
               user_id: user!.id,
               badge_id: badge.badge_id,
             });
+            if (badgeErr) console.error('Badge award error:', badgeErr);
           }
         }
       }
@@ -850,6 +872,23 @@ export function LessonFlow() {
     );
   }
 
+  // Delay screen — progress bar at 100% with a short pause
+  if (showCompletionDelay) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center font-inter"
+        style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
+        <div className="w-full max-w-[684px] p-8">
+          <div className="flex items-center justify-center mb-8">
+            <div className="flex-1 max-w-[400px] h-3 bg-white/30 rounded-full overflow-hidden">
+              <div className="h-full bg-[#FFFDE6] rounded-full transition-all duration-500" style={{ width: '100%' }} />
+            </div>
+          </div>
+          <p className="text-[#FFFDE6] text-[22px] font-bold text-center animate-pulse">Great work!</p>
+        </div>
+      </div>
+    );
+  }
+
   // End of lesson screen
   if (lessonComplete || !currentTerm) {
     const STATUS_LABELS: Record<string, string> = {
@@ -861,8 +900,38 @@ export function LessonFlow() {
     };
 
     return (
-      <div className="min-h-screen w-full flex items-center justify-center font-inter overflow-y-auto py-8"
+      <div className="min-h-screen w-full flex items-center justify-center font-inter overflow-y-auto py-8 relative"
         style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
+        {/* Confetti */}
+        {confettiPieces.length > 0 && (
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+            {confettiPieces.map((p) => (
+              <div
+                key={p.id}
+                className="absolute top-0 rounded-sm"
+                style={{
+                  left: `${p.left}%`,
+                  width: `${p.size}px`,
+                  height: `${p.size * 1.5}px`,
+                  backgroundColor: p.color,
+                  animation: `confettiFall ${2.5 + p.delay}s ease-in forwards`,
+                  animationDelay: `${p.delay * 0.3}s`,
+                  transform: `rotate(${Math.random() * 360}deg)`,
+                }}
+              />
+            ))}
+            <style>{`
+              @keyframes confettiFall {
+                0% { top: -10%; opacity: 1; transform: rotate(0deg) translateX(0); }
+                25% { transform: rotate(90deg) translateX(20px); }
+                50% { transform: rotate(180deg) translateX(-20px); opacity: 1; }
+                75% { transform: rotate(270deg) translateX(10px); }
+                100% { top: 110%; opacity: 0; transform: rotate(360deg) translateX(-10px); }
+              }
+            `}</style>
+          </div>
+        )}
+
         <div className="w-full max-w-[420px] mx-4">
           {/* Trophy */}
           <div className="flex justify-center mb-6">
@@ -872,7 +941,7 @@ export function LessonFlow() {
           </div>
 
           <h1 className="text-[#FFFDE6] text-[28px] font-bold text-center mb-2">
-            Lesson Complete!
+            {t('lesson.complete')}
           </h1>
           <p className="text-[#FFFDE6]/80 text-[15px] text-center mb-8">
             {state.title || 'Great work!'}
@@ -883,23 +952,23 @@ export function LessonFlow() {
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Zap className="w-7 h-7 text-[#16A34A] fill-[#16A34A] mb-1" />
               <span className="text-[#372213] text-[24px] font-bold">{sessionXp}</span>
-              <span className="text-[#372213] text-[12px]">XP Earned</span>
+              <span className="text-[#372213] text-[12px]">{t('lesson.xpEarned')}</span>
             </div>
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Star className="w-7 h-7 text-[#F59E0B] fill-[#F59E0B] mb-1" />
               <span className="text-[#372213] text-[24px] font-bold">{termsSeenThisSession}</span>
-              <span className="text-[#372213] text-[12px]">New Terms</span>
+              <span className="text-[#372213] text-[12px]">{t('lesson.newTerms')}</span>
             </div>
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Check className="w-7 h-7 text-[#22C55E] mb-1" />
               <span className="text-[#372213] text-[24px] font-bold">{correctAnswersThisSession}</span>
-              <span className="text-[#372213] text-[12px]">Correct Answers</span>
+              <span className="text-[#372213] text-[12px]">{t('lesson.correctAnswers')}</span>
             </div>
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Flame className="w-7 h-7 text-[#FF4D01] fill-[#FF4D01] mb-1" />
               <span className="text-[#372213] text-[24px] font-bold">{newStreak}</span>
               <span className="text-[#372213] text-[12px]">
-                {streakUpdated ? 'Day Streak!' : 'Day Streak'}
+                {streakUpdated ? `${t('lesson.dayStreak')}!` : t('lesson.dayStreak')}
               </span>
             </div>
           </div>
@@ -907,7 +976,7 @@ export function LessonFlow() {
           {/* Graduated Words — only words that changed status */}
           {graduatedWords.length > 0 && (
             <div className="bg-white rounded-xl p-4 mb-6 shadow-md border border-[#E5E7EB]">
-              <h3 className="text-[#372213] font-bold text-[15px] mb-3">Words Progressed</h3>
+              <h3 className="text-[#372213] font-bold text-[15px] mb-3">{t('lesson.wordsProgressed')}</h3>
               <div className="flex flex-col gap-2">
                 {graduatedWords.map(({ term, from, to }) => (
                   <div key={term.term_id} className="flex items-center justify-between bg-[#FFF8E1] rounded-lg px-3 py-2.5">
@@ -931,7 +1000,7 @@ export function LessonFlow() {
             <button onClick={() => navigate('/dashboard')}
               className="flex-1 py-4 bg-white rounded-xl shadow-md border border-[#E5E7EB] text-[#372213] font-bold text-[15px] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
               <Home className="w-5 h-5" />
-              Home
+              {t('lesson.home')}
             </button>
             <button onClick={() => {
               // Reset state for next lesson batch
@@ -962,7 +1031,7 @@ export function LessonFlow() {
               }
             }}
               className="flex-1 py-4 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[15px] hover:bg-white transition-colors shadow-lg flex items-center justify-center gap-2">
-              Next Lesson
+              {t('lesson.nextLesson')}
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
@@ -1345,13 +1414,30 @@ export function LessonFlow() {
             ) : (
               <div className="flex flex-col items-center gap-3">
                 <p className={`font-bold text-[18px] ${lsCorrect ? 'text-white' : 'text-[#FCA5A5]'}`}>
-                  {lsCorrect ? 'Correct!' : 'Not quite!'}
+                  {lsCorrect ? 'Great pronunciation!' : 'Keep practicing!'}
                 </p>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
-                  <p className="text-[14px] text-[#FFFDE6]">
-                    Correct answer: <span className="font-bold" lang="es" style={{ color: 'white' }}>{lsTerm.spanish_text}</span>
-                  </p>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 w-full max-w-[380px]">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-[12px] text-[#FFFDE6]/70 shrink-0 w-12">You:</span>
+                      <span className="text-[15px] font-medium text-white">{lsTranscript}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[12px] text-[#FFFDE6]/70 shrink-0 w-12">Target:</span>
+                      <span className="text-[15px] font-bold text-white">{lsTerm.spanish_text}</span>
+                    </div>
+                    {!lsCorrect && (
+                      <p className="text-[12px] text-[#FFFDE6]/80 mt-1">
+                        Tip: Listen again and focus on each syllable.
+                      </p>
+                    )}
+                  </div>
                 </div>
+                <button onClick={() => speakSpanish(lsTerm.spanish_text, true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-lg text-[#FFFDE6] text-[13px] hover:bg-white/30 transition-colors">
+                  <Volume2 className="w-4 h-4" />
+                  Listen again (slow)
+                </button>
                 <button onClick={advanceQueue}
                   className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">
                   Continue

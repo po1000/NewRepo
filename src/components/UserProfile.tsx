@@ -68,7 +68,25 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
     const previewUrl = URL.createObjectURL(file);
     setLocalAvatarUrl(previewUrl);
     setImgKey(prev => prev + 1);
+    setImgError(false);
 
+    // Always store base64 first as reliable fallback
+    const b64Promise = new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+
+    const b64 = await b64Promise;
+    if (b64) {
+      localStorage.setItem(`avatar_b64_${userId}`, b64);
+      localStorage.setItem(`avatar_url_${userId}`, b64);
+      setLocalAvatarUrl(b64);
+      setImgKey(prev => prev + 1);
+    }
+
+    // Try uploading to Supabase Storage
     const fileExt = file.name.split('.').pop();
     const filePath = `${userId}/avatar.${fileExt}`;
 
@@ -76,43 +94,29 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
       .from('avatars')
       .upload(filePath, file, { upsert: true });
 
-    if (uploadError) {
-      console.error('Avatar upload error:', uploadError);
-      setUploading(false);
-      return;
-    }
+    if (!uploadError) {
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
+      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
-    const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+      await supabase.auth.updateUser({
+        data: { avatar_url: urlWithCacheBust },
+      });
 
-    await supabase.auth.updateUser({
-      data: { avatar_url: urlWithCacheBust },
-    });
-
-    // Persist both the remote URL and a base64 data URL to localStorage
-    if (userId) {
       localStorage.setItem(`avatar_url_${userId}`, urlWithCacheBust);
-      // Also store base64 as bulletproof fallback (works offline, no network needed)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          localStorage.setItem(`avatar_b64_${userId}`, reader.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+      URL.revokeObjectURL(previewUrl);
+      setLocalAvatarUrl(urlWithCacheBust);
+      setImgError(false);
+      setImgKey(prev => prev + 1);
+      onAvatarChange?.(urlWithCacheBust);
+    } else {
+      console.error('Avatar upload error (using local fallback):', uploadError);
+      URL.revokeObjectURL(previewUrl);
     }
 
-    // Swap from blob preview to real URL
-    URL.revokeObjectURL(previewUrl);
-    setLocalAvatarUrl(urlWithCacheBust);
-    setImgError(false);
-    setImgKey(prev => prev + 1);
-    onAvatarChange?.(urlWithCacheBust);
     setUploading(false);
-
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 

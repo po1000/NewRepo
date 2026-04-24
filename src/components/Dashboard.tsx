@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -48,6 +48,8 @@ export function Dashboard() {
   const { user, signOut } = useAuth();
   const { t, showInstructions } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [fetchKey, setFetchKey] = useState(0);
   const [rawUnits, setRawUnits] = useState<UnitRow[]>([]);
   const [subunitProgressMap, setSubunitProgressMap] = useState<Record<number, SubunitProgress>>({});
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,11 @@ export function Dashboard() {
   const [selectedSubunit, setSelectedSubunit] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string } | null>(null);
   const [lastLesson, setLastLesson] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string; vocabPreview: string; progressPercent: number } | null>(null);
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
+
+  // Force refetch when navigating back to dashboard
+  useEffect(() => {
+    setFetchKey(prev => prev + 1);
+  }, [location.key]);
 
   useEffect(() => {
     async function fetchData() {
@@ -110,17 +117,16 @@ export function Dashboard() {
           if (upsertErr) console.error('Streak upsert error:', upsertErr);
         }
 
-        // Count badges earned (only count those matching real badges)
-        const { data: earnedBadges } = await supabase
+        // Count badges earned
+        const { count: badgeCount } = await supabase
           .from('user_badges')
-          .select('badge_id, badges ( badge_id )')
+          .select('badge_id', { count: 'exact', head: true })
           .eq('user_id', user.id);
-        const badgeCount = (earnedBadges || []).filter((b: any) => b.badges).length;
 
         setUserStats({
           total_xp: stats?.total_xp || 0,
           current_streak: currentStreak,
-          badge_count: badgeCount || 0,
+          badge_count: badgeCount ?? 0,
         });
       }
 
@@ -219,7 +225,7 @@ export function Dashboard() {
     }
 
     fetchData();
-  }, [user]);
+  }, [user, fetchKey]);
 
   const unitsByLevel = useMemo(() => {
     const grouped: Record<string, UnitData[]> = {};
@@ -272,6 +278,11 @@ export function Dashboard() {
     >
       {/* Main Content */}
       <main className="flex flex-col items-center gap-6 px-4 pb-12">
+        {/* Welcome Back message */}
+        <h1 className="w-full max-w-[632px] mx-auto font-inter font-bold text-[28px] leading-[36px] text-[#372213]">
+          {t('ui.welcomeBack')}, {username}
+        </h1>
+
         {showInstructions && (
           <div className="w-full max-w-[632px] mx-auto bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#F97316]/20">
             <p className="font-inter text-[13px] leading-[20px] text-[#372213]">

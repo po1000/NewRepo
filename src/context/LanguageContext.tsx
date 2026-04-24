@@ -59,6 +59,7 @@ const translations: Record<string, Record<Language, string>> = {
   'ui.back': { en: 'Back', es: 'Volver' },
   'ui.close': { en: 'Close', es: 'Cerrar' },
   'ui.welcome': { en: 'Welcome', es: 'Bienvenido' },
+  'ui.welcomeBack': { en: 'Welcome Back', es: 'Bienvenido de Nuevo' },
   'ui.myBadges': { en: 'My Badges', es: 'Mis Insignias' },
   'ui.changePhoto': { en: 'Change Profile Photo', es: 'Cambiar Foto de Perfil' },
   'ui.uploading': { en: 'Uploading...', es: 'Subiendo...' },
@@ -181,6 +182,9 @@ const translations: Record<string, Record<Language, string>> = {
   'sub.Clock In, Clock Out': { en: 'Clock In, Clock Out', es: 'Fichar Entrada, Fichar Salida' },
   'sub.Last Weekend': { en: 'Last Weekend', es: 'El Fin de Semana Pasado' },
   'sub.Pay Up': { en: 'Pay Up', es: 'A Pagar' },
+  'sub.Rinse and Repeat': { en: 'Rinse and Repeat', es: 'Repetir y Practicar' },
+  'sub.Fill Me In': { en: 'Fill Me In', es: 'Ponme al Día' },
+  'sub.Tap and Go': { en: 'Tap and Go', es: 'Toca y Avanza' },
 
   // Instructions / helper text
   'instructions.dashboard': { en: 'Tap any lesson tile to preview its vocabulary, then hit "Start Lesson" to begin. Lessons and units can be taken in any order!', es: '¡Toca cualquier lección para ver su vocabulario, luego presiona "Iniciar Lección" para empezar. ¡Las lecciones y unidades se pueden tomar en cualquier orden!' },
