@@ -117,16 +117,21 @@ export function Dashboard() {
           if (upsertErr) console.error('Streak upsert error:', upsertErr);
         }
 
-        // Count badges earned
-        const { count: badgeCount } = await supabase
+        // Count badges earned (only those matching existing badges table entries)
+        const { data: userBadgesList } = await supabase
           .from('user_badges')
-          .select('badge_id', { count: 'exact', head: true })
+          .select('badge_id')
           .eq('user_id', user.id);
+        const { data: allBadgesList } = await supabase
+          .from('badges')
+          .select('badge_id');
+        const validBadgeIds = new Set((allBadgesList || []).map((b: any) => b.badge_id));
+        const badgeCount = (userBadgesList || []).filter((ub: any) => validBadgeIds.has(ub.badge_id)).length;
 
         setUserStats({
           total_xp: stats?.total_xp || 0,
           current_streak: currentStreak,
-          badge_count: badgeCount ?? 0,
+          badge_count: badgeCount,
         });
       }
 
@@ -279,7 +284,7 @@ export function Dashboard() {
       {/* Main Content */}
       <main className="flex flex-col items-center gap-6 px-4 pb-12">
         {/* Welcome Back message */}
-        <h1 className="w-full max-w-[632px] mx-auto font-inter font-bold text-[28px] leading-[36px] text-[#372213]">
+        <h1 className="w-full max-w-[632px] mx-auto font-inter font-normal text-[28px] leading-[36px] text-[#372213] text-center mt-8">
           {t('ui.welcomeBack')}, {username}
         </h1>
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -21,6 +22,7 @@ interface Badge {
 export function Badges() {
   usePageTitle('Badges');
   const { user } = useAuth();
+  const location = useLocation();
   const { t, showInstructions } = useLanguage();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +71,25 @@ export function Badges() {
         correct_answers: correctAnswerCount || 0,
       };
 
+      // Self-heal: auto-award any missing badges whose criteria are met
+      const newlyEarned: { badge_id: number; earned_at: string }[] = [];
+      for (const b of (allBadges || [])) {
+        if (!earnedMap.has(b.badge_id)) {
+          const progress = progressLookup[b.criteria_type] || 0;
+          if (progress >= b.criteria_value) {
+            const { data: inserted, error } = await supabase
+              .from('user_badges')
+              .insert({ user_id: user.id, badge_id: b.badge_id })
+              .select('earned_at')
+              .single();
+            if (!error && inserted) {
+              earnedMap.set(b.badge_id, inserted.earned_at);
+              newlyEarned.push({ badge_id: b.badge_id, earned_at: inserted.earned_at });
+            }
+          }
+        }
+      }
+
       const badgeList: Badge[] = (allBadges || []).map((b: any) => ({
         ...b,
         earned: earnedMap.has(b.badge_id),
@@ -81,7 +102,7 @@ export function Badges() {
     }
 
     fetchBadges();
-  }, [user]);
+  }, [user, location.key]);
 
   return (
     <PageLayout>
@@ -110,25 +131,25 @@ export function Badges() {
                   key={badge.badge_id}
                   className={`flex flex-col items-center p-5 rounded-[16px] shadow-sm transition-all ${
                     badge.earned
-                      ? 'bg-gradient-to-b from-[#FFF8F0] to-white border-2 border-[#22C55E]'
+                      ? 'bg-gradient-to-b from-[#FFE5B4] to-[#FFF3E0] border-2 border-[#F97316]'
                       : 'bg-white border border-gray-200'
                   }`}
                 >
                   <div className="relative">
                     <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 ${
-                      badge.earned ? 'bg-[#FFF3E0]' : 'bg-gray-100'
+                      badge.earned ? 'bg-gradient-to-br from-[#FFB347] to-[#FF8C00] shadow-md' : 'bg-gray-100'
                     }`}>
                       {badge.icon_url ? (
                         <img
                           src={badge.icon_url}
                           alt={badge.label}
-                          className={`w-10 h-10 object-contain ${badge.earned ? '' : 'opacity-40 grayscale'}`}
+                          className={`w-10 h-10 object-contain ${badge.earned ? 'drop-shadow-md' : 'opacity-40 grayscale'}`}
                         />
                       ) : (
                         <img
                           src="/badges-icon.svg"
                           alt={badge.label}
-                          className={`w-10 h-10 object-contain ${badge.earned ? '' : 'opacity-40 grayscale'}`}
+                          className={`w-10 h-10 object-contain ${badge.earned ? 'drop-shadow-md' : 'opacity-40 grayscale'}`}
                         />
                       )}
                     </div>

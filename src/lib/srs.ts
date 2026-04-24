@@ -1,10 +1,71 @@
 /**
- * Spaced Repetition System (SM-2 variant)
+ * ============================================================
+ *  HOW THE SPACED REPETITION SYSTEM WORKS (PLAIN ENGLISH)
+ * ============================================================
  *
- * Statuses: not_seen → seen → learning → reinforced → learnt
+ *  1) Each word progresses through five stages:
+ *       not_seen → seen → learning → reinforced → learnt
  *
- * Quality scores (q):
- *   5 = perfect, 4 = minor error, 3 = weak/gender/typo, 1 = wrong, 0 = skipped
+ *  2) Staged exposure — a word is first shown as a FLASHCARD (moves to `seen`).
+ *     It is only quizzed ("Learning") after the user has been exposed to it.
+ *     This avoids testing people on words they have never seen.
+ *
+ *  3) PACING (protects beginners from overload):
+ *     - At most 3 NEW words are introduced per session
+ *       (MAX_NEW_TERMS_PER_SESSION in LessonFlow.tsx).
+ *     - After every 1 new flashcard, the app inserts a quiz on an
+ *       already-seen word. This interleaving reinforces recall and
+ *       prevents the user from being shown a large block of new
+ *       vocabulary without any testing.
+ *     - Once the cap of new words is hit, the queue stops showing
+ *       new terms and only re-tests seen ones.
+ *
+ *  4) QUALITY SCORE (q) per answer:
+ *       5 = perfect
+ *       4 = accent missing or minor error
+ *       3 = typo / gender mistake / close attempt
+ *       1 = wrong
+ *       0 = skipped
+ *
+ *  5) IN-SESSION LOOP (Layer 1):
+ *     - If q ≥ 4, the word is considered remembered; it may advance
+ *       to the next stage and is scheduled for a future review.
+ *     - If q ≤ 3, the word is re-queued 3–5 cards later so the user
+ *       sees it again in the SAME session, still at the current stage.
+ *
+ *  6) STAGE PROMOTION RULES:
+ *     - seen → learning: first successful test attempt.
+ *     - learning → reinforced: 2 correct answers across 2 DIFFERENT
+ *       question types (e.g. multi-choice + listen-write).
+ *     - reinforced → learnt: 2+ successful spaced reviews (q ≥ 4)
+ *       on different days.
+ *
+ *  7) CROSS-SESSION SPACING (Layer 2 — Modified SM-2):
+ *     Expanding intervals between reviews:
+ *       1st success  → review in 1 day
+ *       2nd success  → review in 3 days
+ *       3rd+ success → review in (previous interval × EF)
+ *       any failure  → reset to 1 day, stage may drop
+ *     EF (easiness factor) starts at 2.5 and adjusts per answer.
+ *
+ *  8) MEMORY DECAY:
+ *     Memory strength fades daily based on the forgetting curve.
+ *       Strength ≥ 90%   → stays Learnt
+ *       Strength 70–89%  → drops to Reinforced
+ *       Strength 50–69%  → drops to Learning
+ *       Strength < 50%   → drops to Seen
+ *     Overdue terms are prioritised in the session queue.
+ *
+ *  9) "I KNOW THIS" shortcut:
+ *     The thumbs-up button scores q=5 and jumps the word straight
+ *     to `learnt`, so existing speakers aren't forced through drills.
+ *
+ *  Why these choices? Competitor platforms (Duolingo, Babbel, etc.)
+ *  are known to introduce vocabulary too quickly and to give only
+ *  pass/fail feedback. Our interleaved cap (3 new / session, quiz
+ *  every 1 flashcard, re-queue on weak answers) deliberately slows
+ *  the drip of new words while maximising retrieval practice.
+ * ============================================================
  */
 
 import { supabase } from './supabase';
