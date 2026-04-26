@@ -770,7 +770,7 @@ export function LessonFlow() {
         .from('user_stats')
         .select('total_xp, lessons_completed, current_streak, longest_streak, updated_at')
         .eq('user_id', user!.id)
-        .single();
+        .maybeSingle();
 
       const currentXp = stats?.total_xp || 0;
       const currentLessons = stats?.lessons_completed || 0;
@@ -798,18 +798,27 @@ export function LessonFlow() {
       const newTotalXp = currentXp + sessionXp;
       const newLessonsCompleted = currentLessons + 1;
 
-      const { error: statsErr } = await supabase
-        .from('user_stats')
-        .upsert({
-          user_id: user!.id,
-          total_xp: newTotalXp,
-          lessons_completed: newLessonsCompleted,
-          current_streak: updatedStreak,
-          longest_streak: newLongest,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+      // Save stats: try UPDATE first; if no row exists, INSERT
+      const statsPayload = {
+        total_xp: newTotalXp,
+        lessons_completed: newLessonsCompleted,
+        current_streak: updatedStreak,
+        longest_streak: newLongest,
+        updated_at: new Date().toISOString(),
+      };
 
-      if (statsErr) console.error('XP stats save error:', statsErr);
+      if (stats) {
+        const { error: updErr } = await supabase
+          .from('user_stats')
+          .update(statsPayload)
+          .eq('user_id', user!.id);
+        if (updErr) console.error('XP stats update error:', updErr);
+      } else {
+        const { error: insErr } = await supabase
+          .from('user_stats')
+          .insert({ user_id: user!.id, ...statsPayload });
+        if (insErr) console.error('XP stats insert error:', insErr);
+      }
 
       if (sessionXp > 0) {
         const { error: xpErr } = await supabase.from('xp_events').insert({

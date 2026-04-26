@@ -92,7 +92,7 @@ export function Dashboard() {
             .from('user_stats')
             .select('total_xp, current_streak, longest_streak, lessons_completed, updated_at')
             .eq('user_id', user.id)
-            .single(),
+            .maybeSingle(),
           supabase
             .from('user_badges')
             .select('badge_id')

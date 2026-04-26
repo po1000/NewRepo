@@ -51,7 +51,7 @@ export function Badges() {
           .from('user_stats')
           .select('lessons_completed, current_streak')
           .eq('user_id', user.id)
-          .single(),
+          .maybeSingle(),
         // Count terms where the user has answered correctly (status beyond 'seen')
         supabase
           .from('user_term_progress')
@@ -99,7 +99,7 @@ export function Badges() {
               .from('user_badges')
               .insert({ user_id: user.id, badge_id: b.badge_id })
               .select('earned_at')
-              .single();
+              .maybeSingle();
             if (!error && inserted) {
               earnedMap.set(b.badge_id, inserted.earned_at);
             }

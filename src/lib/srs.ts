@@ -386,7 +386,7 @@ export async function markSeen(userId: string, termId: number): Promise<void> {
     .select('status')
     .eq('user_id', userId)
     .eq('term_id', termId)
-    .single();
+    .maybeSingle();
 
   if (!data || data.status === 'not_seen') {
     const { error } = await supabase.from('user_term_progress').upsert(
