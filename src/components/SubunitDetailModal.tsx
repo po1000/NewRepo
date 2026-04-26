@@ -72,7 +72,7 @@ function MasteryIcon({ status }: { status: string }) {
     );
   }
   if (status === 'seen') {
-    return <Eye className="w-[22px] h-[22px] text-[#3B82F6]" strokeWidth={2.5} />;
+    return <Eye className="w-[22px] h-[22px] text-[#372213]" strokeWidth={2.5} />;
   }
   return <EyeOff className="w-[22px] h-[22px] text-[#9CA3AF]" strokeWidth={2.5} />;
 }
