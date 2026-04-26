@@ -36,13 +36,13 @@ export function Navigation({
             <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg py-2 min-w-[180px] z-50">
               <button
                 onClick={() => { setShowLearnDropdown(false); onLearnLessonsClick?.(); }}
-                className="w-full text-left px-4 py-2 font-inter text-[15px] text-[#372213] hover:bg-gray-100 transition-colors"
+                className="w-full text-left px-4 py-2 font-inter text-[15px] !text-[#372213] hover:bg-gray-100 transition-colors"
               >
                 {t('nav.lessons')}
               </button>
               <button
                 onClick={() => { setShowLearnDropdown(false); onLearnSpeakWriteClick?.(); }}
-                className="w-full text-left px-4 py-2 font-inter text-[15px] text-[#372213] hover:bg-gray-100 transition-colors"
+                className="w-full text-left px-4 py-2 font-inter text-[15px] !text-[#372213] hover:bg-gray-100 transition-colors"
               >
                 {t('nav.speakAndWrite')}
               </button>

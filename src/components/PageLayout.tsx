@@ -7,7 +7,7 @@ import { UserStats } from './UserStats';
 
 interface PageLayoutProps {
   children: React.ReactNode;
-  stats?: { xp: string; hearts: number; streak: number };
+  stats?: { xp: string; hearts: number; streak: number; longestStreak?: number };
   backgroundColor?: string;
   navOverrideClass?: string;
 }
@@ -34,6 +34,7 @@ export function PageLayout({ children, stats, backgroundColor = '#FFF799', navOv
             xp={stats.xp}
             hearts={stats.hearts}
             streak={stats.streak}
+            longestStreak={stats.longestStreak}
           />
         )}
       </header>

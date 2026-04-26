@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Check } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Check, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { PageLayout } from '../components/PageLayout';
@@ -22,6 +22,7 @@ interface Badge {
 export function Badges() {
   usePageTitle('Badges');
   const { user } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const { t, showInstructions } = useLanguage();
   const [badges, setBadges] = useState<Badge[]>([]);
@@ -71,8 +72,25 @@ export function Badges() {
         correct_answers: correctAnswerCount || 0,
       };
 
+      // Cleanup: remove any phantom badges where criteria aren't actually met
+      const allBadgeMap = new Map<number, any>();
+      (allBadges || []).forEach((b: any) => allBadgeMap.set(b.badge_id, b));
+
+      for (const [badgeId] of earnedMap) {
+        const badge = allBadgeMap.get(badgeId);
+        if (badge) {
+          const progress = progressLookup[badge.criteria_type] || 0;
+          if (progress < badge.criteria_value) {
+            await supabase.from('user_badges').delete().eq('user_id', user.id).eq('badge_id', badgeId);
+            earnedMap.delete(badgeId);
+          }
+        } else {
+          await supabase.from('user_badges').delete().eq('user_id', user.id).eq('badge_id', badgeId);
+          earnedMap.delete(badgeId);
+        }
+      }
+
       // Self-heal: auto-award any missing badges whose criteria are met
-      const newlyEarned: { badge_id: number; earned_at: string }[] = [];
       for (const b of (allBadges || [])) {
         if (!earnedMap.has(b.badge_id)) {
           const progress = progressLookup[b.criteria_type] || 0;
@@ -84,7 +102,6 @@ export function Badges() {
               .single();
             if (!error && inserted) {
               earnedMap.set(b.badge_id, inserted.earned_at);
-              newlyEarned.push({ badge_id: b.badge_id, earned_at: inserted.earned_at });
             }
           }
         }
@@ -107,6 +124,13 @@ export function Badges() {
   return (
     <PageLayout>
       <main className="max-w-[632px] mx-auto px-4 pb-12">
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-1.5 font-inter font-medium text-[14px] text-[#372213] hover:text-[#FF4D01] transition-colors mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          {t('ui.back')} to Dashboard
+        </button>
         <h1 className="font-inter font-bold text-[22px] text-[#372213] mb-4">{t('ui.myBadges')}</h1>
         {showInstructions && (
           <div className="bg-white/80 rounded-[12px] px-4 py-3 shadow-sm border border-[#F97316]/20 mb-4">

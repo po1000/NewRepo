@@ -53,7 +53,7 @@ export function Dashboard() {
   const [rawUnits, setRawUnits] = useState<UnitRow[]>([]);
   const [subunitProgressMap, setSubunitProgressMap] = useState<Record<number, SubunitProgress>>({});
   const [loading, setLoading] = useState(true);
-  const [userStats, setUserStats] = useState({ total_xp: 0, badge_count: 0, current_streak: 0 });
+  const [userStats, setUserStats] = useState({ total_xp: 0, badge_count: 0, current_streak: 0, longest_streak: 0 });
   const [selectedSubunit, setSelectedSubunit] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string } | null>(null);
   const [lastLesson, setLastLesson] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string; vocabPreview: string; progressPercent: number } | null>(null);
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
@@ -81,56 +81,34 @@ export function Dashboard() {
         return;
       }
 
-      // Fetch user stats + update streak on app entry
+      // Fetch user stats (read-only — streak only increments on lesson completion)
       if (user) {
-        const { data: stats } = await supabase
-          .from('user_stats')
-          .select('total_xp, current_streak, longest_streak, lessons_completed, updated_at')
-          .eq('user_id', user.id)
-          .single();
+        const [
+          { data: stats },
+          { data: userBadgesList },
+          { data: allBadgesList },
+        ] = await Promise.all([
+          supabase
+            .from('user_stats')
+            .select('total_xp, current_streak, longest_streak, lessons_completed, updated_at')
+            .eq('user_id', user.id)
+            .single(),
+          supabase
+            .from('user_badges')
+            .select('badge_id')
+            .eq('user_id', user.id),
+          supabase
+            .from('badges')
+            .select('badge_id'),
+        ]);
 
-        let currentStreak = stats?.current_streak || 0;
-        const longestStreak = stats?.longest_streak || 0;
-
-        const lastUpdate = stats?.updated_at ? new Date(stats.updated_at) : null;
-        const now = new Date();
-        const todayStr = now.toLocaleDateString('en-CA');
-        const lastStr = lastUpdate ? lastUpdate.toLocaleDateString('en-CA') : null;
-        const isNewDay = !lastStr || lastStr !== todayStr;
-
-        if (isNewDay) {
-          const yesterday = new Date(now);
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toLocaleDateString('en-CA');
-          const isConsecutive = lastStr === yesterdayStr;
-          currentStreak = isConsecutive ? currentStreak + 1 : 1;
-
-          const { error: upsertErr } = await supabase.from('user_stats').upsert({
-            user_id: user.id,
-            total_xp: stats?.total_xp || 0,
-            current_streak: currentStreak,
-            longest_streak: Math.max(longestStreak, currentStreak),
-            lessons_completed: stats?.lessons_completed || 0,
-            updated_at: now.toISOString(),
-          }, { onConflict: 'user_id' });
-
-          if (upsertErr) console.error('Streak upsert error:', upsertErr);
-        }
-
-        // Count badges earned (only those matching existing badges table entries)
-        const { data: userBadgesList } = await supabase
-          .from('user_badges')
-          .select('badge_id')
-          .eq('user_id', user.id);
-        const { data: allBadgesList } = await supabase
-          .from('badges')
-          .select('badge_id');
         const validBadgeIds = new Set((allBadgesList || []).map((b: any) => b.badge_id));
         const badgeCount = (userBadgesList || []).filter((ub: any) => validBadgeIds.has(ub.badge_id)).length;
 
         setUserStats({
           total_xp: stats?.total_xp || 0,
-          current_streak: currentStreak,
+          current_streak: stats?.current_streak || 0,
+          longest_streak: stats?.longest_streak || 0,
           badge_count: badgeCount,
         });
       }
@@ -279,6 +257,7 @@ export function Dashboard() {
         xp: userStats.total_xp.toLocaleString(),
         hearts: userStats.badge_count,
         streak: userStats.current_streak,
+        longestStreak: userStats.longest_streak,
       }}
     >
       {/* Main Content */}
