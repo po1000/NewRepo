@@ -74,8 +74,23 @@ function speakSpanish(text: string, slow: boolean) {
   window.speechSynthesis.speak(utterance);
 }
 
+function speakEnglish(text: string) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.92;
+  utterance.pitch = 1.05;
+  const voices = window.speechSynthesis.getVoices();
+  let best = voices.find(v => v.lang === 'en-US');
+  if (!best) best = voices.find(v => v.lang.startsWith('en'));
+  if (best) utterance.voice = best;
+  window.speechSynthesis.speak(utterance);
+}
+
 // XP constants
-const XP_CORRECT_ANSWER = 10;
+const XP_MULTI_CHOICE = 5;
+const XP_FREE_TYPE = 10;
 
 // Max NEW terms to introduce before cycling quizzes
 const MAX_NEW_TERMS_PER_SESSION = 3;
@@ -180,6 +195,19 @@ export function LessonFlow() {
   const [lsCorrect, setLsCorrect] = useState(false);
   const [lsTargetId, setLsTargetId] = useState<number | null>(null);
   const lsRecogRef = useRef<any>(null);
+
+  // Listen & Write direction
+  const [lwDirection, setLwDirection] = useState<'hear_es_type_en' | 'hear_en_type_es'>('hear_es_type_en');
+
+  // Waveform visualization refs
+  const waveformRef = useRef<HTMLDivElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number>(0);
+
+  // Quiz counter for session cap
+  const totalQuizzesRef = useRef(0);
 
   // XP & lesson completion state
   const [sessionXp, setSessionXp] = useState(0);
@@ -290,7 +318,16 @@ export function LessonFlow() {
 
       if (!restored) {
         const sessionQueue = buildSessionQueue(termIds, pMap);
-        setQueue(sessionQueue);
+        let unseenCount = 0;
+        const limitedQueue = sessionQueue.filter(tid => {
+          const tp = pMap.get(tid);
+          if (!tp || tp.status === 'not_seen' || tp.status === 'seen') {
+            unseenCount++;
+            return unseenCount <= MAX_NEW_TERMS_PER_SESSION;
+          }
+          return true;
+        });
+        setQueue(limitedQueue);
       }
 
       // Save last lesson info for "Continue Lesson" card on dashboard
@@ -391,19 +428,28 @@ export function LessonFlow() {
     setMode('multi_choice');
   }, [termsMap, seenTermIds]);
 
-  // ── Setup Listen & Write ──────────────────────────────────
+  // ── Setup Listen & Write (bidirectional) ──────────────────
   const setupListenWrite = useCallback((targetTermId: number) => {
     setLwTargetId(targetTermId);
     setLwAnswer('');
     setLwSubmitted(false);
     setLwCorrect(false);
+    const dir = Math.random() < 0.5 ? 'hear_es_type_en' : 'hear_en_type_es';
+    setLwDirection(dir);
     setMode('listen_write');
-    // Auto-play the word
     const term = termsMap.get(targetTermId);
-    if (term) setTimeout(() => speakSpanish(term.spanish_text, false), 300);
+    if (term) {
+      setTimeout(() => {
+        if (dir === 'hear_es_type_en') {
+          speakSpanish(term.spanish_text, false);
+        } else {
+          speakEnglish(term.english_text);
+        }
+      }, 300);
+    }
   }, [termsMap]);
 
-  // ── Setup Listen & Speak ─────────────────────────────────
+  // ── Setup Translate & Speak (English text → speak Spanish) ──
   const setupListenSpeak = useCallback((targetTermId: number) => {
     setLsTargetId(targetTermId);
     setLsTranscript('');
@@ -411,102 +457,103 @@ export function LessonFlow() {
     setLsCorrect(false);
     setLsRecording(false);
     setMode('listen_speak');
-    // Auto-play the word
-    const term = termsMap.get(targetTermId);
-    if (term) setTimeout(() => speakSpanish(term.spanish_text, false), 300);
-  }, [termsMap]);
+  }, []);
 
   // ── Handlers ──────────────────────────────────────────────
 
-  const advanceQueue = useCallback(() => {
-    if (queueIndex + 1 >= queue.length) {
-      // Lesson is done — show end screen instead of closing immediately
-      if (state.subunitId && user) {
-        localStorage.removeItem(sessionKey(state.subunitId, user.id));
-      }
+  // Helper: pick a random quiz type for a term
+  const setupRandomQuiz = useCallback((termId: number) => {
+    const roll = Math.random();
+    if (roll < 0.5) setupMultiChoice(termId);
+    else if (roll < 0.75) setupListenWrite(termId);
+    else setupListenSpeak(termId);
+  }, [setupMultiChoice, setupListenWrite, setupListenSpeak]);
 
-      // Compute graduated words — terms whose status changed during this session
-      const STATUS_ORDER = ['not_seen', 'seen', 'learning', 'reinforced', 'learnt'];
-      const graduated: { term: Term; from: string; to: string }[] = [];
-      for (const [tid, tp] of progressMap) {
-        const initial = initialStatusRef.current.get(tid) || 'not_seen';
-        const current = tp.status;
-        if (STATUS_ORDER.indexOf(current) > STATUS_ORDER.indexOf(initial)) {
-          const term = termsMap.get(tid);
-          if (term) graduated.push({ term, from: initial, to: current });
-        }
-      }
-      setGraduatedWords(graduated);
-
-      // Show delay screen (progress bar at 100%) then transition to complete
-      setShowCompletionDelay(true);
-      const pieces = Array.from({ length: 50 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 2,
-        color: ['#FF4D01', '#FFD905', '#22C55E', '#3B82F6', '#A855F7', '#EC4899'][Math.floor(Math.random() * 6)],
-        size: 6 + Math.random() * 8,
-      }));
-      setTimeout(() => {
-        setConfettiPieces(pieces);
-        setLessonComplete(true);
-        setShowCompletionDelay(false);
-      }, 1500);
-      return;
+  // Helper: finish the lesson
+  const finishLesson = useCallback(() => {
+    if (state.subunitId && user) {
+      localStorage.removeItem(sessionKey(state.subunitId, user.id));
     }
+    const STATUS_ORDER = ['not_seen', 'seen', 'learning', 'reinforced', 'learnt'];
+    const graduated: { term: Term; from: string; to: string }[] = [];
+    for (const [tid, tp] of progressMap) {
+      const initial = initialStatusRef.current.get(tid) || 'not_seen';
+      const current = tp.status;
+      if (STATUS_ORDER.indexOf(current) > STATUS_ORDER.indexOf(initial)) {
+        const term = termsMap.get(tid);
+        if (term) graduated.push({ term, from: initial, to: current });
+      }
+    }
+    setGraduatedWords(graduated);
+    setShowCompletionDelay(true);
+    const pieces = Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 2,
+      color: ['#FF4D01', '#FFD905', '#22C55E', '#3B82F6', '#A855F7', '#EC4899'][Math.floor(Math.random() * 6)],
+      size: 6 + Math.random() * 8,
+    }));
+    setTimeout(() => {
+      setConfettiPieces(pieces);
+      setLessonComplete(true);
+      setShowCompletionDelay(false);
+    }, 1500);
+  }, [state.subunitId, user, progressMap, termsMap]);
 
-    const nextIndex = queueIndex + 1;
-    setQueueIndex(nextIndex);
-    setHintsExpanded(false);
-    setShowReport(false);
-    setReportText('');
-    setReportSent(false);
-
-    // After every new flashcard, trigger a quiz on a random SEEN term
+  const advanceQueue = useCallback(() => {
+    // 1) After every new flashcard, inject a quiz WITHOUT advancing queueIndex
     if (newFlashcardCount >= 1 && seenTermIds.length >= 1) {
       const quizCandidates = seenTermIds.filter(id => {
         const tp = progressMap.get(id);
         return tp && tp.status !== 'not_seen';
       });
       if (quizCandidates.length > 0) {
+        totalQuizzesRef.current++;
         const randomId = quizCandidates[Math.floor(Math.random() * quizCandidates.length)];
-        // Pick a random question type — multi_choice, listen_write, or listen_speak
-        const roll = Math.random();
-        if (roll < 0.5) {
-          setupMultiChoice(randomId);
-        } else if (roll < 0.75) {
-          setupListenWrite(randomId);
-        } else {
-          setupListenSpeak(randomId);
-        }
+        setupRandomQuiz(randomId);
         setNewFlashcardCount(0);
         return;
       }
     }
 
-    // If we've already introduced MAX_NEW_TERMS_PER_SESSION new terms,
-    // force quizzes on seen terms rather than showing more flashcards
-    if (termsSeenThisSession >= MAX_NEW_TERMS_PER_SESSION && seenTermIds.length >= 2) {
-      const quizCandidates = seenTermIds.filter(id => {
+    // 2) After max new terms, force quizzes WITHOUT advancing
+    if (termsSeenThisSession >= MAX_NEW_TERMS_PER_SESSION && seenTermIds.length >= 1) {
+      const allReinforced = seenTermIds.every(id => {
         const tp = progressMap.get(id);
-        return tp && tp.status !== 'not_seen';
+        return tp && (tp.status === 'learning' || tp.status === 'reinforced' || tp.status === 'learnt');
       });
-      if (quizCandidates.length > 0) {
-        const randomId = quizCandidates[Math.floor(Math.random() * quizCandidates.length)];
-        const roll = Math.random();
-        if (roll < 0.5) {
-          setupMultiChoice(randomId);
-        } else if (roll < 0.75) {
-          setupListenWrite(randomId);
-        } else {
-          setupListenSpeak(randomId);
-        }
+
+      if (allReinforced || totalQuizzesRef.current >= 12) {
+        finishLesson();
         return;
       }
+
+      const weakFirst = seenTermIds.filter(id => {
+        const tp = progressMap.get(id);
+        return tp && tp.status === 'seen';
+      });
+      const candidates = weakFirst.length > 0 ? weakFirst : seenTermIds;
+      totalQuizzesRef.current++;
+      const randomId = candidates[Math.floor(Math.random() * candidates.length)];
+      setupRandomQuiz(randomId);
+      return;
     }
 
+    // 3) End-of-queue check
+    if (queueIndex + 1 >= queue.length) {
+      finishLesson();
+      return;
+    }
+
+    // 4) Normal advance to next flashcard
+    const nextIndex = queueIndex + 1;
+    setQueueIndex(nextIndex);
+    setHintsExpanded(false);
+    setShowReport(false);
+    setReportText('');
+    setReportSent(false);
     setMode('flashcard');
-  }, [queueIndex, queue, state.subunitId, user, progressMap, newFlashcardCount, seenTermIds, setupMultiChoice, setupListenWrite, setupListenSpeak, termsSeenThisSession]);
+  }, [queueIndex, queue, progressMap, newFlashcardCount, seenTermIds, setupRandomQuiz, termsSeenThisSession, finishLesson]);
 
   // "Got it!" / "Next" — flashcard handler
   // First encounter: only mark as seen (no processAnswer — don't advance status yet)
@@ -624,11 +671,10 @@ export function LessonFlow() {
       });
     }
 
-    // Sound effects + XP on correct answer
     if (correct) {
       playCorrectSound();
-      setSessionXp(prev => prev + XP_CORRECT_ANSWER);
-      setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
+      setSessionXp(prev => prev + XP_MULTI_CHOICE);
+      setXpPopup({ amount: XP_MULTI_CHOICE, key: Date.now() });
       setCorrectAnswersThisSession(prev => prev + 1);
     } else {
       playIncorrectSound();
@@ -639,14 +685,15 @@ export function LessonFlow() {
     advanceQueue();
   }, [advanceQueue]);
 
-  // ── Listen & Write handler ─────────────────────────────
+  // ── Listen & Write handler (bidirectional) ──────────────
   const handleLwSubmit = useCallback(async () => {
     if (lwSubmitted || !lwTargetId || !user) return;
     const term = termsMap.get(lwTargetId);
     if (!term) return;
 
     setLwSubmitted(true);
-    const q = listenWriteQuality(lwAnswer, term.spanish_text, false);
+    const expected = lwDirection === 'hear_es_type_en' ? term.english_text : term.spanish_text;
+    const q = listenWriteQuality(lwAnswer, expected, false);
     const correct = q >= 4;
     setLwCorrect(correct);
 
@@ -662,18 +709,45 @@ export function LessonFlow() {
 
     if (correct) {
       playCorrectSound();
-      setSessionXp(prev => prev + XP_CORRECT_ANSWER);
-      setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
+      setSessionXp(prev => prev + XP_FREE_TYPE);
+      setXpPopup({ amount: XP_FREE_TYPE, key: Date.now() });
       setCorrectAnswersThisSession(prev => prev + 1);
     } else {
       playIncorrectSound();
     }
-  }, [lwSubmitted, lwTargetId, lwAnswer, user, progressMap, queueIndex, termsMap]);
+  }, [lwSubmitted, lwTargetId, lwAnswer, user, progressMap, queueIndex, termsMap, lwDirection]);
 
-  // ── Listen & Speak handler ────────────────────────────
-  const startLsRecording = useCallback(() => {
+  // ── Translate & Speak handler ─────────────────────────
+  const cleanupAudio = useCallback(() => {
+    cancelAnimationFrame(animFrameRef.current);
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+  }, []);
+
+  const startLsRecording = useCallback(async () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { alert('Speech recognition not supported. Use Chrome.'); return; }
+
+    // Start media stream for waveform visualization
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const ctx = new AudioContext();
+      audioContextRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+    } catch {}
+
     const recog = new SR();
     recog.lang = 'es-ES';
     recog.interimResults = false;
@@ -683,13 +757,14 @@ export function LessonFlow() {
       gotResult = true;
       setLsTranscript(e.results[0][0].transcript);
       setLsRecording(false);
+      cleanupAudio();
     };
-    recog.onerror = () => setLsRecording(false);
-    recog.onend = () => { if (!gotResult) setLsRecording(false); };
+    recog.onerror = () => { setLsRecording(false); cleanupAudio(); };
+    recog.onend = () => { if (!gotResult) { setLsRecording(false); cleanupAudio(); } };
     lsRecogRef.current = recog;
     recog.start();
     setLsRecording(true);
-  }, []);
+  }, [cleanupAudio]);
 
   const handleLsSubmit = useCallback(async () => {
     if (lsSubmitted || !lsTargetId || !user || !lsTranscript) return;
@@ -732,13 +807,41 @@ export function LessonFlow() {
 
     if (correct) {
       playCorrectSound();
-      setSessionXp(prev => prev + XP_CORRECT_ANSWER);
-      setXpPopup({ amount: XP_CORRECT_ANSWER, key: Date.now() });
+      setSessionXp(prev => prev + XP_FREE_TYPE);
+      setXpPopup({ amount: XP_FREE_TYPE, key: Date.now() });
       setCorrectAnswersThisSession(prev => prev + 1);
     } else {
       playIncorrectSound();
     }
   }, [lsSubmitted, lsTargetId, lsTranscript, user, progressMap, queueIndex, termsMap]);
+
+  // Waveform animation: directly manipulate DOM bars at 60fps
+  useEffect(() => {
+    if (!lsRecording || !analyserRef.current || !waveformRef.current) return;
+    const analyser = analyserRef.current;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    const container = waveformRef.current;
+    let running = true;
+
+    function draw() {
+      if (!running || !container) return;
+      analyser.getByteFrequencyData(dataArray);
+      const bars = container.children;
+      const step = Math.floor(dataArray.length / bars.length) || 1;
+      for (let i = 0; i < bars.length; i++) {
+        const value = dataArray[i * step] || 0;
+        const height = Math.max(4, (value / 255) * 40);
+        (bars[i] as HTMLElement).style.height = `${height}px`;
+      }
+      animFrameRef.current = requestAnimationFrame(draw);
+    }
+    draw();
+
+    return () => {
+      running = false;
+      cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [lsRecording]);
 
   const handlePlayAudio = useCallback(() => {
     if (currentTerm) speakSpanish(currentTerm.spanish_text, slowAudio);
@@ -1023,10 +1126,20 @@ export function LessonFlow() {
               setMode('flashcard');
               setQueueIndex(0);
 
-              // Rebuild queue from current progress
+              // Rebuild queue from current progress (limited to 3 new terms)
               const termIds = Array.from(termsMap.keys());
               const newQueue = buildSessionQueue(termIds, progressMap);
-              setQueue(newQueue);
+              let nextUnseenCount = 0;
+              const limitedNewQueue = newQueue.filter(tid => {
+                const tp = progressMap.get(tid);
+                if (!tp || tp.status === 'not_seen' || tp.status === 'seen') {
+                  nextUnseenCount++;
+                  return nextUnseenCount <= MAX_NEW_TERMS_PER_SESSION;
+                }
+                return true;
+              });
+              setQueue(limitedNewQueue);
+              totalQuizzesRef.current = 0;
 
               // Re-capture initial statuses from current progress
               initialStatusRef.current = new Map();
@@ -1283,9 +1396,16 @@ export function LessonFlow() {
             {/* Feedback + Continue — always show correct answer */}
             {mcAnswered && (
               <div className="flex flex-col items-center gap-3">
-                <p className={`font-bold text-[18px] ${mcSelectedId === mcCorrectId ? 'text-white' : 'text-[#FCA5A5]'}`}>
-                  {mcSelectedId === mcCorrectId ? 'Correct!' : 'Not quite!'}
-                </p>
+                {mcSelectedId === mcCorrectId ? (
+                  <p className="font-bold text-[18px] text-white">Correct!</p>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-[#EF4444] flex items-center justify-center shrink-0">
+                      <X className="w-4 h-4 text-white" />
+                    </div>
+                    <p className="font-bold text-[18px] text-white">Not quite!</p>
+                  </div>
+                )}
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
                   <p className="text-[14px] text-[#FFFDE6]">
                     Correct answer: <span className="font-bold" lang="es" style={{ color: 'white' }}>{quizzedTerm.spanish_text}</span>
@@ -1303,10 +1423,16 @@ export function LessonFlow() {
           );
         })()}
 
-        {/* ─── LISTEN & WRITE MODE ─── */}
+        {/* ─── LISTEN & WRITE MODE (bidirectional) ─── */}
         {mode === 'listen_write' && lwTargetId && (() => {
           const lwTerm = termsMap.get(lwTargetId);
           if (!lwTerm) return null;
+          const isHearEsTypeEn = lwDirection === 'hear_es_type_en';
+          const promptText = isHearEsTypeEn
+            ? 'Listen to the Spanish and type the English meaning'
+            : 'Listen to the English and type the Spanish word';
+          const placeholder = isHearEsTypeEn ? 'Type in English...' : 'Type in Spanish...';
+          const correctAnswer = isHearEsTypeEn ? lwTerm.english_text : lwTerm.spanish_text;
           return (
           <div className="flex-1 flex flex-col items-center">
             <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
@@ -1316,8 +1442,8 @@ export function LessonFlow() {
             </div>
 
             <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
-              <p className="text-[14px] text-[#372213] mb-3">Listen and type what you hear in Spanish</p>
-              <button onClick={() => speakSpanish(lwTerm.spanish_text, slowAudio)}
+              <p className="text-[14px] text-[#372213] mb-3">{promptText}</p>
+              <button onClick={() => isHearEsTypeEn ? speakSpanish(lwTerm.spanish_text, slowAudio) : speakEnglish(lwTerm.english_text)}
                 className="w-16 h-16 bg-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform mb-4">
                 <Volume2 className="w-8 h-8 text-white" />
               </button>
@@ -1327,25 +1453,38 @@ export function LessonFlow() {
                 onChange={(e) => setLwAnswer(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !lwSubmitted && handleLwSubmit()}
                 disabled={lwSubmitted}
-                placeholder="Type in Spanish..."
+                placeholder={placeholder}
                 className="w-full px-4 py-3 bg-white border-2 border-[#E5E7EB] rounded-xl text-[16px] text-[#372213] text-center focus:outline-none focus:border-[#FF4D01] disabled:opacity-60"
                 autoFocus
               />
             </div>
 
             {!lwSubmitted ? (
-              <button onClick={handleLwSubmit} disabled={!lwAnswer.trim()}
-                className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg disabled:opacity-50">
-                Check
-              </button>
+              <div className="flex flex-col items-center gap-3">
+                <button onClick={handleLwSubmit} disabled={!lwAnswer.trim()}
+                  className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg disabled:opacity-50">
+                  Check
+                </button>
+                <button onClick={advanceQueue}
+                  className="text-[#FFFDE6]/60 text-[13px] hover:text-[#FFFDE6] transition-colors">
+                  Can't listen right now
+                </button>
+              </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <p className={`font-bold text-[18px] ${lwCorrect ? 'text-white' : 'text-[#FCA5A5]'}`}>
-                  {lwCorrect ? 'Correct!' : 'Not quite!'}
-                </p>
+                {lwCorrect ? (
+                  <p className="font-bold text-[18px] text-white">Correct!</p>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-[#EF4444] flex items-center justify-center shrink-0">
+                      <X className="w-4 h-4 text-white" />
+                    </div>
+                    <p className="font-bold text-[18px] text-white">Not quite!</p>
+                  </div>
+                )}
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
                   <p className="text-[14px] text-[#FFFDE6]">
-                    Correct answer: <span className="font-bold" lang="es" style={{ color: 'white' }}>{lwTerm.spanish_text}</span>
+                    Correct answer: <span className="font-bold" style={{ color: 'white' }}>{correctAnswer}</span>
                   </p>
                 </div>
                 <button onClick={advanceQueue}
@@ -1358,7 +1497,7 @@ export function LessonFlow() {
           );
         })()}
 
-        {/* ─── LISTEN & SPEAK MODE ─── */}
+        {/* ─── TRANSLATE & SPEAK MODE (English text → speak Spanish) ─── */}
         {mode === 'listen_speak' && lsTargetId && (() => {
           const lsTerm = termsMap.get(lsTargetId);
           if (!lsTerm) return null;
@@ -1366,20 +1505,25 @@ export function LessonFlow() {
           <div className="flex-1 flex flex-col items-center">
             <div className="px-4 py-1 border border-[#FFFDE6] rounded-full mb-8">
               <span className="font-medium text-[14px] leading-[16px] text-[#FFFDE6] uppercase tracking-wider">
-                {t('lesson.listenSpeak')}
+                TRANSLATE &amp; SPEAK
               </span>
             </div>
 
             <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
-              <p className="text-[14px] text-[#372213] mb-3">Listen, then repeat what you hear</p>
-              <button onClick={() => speakSpanish(lsTerm.spanish_text, slowAudio)}
-                className="w-16 h-16 bg-[#FF4D01] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform mb-4">
-                <Volume2 className="w-8 h-8 text-white" />
-              </button>
+              <p className="text-[14px] text-[#372213] mb-3">Say this in Spanish:</p>
+
+              {lsTerm.image_url && (
+                <img src={lsTerm.image_url} alt={lsTerm.english_text}
+                  className="w-[180px] h-[120px] object-cover rounded-lg mb-4" />
+              )}
+
+              <h2 className="font-bold text-[24px] leading-[36px] text-center" lang="en" style={{ color: ENGLISH_COLOR }}>
+                {lsTerm.english_text}
+              </h2>
 
               {lsTranscript && !lsSubmitted && (
-                <div className="w-full bg-white border-2 border-[#FF4D01] rounded-xl px-4 py-3 mb-3">
-                  <p className="text-[11px] font-semibold text-[#372213] mb-1">Your pronunciation:</p>
+                <div className="w-full bg-white border-2 border-[#FF4D01] rounded-xl px-4 py-3 mt-4">
+                  <p className="text-[11px] font-semibold text-[#372213] mb-1">You said:</p>
                   <p className="text-[16px] text-[#372213] text-center">{lsTranscript}</p>
                 </div>
               )}
@@ -1389,23 +1533,37 @@ export function LessonFlow() {
               <div className="flex flex-col items-center gap-3">
                 {!lsTranscript ? (
                   lsRecording ? (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 px-6 py-3 bg-[#FF4D01] rounded-xl text-white">
-                        <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
-                        <span className="font-medium text-[14px]">Listening...</span>
+                    <div className="flex flex-col items-center gap-3">
+                      {/* Waveform visualization */}
+                      <div ref={waveformRef} className="flex items-center justify-center gap-[3px] h-[44px]">
+                        {Array.from({ length: 24 }, (_, i) => (
+                          <div key={i} className="w-[4px] rounded-full bg-[#FFFDE6]" style={{ height: '4px' }} />
+                        ))}
                       </div>
-                      <button onClick={() => { lsRecogRef.current?.stop(); setLsRecording(false); }}
-                        className="px-4 py-3 bg-[#FFFDE6] rounded-xl flex items-center gap-2">
-                        <Check className="w-5 h-5 text-[#22C55E]" />
-                        <span className="font-bold text-[14px] text-[#22C55E]">Done</span>
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-6 py-3 bg-[#FF4D01] rounded-xl text-white">
+                          <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
+                          <span className="font-medium text-[14px]">Recording...</span>
+                        </div>
+                        <button onClick={() => { lsRecogRef.current?.stop(); setLsRecording(false); cleanupAudio(); }}
+                          className="px-4 py-3 bg-[#FFFDE6] rounded-xl flex items-center gap-2">
+                          <Check className="w-5 h-5 text-[#22C55E]" />
+                          <span className="font-bold text-[14px] text-[#22C55E]">Done</span>
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <button onClick={startLsRecording}
-                      className="flex items-center gap-2 px-6 py-3 bg-[#FFFDE6] rounded-xl text-[#372213] hover:bg-white transition-colors shadow-lg">
-                      <Mic className="w-5 h-5 text-[#FF4D01]" />
-                      <span className="font-medium text-[14px]">Tap to speak</span>
-                    </button>
+                    <>
+                      <button onClick={startLsRecording}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#FFFDE6] rounded-xl text-[#372213] hover:bg-white transition-colors shadow-lg">
+                        <Mic className="w-5 h-5 text-[#FF4D01]" />
+                        <span className="font-medium text-[14px]">Tap to speak</span>
+                      </button>
+                      <button onClick={advanceQueue}
+                        className="text-[#FFFDE6]/60 text-[13px] hover:text-[#FFFDE6] transition-colors">
+                        Can't speak right now
+                      </button>
+                    </>
                   )
                 ) : (
                   <div className="flex gap-3">
@@ -1422,9 +1580,16 @@ export function LessonFlow() {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <p className={`font-bold text-[18px] ${lsCorrect ? 'text-white' : 'text-[#FCA5A5]'}`}>
-                  {lsCorrect ? 'Great pronunciation!' : 'Keep practicing!'}
-                </p>
+                {lsCorrect ? (
+                  <p className="font-bold text-[18px] text-white">Great pronunciation!</p>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-[#EF4444] flex items-center justify-center shrink-0">
+                      <X className="w-4 h-4 text-white" />
+                    </div>
+                    <p className="font-bold text-[18px] text-white">Keep practicing!</p>
+                  </div>
+                )}
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 w-full max-w-[380px]">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-start gap-2">
@@ -1435,17 +1600,12 @@ export function LessonFlow() {
                       <span className="text-[12px] text-[#FFFDE6]/70 shrink-0 w-12">Target:</span>
                       <span className="text-[15px] font-bold text-white">{lsTerm.spanish_text}</span>
                     </div>
-                    {!lsCorrect && (
-                      <p className="text-[12px] text-[#FFFDE6]/80 mt-1">
-                        Tip: Listen again and focus on each syllable.
-                      </p>
-                    )}
                   </div>
                 </div>
                 <button onClick={() => speakSpanish(lsTerm.spanish_text, true)}
                   className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-lg text-[#FFFDE6] text-[13px] hover:bg-white/30 transition-colors">
                   <Volume2 className="w-4 h-4" />
-                  Listen again (slow)
+                  Listen correct (slow)
                 </button>
                 <button onClick={advanceQueue}
                   className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg">

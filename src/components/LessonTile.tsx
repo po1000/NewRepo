@@ -62,16 +62,7 @@ export function LessonTile({
           </div>
         }
 
-        {status === 'in-progress' &&
-        <div className="absolute bottom-0 left-0 right-0 h-[12px] bg-white/30">
-            <div
-            className="h-full bg-white transition-all duration-500"
-            style={{
-              width: `${progressPercent}%`
-            }} />
-
-          </div>
-        }
+        {/* Progress bar below tile only — no overlay */}
       </div>
 
       {/* Progress indicator below tile */}

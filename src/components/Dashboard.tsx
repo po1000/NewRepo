@@ -277,22 +277,18 @@ export function Dashboard() {
         {/* Continue Lesson Card */}
         {!loading && lastLesson && (
           <div className="w-full max-w-[632px] mx-auto bg-[#FFFDF5] rounded-[16px] p-5 shadow-sm border-2 border-[#FFE082]">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h3 className="font-inter font-bold text-[17px] text-[#372213]">
-                  {t('label.unit')} {lastLesson.subunitCode}: {t(`sub.${lastLesson.title}`)}
-                </h3>
-                <p className="font-inter text-[13px] text-[#372213] mt-1">
-                  {t('resume.vocab')} {lastLesson.vocabPreview}....
-                </p>
-              </div>
-              <div className="text-right shrink-0 ml-4">
-                <p className="font-inter font-semibold text-[13px] text-[#FF4D01]">+20 {t('resume.xpReward')}</p>
-                {lastLesson.goalText && (
-                  <p className="font-inter italic text-[12px] text-[#372213] mt-0.5">"{lastLesson.goalText}"</p>
-                )}
-              </div>
+            <div className="flex justify-between items-start mb-1">
+              <h3 className="font-inter font-bold text-[17px] text-[#372213] flex-1 min-w-0 mr-3">
+                {t('label.unit')} {lastLesson.subunitCode}: {t(`sub.${lastLesson.title}`)}
+              </h3>
+              <p className="font-inter font-semibold text-[13px] text-[#FF4D01] shrink-0">+20 {t('resume.xpReward')}</p>
             </div>
+            {lastLesson.goalText && (
+              <p className="font-inter italic text-[12px] text-[#372213] mb-1">"{lastLesson.goalText}"</p>
+            )}
+            <p className="font-inter text-[13px] text-[#372213] mb-2">
+              {t('resume.vocab')} {lastLesson.vocabPreview}....
+            </p>
             {/* Progress bar */}
             <div className="flex items-center gap-2 mb-3">
               <div className="flex-1 h-[8px] bg-gray-200 rounded-full overflow-hidden">

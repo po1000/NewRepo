@@ -155,7 +155,7 @@ export function Badges() {
                   key={badge.badge_id}
                   className={`flex flex-col items-center p-5 rounded-[16px] shadow-sm transition-all ${
                     badge.earned
-                      ? 'bg-gradient-to-b from-[#FFE5B4] to-[#FFF3E0] border-2 border-[#F97316]'
+                      ? 'bg-gradient-to-b from-[#D0FFC4] to-[#FFFCE0] border-2 border-[#00C724]'
                       : 'bg-white border border-gray-200'
                   }`}
                 >
