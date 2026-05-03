@@ -41,6 +41,7 @@ interface SubunitProgress {
   totalTerms: number;
   seenTerms: number;
   masteredTerms: number;
+  weightedProgress: number; // sum of weighted status values (0..totalTerms)
 }
 
 export function Dashboard() {
@@ -154,17 +155,30 @@ export function Dashboard() {
             });
 
             // Calculate progress per subunit
+            // Weighted by status: not_seen=0, seen=0.25, learning=0.5, reinforced=0.75, learnt=1.0
+            // 100% only reached when ALL terms are 'learnt'
+            const STATUS_WEIGHT: Record<string, number> = {
+              not_seen: 0,
+              seen: 0.25,
+              learning: 0.5,
+              reinforced: 0.75,
+              learnt: 1.0,
+              mastered: 1.0,
+            };
             for (const subId of allSubunitIds) {
               const termIds = termsBySubunit[subId] || [];
               const total = termIds.length;
+              let weighted = 0;
               let seen = 0;
               let mastered = 0;
               for (const tid of termIds) {
-                const status = termStatusMap[tid];
+                const status = termStatusMap[tid] || 'not_seen';
+                weighted += STATUS_WEIGHT[status] || 0;
                 if (status === 'seen' || status === 'learning' || status === 'reinforced') seen++;
                 if (status === 'mastered' || status === 'learnt') mastered++;
               }
-              progressMap[subId] = { totalTerms: total, seenTerms: seen + mastered, masteredTerms: mastered };
+              const weightedTotal = total > 0 ? weighted : 0;
+              progressMap[subId] = { totalTerms: total, seenTerms: seen + mastered, masteredTerms: mastered, weightedProgress: weightedTotal };
             }
           }
         }
@@ -172,7 +186,7 @@ export function Dashboard() {
         // Fill in subunits without progress data
         for (const subId of allSubunitIds) {
           if (!progressMap[subId]) {
-            progressMap[subId] = { totalTerms: termsBySubunit[subId]?.length || 0, seenTerms: 0, masteredTerms: 0 };
+            progressMap[subId] = { totalTerms: termsBySubunit[subId]?.length || 0, seenTerms: 0, masteredTerms: 0, weightedProgress: 0 };
           }
         }
       }
@@ -188,8 +202,8 @@ export function Dashboard() {
             const saved = JSON.parse(raw);
             const prog = progressMap[saved.subunitId];
             const total = prog?.totalTerms || 0;
-            const seen = prog?.seenTerms || 0;
-            const pct = total > 0 ? Math.round((seen / total) * 100) : 0;
+            const weighted = prog?.weightedProgress || 0;
+            const pct = total > 0 ? Math.round((weighted / total) * 100) : 0;
             if (pct < 100) {
               setLastLesson({
                 subunitId: saved.subunitId,
@@ -225,10 +239,11 @@ export function Dashboard() {
           const prog = subunitProgressMap[sub.subunit_id];
           const total = prog?.totalTerms || 0;
           const seen = prog?.seenTerms || 0;
-          const pct = total > 0 ? Math.round((seen / total) * 100) : 0;
+          const weighted = prog?.weightedProgress || 0;
+          const pct = total > 0 ? Math.round((weighted / total) * 100) : 0;
           let status: 'completed' | 'in-progress' | 'locked' = 'locked';
           if (pct >= 100) status = 'completed';
-          else if (seen > 0) status = 'in-progress';
+          else if (seen > 0 || weighted > 0) status = 'in-progress';
           return {
             unitNumber: sub.subunit_code,
             title: t(`sub.${sub.title}`),

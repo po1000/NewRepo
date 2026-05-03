@@ -288,7 +288,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
     if (window.speechSynthesis) window.speechSynthesis.getVoices();
   }, []);
 
-  // Check criteria
+  // Check criteria — track which are complete but DON'T auto-finish
   useEffect(() => {
     const allUserText = messages.filter(m => m.role === 'user').map(m => m.text.toLowerCase()).join(' ');
     const completed = new Set<string>();
@@ -298,30 +298,25 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
       }
     }
     setCriteriaComplete(completed);
-
-    if (completed.size === scenario.criteria.length && messages.filter(m => m.role === 'user').length >= 2) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.role === 'user') {
-        setTimeout(() => {
-          const elapsed = Math.round((Date.now() - startTime) / 1000);
-          navigate(`/speak-and-write/${scenario.id}/complete`, {
-            state: {
-              scenarioId: scenario.id,
-              scenarioTitle: scenario.title,
-              messages: messages.map(m => ({
-                role: m.role,
-                text: m.text,
-                translation: m.translation,
-                inputMode: m.inputMode,
-              })),
-              elapsed,
-              criteriaCount: scenario.criteria.length,
-            },
-          });
-        }, 2500);
-      }
-    }
   }, [messages]);
+
+  function handleFinishRoleplay() {
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    navigate(`/speak-and-write/${scenario.id}/complete`, {
+      state: {
+        scenarioId: scenario.id,
+        scenarioTitle: scenario.title,
+        messages: messages.map(m => ({
+          role: m.role,
+          text: m.text,
+          translation: m.translation,
+          inputMode: m.inputMode,
+        })),
+        elapsed,
+        criteriaCount: scenario.criteria.length,
+      },
+    });
+  }
 
   const sendMessage = useCallback((text: string, mode: 'text' | 'voice') => {
     if (!text.trim()) return;
@@ -546,6 +541,22 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
           <div ref={chatEndRef} />
         </div>
       </div>
+
+      {/* Finish Roleplay Button — shown when all criteria are met */}
+      {criteriaComplete.size === scenario.criteria.length && messages.filter(m => m.role === 'user').length >= 2 && (
+        <div className="shrink-0 px-4 pb-2">
+          <div className="max-w-[600px] mx-auto bg-[#FFFDE6] border-2 border-[#3BBC00] rounded-xl p-3 flex items-center justify-between gap-3 shadow-lg">
+            <div className="flex flex-col">
+              <span className="font-bold text-[14px] text-[#3BBC00]">All objectives met!</span>
+              <span className="text-[11px] text-[#372213]">Keep chatting or finish to see your evaluation.</span>
+            </div>
+            <button onClick={handleFinishRoleplay}
+              className="px-4 py-2 bg-[#3BBC00] text-white rounded-lg font-bold text-[13px] hover:bg-[#2EA000] transition-colors shrink-0">
+              Finish Roleplay
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Input Area */}
       <div className="shrink-0 px-4 pb-4">
