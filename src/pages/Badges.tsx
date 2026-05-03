@@ -163,19 +163,17 @@ export function Badges() {
                     <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 ${
                       badge.earned ? 'bg-gradient-to-br from-[#FFB347] to-[#FF8C00] shadow-md' : 'bg-gray-100'
                     }`}>
-                      {badge.icon_url ? (
-                        <img
-                          src={badge.icon_url}
-                          alt={badge.label}
-                          className={`w-10 h-10 object-contain ${badge.earned ? 'drop-shadow-md' : 'opacity-40 grayscale'}`}
-                        />
-                      ) : (
-                        <img
-                          src="/badges-icon.svg"
-                          alt={badge.label}
-                          className={`w-10 h-10 object-contain ${badge.earned ? 'drop-shadow-md' : 'opacity-40 grayscale'}`}
-                        />
-                      )}
+                      <img
+                        src={badge.icon_url || '/badges-icon.svg'}
+                        alt={badge.label}
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          if (img.src.indexOf('/badges-icon.svg') === -1) {
+                            img.src = '/badges-icon.svg';
+                          }
+                        }}
+                        className={`w-10 h-10 object-contain ${badge.earned ? 'drop-shadow-md' : 'opacity-40 grayscale'}`}
+                      />
                     </div>
                     {badge.earned && (
                       <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#22C55E] flex items-center justify-center shadow">

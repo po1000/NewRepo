@@ -224,6 +224,7 @@ export function LessonFlow() {
   const [confettiPieces, setConfettiPieces] = useState<{ id: number; left: number; delay: number; color: string; size: number }[]>([]);
 
   const hasInitialized = useRef(false);
+  const initialModeApplied = useRef(false);
   const lessonCompletionHandled = useRef(false);
 
   // Load terms + progress, build queue (resume if possible)
@@ -357,6 +358,22 @@ export function LessonFlow() {
     const data: SavedSession = { queueIndex, queue, newFlashcardCount };
     localStorage.setItem(sessionKey(state.subunitId, user.id), JSON.stringify(data));
   }, [queueIndex, queue, newFlashcardCount, state.subunitId, user, loading]);
+
+  // One-shot: when the queue is first ready, if the starting term is already
+  // seen (or beyond), open with a quiz instead of a flashcard. Flashcards
+  // should only ever be shown for brand-new (not_seen) terms.
+  useEffect(() => {
+    if (loading || initialModeApplied.current) return;
+    if (queue.length === 0 || termsMap.size === 0) return;
+    initialModeApplied.current = true;
+    const firstId = queue[queueIndex];
+    if (!firstId) return;
+    const tp = progressMap.get(firstId);
+    if (tp && tp.status !== 'not_seen') {
+      totalQuizzesRef.current++;
+      setupRandomQuiz(firstId);
+    }
+  }, [loading, queue, queueIndex, termsMap, progressMap, setupRandomQuiz]);
 
   // Current term
   const currentTermId = queueIndex < queue.length ? queue[queueIndex] : null;
@@ -545,14 +562,24 @@ export function LessonFlow() {
       return;
     }
 
-    // 4) Normal advance to next flashcard
+    // 4) Normal advance — flashcard for new terms, quiz for any already-seen term
     const nextIndex = queueIndex + 1;
+    const nextTermId = queue[nextIndex];
+    const nextProgress = progressMap.get(nextTermId);
+    const nextIsNew = !nextProgress || nextProgress.status === 'not_seen';
+
     setQueueIndex(nextIndex);
     setHintsExpanded(false);
     setShowReport(false);
     setReportText('');
     setReportSent(false);
-    setMode('flashcard');
+
+    if (nextIsNew) {
+      setMode('flashcard');
+    } else {
+      totalQuizzesRef.current++;
+      setupRandomQuiz(nextTermId);
+    }
   }, [queueIndex, queue, progressMap, newFlashcardCount, seenTermIds, setupRandomQuiz, termsSeenThisSession, finishLesson]);
 
   // "Got it!" / "Next" — flashcard handler
@@ -1123,7 +1150,6 @@ export function LessonFlow() {
               setCorrectAnswersThisSession(0);
               setNewFlashcardCount(0);
               setGraduatedWords([]);
-              setMode('flashcard');
               setQueueIndex(0);
 
               // Rebuild queue from current progress (limited to 3 new terms)
@@ -1140,6 +1166,17 @@ export function LessonFlow() {
               });
               setQueue(limitedNewQueue);
               totalQuizzesRef.current = 0;
+
+              // Open the next batch with the right mode — quiz if the first
+              // term has already been seen, otherwise flashcard.
+              const firstId = limitedNewQueue[0];
+              const firstTp = firstId ? progressMap.get(firstId) : undefined;
+              if (firstId && firstTp && firstTp.status !== 'not_seen') {
+                totalQuizzesRef.current++;
+                setupRandomQuiz(firstId);
+              } else {
+                setMode('flashcard');
+              }
 
               // Re-capture initial statuses from current progress
               initialStatusRef.current = new Map();
