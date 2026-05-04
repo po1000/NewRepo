@@ -27,14 +27,14 @@ const CHARACTER_INFO: Record<string, { avatar: string; gender: 'male' | 'female'
     name: 'Maria',
   },
   'asking-directions': {
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face',
-    gender: 'male',
-    name: 'Pedro',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face',
+    gender: 'female',
+    name: 'Lucia',
   },
   'shopping-market': {
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face',
-    gender: 'female',
-    name: 'Elena',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face',
+    gender: 'male',
+    name: 'Miguel',
   },
 };
 
@@ -217,16 +217,11 @@ function generateAiResponse(scenario: PracticeScenario, userMessages: ChatMessag
   );
 }
 
-interface SpeakingPracticeProps {
-  onBack?: () => void;
-  onRoleplayComplete?: () => void;
-}
-
-export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
-  const { scenarioSlug } = useParams();
+export function SpeakingPractice() {
+  const { scenarioId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const scenario = scenarios.find(s => s.id === scenarioSlug) || scenarios[0];
+  const scenario = scenarios.find(s => s.id === scenarioId) || scenarios[0];
   usePageTitle(scenario.title);
   const { t } = useLanguage();
   const storageKey = `chat_${user?.id}_${scenario.id}`;
@@ -409,7 +404,7 @@ export function SpeakingPractice({ onBack }: SpeakingPracticeProps) {
     <div className="min-h-screen w-full bg-gradient-to-br from-[#FF1500] to-[#FFD905] font-inter flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 shrink-0">
-        <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+        <button onClick={() => navigate('/speak-and-write')} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
           <ArrowLeft className="w-6 h-6 text-[#FFFDE6]" />
         </button>
         <h1 className="font-bold text-[14px] leading-[24px] text-[#FFFDE6] text-center flex-1">

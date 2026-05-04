@@ -1,40 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search,
   MessageSquare,
   ArrowUp,
   ArrowDown,
-  ChevronDown,
-  ChevronUp,
   User,
   X,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageLayout } from '../components/PageLayout';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
-interface Reply {
-  id: string;
-  author: string;
-  timeAgo: string;
-  text: string;
-  upvotes: number;
-  userVote: 'up' | 'down' | null;
-}
 interface Comment {
   id: string;
   author: string;
+  user_id: string;
   timeAgo: string;
   text: string;
   upvotes: number;
   userVote: 'up' | 'down' | null;
-  replies: Reply[];
 }
+
 interface Post {
   id: string;
   author: string;
+  user_id: string;
   timeAgo: string;
   topic: string;
   title: string;
@@ -46,54 +41,61 @@ interface Post {
 
 const TOPICS = ['Grammar Help', 'Pronunciation', 'Culture Exchange', 'Study Tips'];
 
+function timeAgo(date: string): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+const SEED_POSTS: Post[] = [
+  {
+    id: 'seed-1',
+    author: 'u/SpanishLearner99',
+    user_id: '',
+    timeAgo: '4 hours ago',
+    topic: 'Pronunciation',
+    title: 'How do you pronounce the double R (rr) correctly?',
+    body: "I've been practicing for weeks but I still can't seem to roll my R's properly. Words like \"perro\" and \"carro\" sound terrible when I say them. Any tips or exercises that worked for you?",
+    upvotes: 124,
+    userVote: null,
+    comments: [
+      {
+        id: 'seed-c1',
+        author: 'u/NativeSpeaker_Madrid',
+        user_id: '',
+        timeAgo: '3 hours ago',
+        text: "Try saying \"butter\" or \"ladder\" in an American accent really fast. The position your tongue hits the roof of your mouth for the 'tt' or 'dd' is exactly where it needs to be for the Spanish R. Start there, then try to push more air to make it vibrate.",
+        upvotes: 89,
+        userVote: null,
+      },
+    ],
+  },
+  {
+    id: 'seed-2',
+    author: 'u/GrammarNerd',
+    user_id: '',
+    timeAgo: '1 day ago',
+    topic: 'Grammar Help',
+    title: 'Por vs Para - The ultimate cheat sheet',
+    body: '',
+    upvotes: 56,
+    userVote: null,
+    comments: [],
+  },
+];
+
 export function Community() {
   usePageTitle('Community');
   const { t, showInstructions } = useLanguage();
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 'post-1',
-      author: 'u/SpanishLearner99',
-      timeAgo: '4 hours ago',
-      topic: 'Pronunciation',
-      title: 'How do you pronounce the double R (rr) correctly?',
-      body: "I've been practicing for weeks but I still can't seem to roll my R's properly. Words like \"perro\" and \"carro\" sound terrible when I say them. Any tips or exercises that worked for you?",
-      upvotes: 124,
-      userVote: null,
-      comments: [
-        {
-          id: 'comment-1',
-          author: 'u/NativeSpeaker_Madrid',
-          timeAgo: '3 hours ago',
-          text: "Try saying \"butter\" or \"ladder\" in an American accent really fast. The position your tongue hits the roof of your mouth for the 'tt' or 'dd' is exactly where it needs to be for the Spanish R. Start there, then try to push more air to make it vibrate.",
-          upvotes: 89,
-          userVote: null,
-          replies: [
-            {
-              id: 'reply-1',
-              author: 'u/SpanishLearner99',
-              timeAgo: '2 hours ago',
-              text: "Wow, the \"butter\" trick actually helps! I can feel the placement now. Still can't trill it consistently but it's a start. Gracias!",
-              upvotes: 15,
-              userVote: null,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'post-2',
-      author: 'u/GrammarNerd',
-      timeAgo: '1 day ago',
-      topic: 'Grammar Help',
-      title: 'Por vs Para - The ultimate cheat sheet',
-      body: '',
-      upvotes: 56,
-      userVote: null,
-      comments: [],
-    },
-  ]);
-  const [expandedPost, setExpandedPost] = useState<string | null>('post-1');
-  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({ 'reply-1': true });
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<Post[]>(SEED_POSTS);
+  const [loading, setLoading] = useState(true);
+  const [expandedPost, setExpandedPost] = useState<string | null>(null);
   const [showNewPostForm, setShowNewPostForm] = useState(false);
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostBody, setNewPostBody] = useState('');
@@ -101,9 +103,60 @@ export function Community() {
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [selectedTopic, setSelectedTopic] = useState<string>('All Topics');
 
-  const toggleReply = (id: string) => {
-    setExpandedReplies((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const fetchPosts = useCallback(async () => {
+    const { data: dbPosts } = await supabase
+      .from('community_posts')
+      .select('id, user_id, author_name, topic, title, body, upvotes, created_at')
+      .order('created_at', { ascending: false });
+
+    if (!dbPosts || dbPosts.length === 0) {
+      setPosts(SEED_POSTS);
+      setLoading(false);
+      return;
+    }
+
+    const postIds = dbPosts.map(p => p.id);
+    const { data: dbComments } = await supabase
+      .from('community_comments')
+      .select('id, post_id, user_id, author_name, body, upvotes, created_at')
+      .in('post_id', postIds)
+      .order('created_at', { ascending: true });
+
+    const commentsByPost = new Map<string, Comment[]>();
+    (dbComments || []).forEach((c: any) => {
+      const arr = commentsByPost.get(c.post_id) || [];
+      arr.push({
+        id: c.id,
+        author: c.author_name,
+        user_id: c.user_id,
+        timeAgo: timeAgo(c.created_at),
+        text: c.body,
+        upvotes: c.upvotes,
+        userVote: null,
+      });
+      commentsByPost.set(c.post_id, arr);
+    });
+
+    const mapped: Post[] = dbPosts.map((p: any) => ({
+      id: p.id,
+      author: p.author_name,
+      user_id: p.user_id,
+      timeAgo: timeAgo(p.created_at),
+      topic: p.topic,
+      title: p.title,
+      body: p.body,
+      upvotes: p.upvotes,
+      userVote: null,
+      comments: commentsByPost.get(p.id) || [],
+    }));
+
+    setPosts([...mapped, ...SEED_POSTS]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   const handlePostVote = (postId: string, voteType: 'up' | 'down') => {
     setPosts((prev) =>
@@ -149,15 +202,32 @@ export function Community() {
     );
   };
 
-  const handleSubmitPost = () => {
-    if (!newPostTitle.trim() || !newPostBody.trim()) return;
+  const handleSubmitPost = async () => {
+    if (!newPostTitle.trim() || !newPostBody.trim() || !user) return;
+    const authorName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonymous';
+
+    const { data, error } = await supabase
+      .from('community_posts')
+      .insert({
+        user_id: user.id,
+        author_name: `u/${authorName}`,
+        topic: newPostTopic,
+        title: newPostTitle.trim(),
+        body: newPostBody.trim(),
+      })
+      .select('id, user_id, author_name, topic, title, body, upvotes, created_at')
+      .single();
+
+    if (error || !data) return;
+
     const newPost: Post = {
-      id: `post-${Date.now()}`,
-      author: 'u/You',
+      id: data.id,
+      author: data.author_name,
+      user_id: data.user_id,
       timeAgo: 'Just now',
-      topic: newPostTopic,
-      title: newPostTitle,
-      body: newPostBody,
+      topic: data.topic,
+      title: data.title,
+      body: data.body,
       upvotes: 0,
       userVote: null,
       comments: [],
@@ -169,17 +239,58 @@ export function Community() {
     setShowNewPostForm(false);
   };
 
-  const handleSubmitComment = (postId: string) => {
+  const handleDeletePost = async (postId: string) => {
+    if (postId.startsWith('seed-')) return;
+    await supabase.from('community_posts').delete().eq('id', postId);
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+  };
+
+  const handleSubmitComment = async (postId: string) => {
     const commentText = commentInputs[postId]?.trim();
-    if (!commentText) return;
+    if (!commentText || !user) return;
+
+    if (postId.startsWith('seed-')) {
+      const newComment: Comment = {
+        id: `local-${Date.now()}`,
+        author: `u/${user.user_metadata?.username || user.email?.split('@')[0] || 'You'}`,
+        user_id: user.id,
+        timeAgo: 'Just now',
+        text: commentText,
+        upvotes: 0,
+        userVote: null,
+      };
+      setPosts((prev) =>
+        prev.map((post) => {
+          if (post.id !== postId) return post;
+          return { ...post, comments: [...post.comments, newComment] };
+        })
+      );
+      setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+      return;
+    }
+
+    const authorName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonymous';
+    const { data, error } = await supabase
+      .from('community_comments')
+      .insert({
+        post_id: postId,
+        user_id: user.id,
+        author_name: `u/${authorName}`,
+        body: commentText,
+      })
+      .select('id, user_id, author_name, body, upvotes, created_at')
+      .single();
+
+    if (error || !data) return;
+
     const newComment: Comment = {
-      id: `comment-${Date.now()}`,
-      author: 'u/You',
+      id: data.id,
+      author: data.author_name,
+      user_id: data.user_id,
       timeAgo: 'Just now',
-      text: commentText,
+      text: data.body,
       upvotes: 0,
       userVote: null,
-      replies: [],
     };
     setPosts((prev) =>
       prev.map((post) => {
@@ -188,6 +299,18 @@ export function Community() {
       })
     );
     setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+  };
+
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    if (!commentId.startsWith('seed-') && !commentId.startsWith('local-')) {
+      await supabase.from('community_comments').delete().eq('id', commentId);
+    }
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (post.id !== postId) return post;
+        return { ...post, comments: post.comments.filter((c) => c.id !== commentId) };
+      })
+    );
   };
 
   return (
@@ -332,6 +455,9 @@ export function Community() {
         </AnimatePresence>
 
         {/* Forum Posts */}
+        {loading ? (
+          <p className="text-center text-[#372213] py-8">Loading posts...</p>
+        ) : (
         <div className="flex flex-col gap-4">
           {posts.filter(post => selectedTopic === 'All Topics' || post.topic === selectedTopic).map((post) => (
             <div
@@ -384,6 +510,16 @@ export function Community() {
                           {post.comments.length} {post.comments.length === 1 ? 'Comment' : 'Comments'}
                         </span>
                       </div>
+                      {user && post.user_id === user.id && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }}
+                          className="flex items-center gap-1 text-[#EF4444] hover:text-[#DC2626] transition-colors ml-auto"
+                          title="Delete your post"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span className="font-inter font-medium text-[12px]">Delete</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -419,42 +555,17 @@ export function Community() {
                               <div className="flex items-center gap-2">
                                 <span className="font-inter font-medium text-[13px] text-[#372213]">{comment.author}</span>
                                 <span className="font-inter text-[12px] text-[#372213]">• {comment.timeAgo}</span>
+                                {user && comment.user_id === user.id && (
+                                  <button
+                                    onClick={() => handleDeleteComment(post.id, comment.id)}
+                                    className="ml-auto text-[#EF4444] hover:text-[#DC2626] transition-colors"
+                                    title="Delete your comment"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
                               <p className="font-inter text-[14px] leading-[22px] text-[#372213]">{comment.text}</p>
-                              {comment.replies.length > 0 && (
-                                <>
-                                  <button
-                                    onClick={() => toggleReply(comment.id)}
-                                    className="flex items-center gap-1 text-[#FF4D01] font-inter font-medium text-[13px] mt-1 w-fit"
-                                  >
-                                    {expandedReplies[comment.id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                    {expandedReplies[comment.id]
-                                      ? 'Hide replies'
-                                      : `${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}`}
-                                  </button>
-                                  {expandedReplies[comment.id] && (
-                                    <div className="flex flex-col gap-4 mt-3 pl-4 border-l-2 border-gray-200">
-                                      {comment.replies.map((reply) => (
-                                        <div key={reply.id} className="flex gap-3">
-                                          <div className="flex flex-col items-center gap-1 mt-1">
-                                            <button className="text-[#9CA3AF]">
-                                              <ArrowUp className="w-4 h-4" />
-                                            </button>
-                                            <span className="font-inter font-bold text-[12px] text-[#372213]">{reply.upvotes}</span>
-                                          </div>
-                                          <div className="flex-1 flex flex-col gap-1">
-                                            <div className="flex items-center gap-2">
-                                              <span className="font-inter font-medium text-[13px] text-[#372213]">{reply.author}</span>
-                                              <span className="font-inter text-[12px] text-[#372213]">• {reply.timeAgo}</span>
-                                            </div>
-                                            <p className="font-inter text-[14px] leading-[22px] text-[#372213]">{reply.text}</p>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </>
-                              )}
                             </div>
                           </div>
                         ))}
@@ -491,6 +602,7 @@ export function Community() {
             </div>
           ))}
         </div>
+        )}
       </div>
     </PageLayout>
   );
