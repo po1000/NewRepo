@@ -67,7 +67,7 @@ export function App() {
 
             <Route path="/speak-and-write" element={<ProtectedRoute><SpeakAndWritePage /></ProtectedRoute>} />
             <Route path="/speak-and-write/practice/:scenarioId" element={<ProtectedRoute><SpeakingPracticePage /></ProtectedRoute>} />
-            <Route path="/speak-and-write/roleplay-complete" element={<ProtectedRoute><RoleplayCompletePage /></ProtectedRoute>} />
+            <Route path="/speak-and-write/:scenarioId/complete" element={<ProtectedRoute><RoleplayCompletePage /></ProtectedRoute>} />
 
             <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
             <Route path="/badges" element={<ProtectedRoute><BadgesPage /></ProtectedRoute>} />

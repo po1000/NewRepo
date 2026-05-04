@@ -41,6 +41,21 @@ interface Post {
 
 const TOPICS = ['Grammar Help', 'Pronunciation', 'Culture Exchange', 'Study Tips'];
 
+const SUGGESTED_QUESTIONS = [
+  'How do I conjugate ser vs estar?',
+  'What is the difference between por and para?',
+  'How do you roll your R\'s in Spanish?',
+  'When do I use subjunctive mood?',
+  'How to pronounce the ñ sound?',
+  'What are the most common irregular verbs?',
+  'Difference between tú and usted?',
+  'How to use reflexive verbs in Spanish?',
+  'Tips for learning Spanish vocabulary fast?',
+  'How do accent marks change word meaning?',
+  'Best way to practice Spanish conversation?',
+  'How to order food in Spanish?',
+];
+
 function timeAgo(date: string): string {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
   if (seconds < 60) return 'Just now';
@@ -102,6 +117,9 @@ export function Community() {
   const [newPostTopic, setNewPostTopic] = useState('Grammar Help');
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [selectedTopic, setSelectedTopic] = useState<string>('All Topics');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
 
   const fetchPosts = useCallback(async () => {
     const { data: dbPosts } = await supabase
@@ -203,7 +221,12 @@ export function Community() {
   };
 
   const handleSubmitPost = async () => {
-    if (!newPostTitle.trim() || !newPostBody.trim() || !user) return;
+    if (!newPostTitle.trim() || !newPostBody.trim()) return;
+    if (!user) {
+      setPostError('You must be logged in to post.');
+      return;
+    }
+    setPostError(null);
     const authorName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonymous';
 
     const { data, error } = await supabase
@@ -218,7 +241,14 @@ export function Community() {
       .select('id, user_id, author_name, topic, title, body, upvotes, created_at')
       .single();
 
-    if (error || !data) return;
+    if (error) {
+      setPostError(error.message || 'Failed to create post. Please try again.');
+      return;
+    }
+    if (!data) {
+      setPostError('Failed to create post. Please try again.');
+      return;
+    }
 
     const newPost: Post = {
       id: data.id,
@@ -334,13 +364,44 @@ export function Community() {
           </div>
         )}
 
-        <div className="w-full bg-white rounded-xl border border-[#E5E7EB] flex items-center px-4 py-3 gap-3 shadow-sm mb-8">
-          <Search className="w-5 h-5 text-[#9CA3AF]" />
-          <input
-            type="text"
-            placeholder={t('community.search')}
-            className="flex-1 bg-transparent border-none outline-none font-inter text-[16px] text-[#372213] placeholder:text-[#9CA3AF]"
-          />
+        <div className="relative mb-8">
+          <div className="w-full bg-white rounded-xl border border-[#E5E7EB] flex items-center px-4 py-3 gap-3 shadow-sm">
+            <Search className="w-5 h-5 text-[#9CA3AF]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(e.target.value.length > 0);
+              }}
+              onFocus={() => { if (searchQuery.length > 0) setShowSuggestions(true); }}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              placeholder={t('community.search')}
+              className="flex-1 bg-transparent border-none outline-none font-inter text-[16px] text-[#372213] placeholder:text-[#9CA3AF]"
+            />
+            {searchQuery && (
+              <button onClick={() => { setSearchQuery(''); setShowSuggestions(false); }} className="text-[#9CA3AF] hover:text-[#372213]">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {showSuggestions && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-[#E5E7EB] shadow-lg z-20 max-h-[240px] overflow-y-auto">
+              {SUGGESTED_QUESTIONS.filter(q => q.toLowerCase().includes(searchQuery.toLowerCase())).map((q) => (
+                <button
+                  key={q}
+                  onMouseDown={() => { setSearchQuery(q); setShowSuggestions(false); }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-[#FFDFFC]/40 font-inter text-[14px] text-[#372213] border-b border-[#F3F4F6] last:border-b-0 transition-colors"
+                >
+                  <Search className="w-3.5 h-3.5 text-[#9CA3AF] inline mr-2" />
+                  {q}
+                </button>
+              ))}
+              {SUGGESTED_QUESTIONS.filter(q => q.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                <p className="px-4 py-3 text-[13px] text-[#9CA3AF] font-inter">No suggestions found</p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 overflow-x-auto pb-4 mb-6 no-scrollbar">
@@ -428,9 +489,12 @@ export function Community() {
                     ))}
                   </select>
                 </div>
+                {postError && (
+                  <p className="text-[#EF4444] font-inter text-[13px]">{postError}</p>
+                )}
                 <div className="flex gap-3 justify-end">
                   <button
-                    onClick={() => setShowNewPostForm(false)}
+                    onClick={() => { setShowNewPostForm(false); setPostError(null); }}
                     className="px-6 py-2.5 border border-[#E5E7EB] rounded-lg font-inter font-medium text-[14px] text-[#372213] hover:bg-gray-50 transition-colors"
                   >
                     Cancel
@@ -452,7 +516,14 @@ export function Community() {
           <p className="text-center text-[#372213] py-8">Loading posts...</p>
         ) : (
         <div className="flex flex-col gap-4">
-          {posts.filter(post => selectedTopic === 'All Topics' || post.topic === selectedTopic).map((post) => (
+          {posts.filter(post => {
+            if (selectedTopic !== 'All Topics' && post.topic !== selectedTopic) return false;
+            if (searchQuery.trim()) {
+              const q = searchQuery.toLowerCase();
+              return post.title.toLowerCase().includes(q) || post.body.toLowerCase().includes(q);
+            }
+            return true;
+          }).map((post) => (
             <div
               key={post.id}
               className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm overflow-hidden"

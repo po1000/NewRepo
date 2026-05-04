@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { scenarios, PracticeScenario } from './SpeakAndWrite';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useLanguage } from '../context/LanguageContext';
+import { findSpellingError } from '../lib/spelling';
 
 interface ChatMessage {
   id: string;
@@ -50,18 +51,21 @@ function speakSpanish(text: string, gender: 'male' | 'female' = 'female') {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
-  utterance.rate = 0.9;
-  utterance.pitch = gender === 'female' ? 1.1 : 0.75;
-  const spanishVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('es'));
+  utterance.rate = gender === 'female' ? 0.9 : 0.88;
+  utterance.pitch = gender === 'female' ? 1.15 : 0.55;
+  const voices = window.speechSynthesis.getVoices();
+  const spanishVoices = voices.filter(v => v.lang.startsWith('es'));
+  const systemVoices = spanishVoices.filter(v => !v.name.includes('Google'));
 
   let best: SpeechSynthesisVoice | undefined;
   if (gender === 'male') {
-    best = spanishVoices.find(v => MALE_VOICE_NAMES.some(n => v.name.includes(n)));
-    if (!best) best = spanishVoices.find(v => !FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    best = systemVoices.find(v => MALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    if (!best) best = systemVoices.find(v => !FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    if (!best) best = systemVoices[0] || spanishVoices[0];
   } else {
-    best = spanishVoices.find(v => FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    best = systemVoices.find(v => FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    if (!best) best = systemVoices[0] || spanishVoices[0];
   }
-  if (!best) best = spanishVoices[0];
   if (best) utterance.voice = best;
   window.speechSynthesis.speak(utterance);
 }
@@ -109,6 +113,31 @@ Format: {"es": "your Spanish response here", "en": "English translation of your 
   }
 
   return { es: content.trim(), en: '' };
+}
+
+function SpellCheckedText({ text }: { text: string }) {
+  const tokens = text.split(/(\s+)/);
+  return (
+    <>
+      {tokens.map((token, i) => {
+        if (/^\s+$/.test(token)) return <span key={i}>{token}</span>;
+        const result = findSpellingError(token);
+        if (!result) return <span key={i}>{token}</span>;
+        return (
+          <span
+            key={i}
+            className="spelling-error relative group cursor-help"
+            style={{ textDecoration: 'underline wavy red', textDecorationThickness: '1.5px', textUnderlineOffset: '3px' }}
+          >
+            {token}
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-[#1F2937] text-white text-[11px] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
+              Did you mean &apos;{result.suggestion}&apos; ({result.translation})?
+            </span>
+          </span>
+        );
+      })}
+    </>
+  );
 }
 
 export function SpeakingPractice() {
@@ -340,8 +369,6 @@ export function SpeakingPractice() {
 
   function stopRecording() {
     recognitionRef.current?.stop();
-    setIsRecording(false);
-    cleanupAudio();
   }
 
   function discardRecording() {
@@ -453,7 +480,7 @@ export function SpeakingPractice() {
                   <p lang="es" className={`text-[15.6px] leading-[24px] ${
                     msg.role === 'ai' ? 'font-medium text-[#1F2937]' : 'text-[#372213]'
                   }`}>
-                    {msg.text}
+                    {msg.role === 'user' ? <SpellCheckedText text={msg.text} /> : msg.text}
                   </p>
                   {msg.role === 'user' && msg.inputMode === 'voice' && (
                     <span className="text-[9px] text-[#372213] mt-1 block">🎙 spoken</span>
@@ -602,9 +629,8 @@ export function SpeakingPractice() {
                       className="w-11 h-11 bg-white/80 rounded-xl flex items-center justify-center hover:bg-white transition-colors shrink-0 border border-[#FCA5A5]">
                       <Trash2 className="w-5 h-5 text-[#EF4444]" />
                     </button>
-                    <div className="flex-1 h-11 rounded-xl overflow-hidden bg-[#FF4D01] relative flex items-center justify-center">
-                      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-                      <span className="relative z-10 font-medium text-[14px] text-white drop-shadow-sm">{t('speakWrite.listening')}</span>
+                    <div className="flex-1 h-11 rounded-xl overflow-hidden bg-[#FF4D01]">
+                      <canvas ref={canvasRef} className="w-full h-full" />
                     </div>
                     <button onClick={stopRecording}
                       className="px-5 py-3 bg-[#FFFDE6] rounded-xl flex items-center justify-center gap-2 hover:bg-white transition-colors shrink-0">

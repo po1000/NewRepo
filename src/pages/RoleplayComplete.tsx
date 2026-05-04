@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Home, Check, Mic, Pencil, ArrowLeft, Eye, EyeOff, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -346,17 +346,17 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { scenarioSlug } = useParams();
+  const { scenarioId: paramScenarioId } = useParams();
 
   const data = (location.state as AnalysisData) || {
-    scenarioId: scenarioSlug,
+    scenarioId: paramScenarioId,
     scenarioTitle: 'Practice',
     messages: [],
     elapsed: 0,
     criteriaCount: 3,
   };
 
-  const scenarioId = data.scenarioId || scenarioSlug;
+  const scenarioId = data.scenarioId || paramScenarioId;
   const scenario = scenarios.find(s => s.id === scenarioId);
   const charAvatar = scenario?.imageUrl;
   const scenarioKeywords = scenario?.criteria.flatMap(c => c.keywords) || [];
@@ -374,6 +374,21 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
   const [expandedCriterion, setExpandedCriterion] = useState<string | null>(null);
   const [writingExpanded, setWritingExpanded] = useState(true);
   const [speakingExpanded, setSpeakingExpanded] = useState(true);
+  const [confetti, setConfetti] = useState<{ id: number; left: number; size: number; color: string; delay: number }[]>([]);
+
+  useEffect(() => {
+    const colors = ['#FF4D01', '#FFD905', '#3BBC00', '#1D4ED8', '#E879F9', '#FFFDE6'];
+    const pieces = Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      size: 6 + Math.random() * 6,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      delay: Math.random() * 1.2,
+    }));
+    setConfetti(pieces);
+    const timer = setTimeout(() => setConfetti([]), 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const minutes = Math.floor(data.elapsed / 60);
   const seconds = data.elapsed % 60;
@@ -383,7 +398,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
     if (user?.id && scenarioId) {
       localStorage.removeItem(`chat_${user.id}_${scenarioId}`);
     }
-    navigate(`/speak-and-write/${scenarioId}`);
+    navigate(`/speak-and-write/practice/${scenarioId}`);
   }
 
   function handleNextScenario() {
@@ -396,7 +411,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
     if (user?.id) {
       localStorage.removeItem(`chat_${user.id}_${next.id}`);
     }
-    navigate(`/speak-and-write/${next.id}`);
+    navigate(`/speak-and-write/practice/${next.id}`);
   }
 
   if (mode === 'review') {
@@ -473,6 +488,30 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
   return (
     <div className="min-h-screen w-full font-inter"
       style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
+
+      {confetti.length > 0 && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+          {confetti.map(p => (
+            <div key={p.id} className="absolute top-0 rounded-sm"
+              style={{
+                left: `${p.left}%`, width: `${p.size}px`, height: `${p.size * 1.5}px`,
+                backgroundColor: p.color,
+                animation: `confettiFall ${2.5 + p.delay}s ease-in forwards`,
+                animationDelay: `${p.delay * 0.3}s`,
+                transform: `rotate(${Math.random() * 360}deg)`,
+              }} />
+          ))}
+          <style>{`
+            @keyframes confettiFall {
+              0% { top: -10%; opacity: 1; transform: rotate(0deg) translateX(0); }
+              25% { transform: rotate(90deg) translateX(20px); }
+              50% { transform: rotate(180deg) translateX(-20px); opacity: 1; }
+              75% { transform: rotate(270deg) translateX(10px); }
+              100% { top: 110%; opacity: 0; transform: rotate(360deg) translateX(-10px); }
+            }
+          `}</style>
+        </div>
+      )}
 
       <div className="absolute top-4 left-4 z-20">
         <button onClick={() => navigate('/speak-and-write')}
