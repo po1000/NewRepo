@@ -42,24 +42,26 @@ const CHARACTER_INFO: Record<string, { avatar: string; gender: 'male' | 'female'
   },
 };
 
+const MALE_VOICE_NAMES = ['Jorge', 'Diego', 'Juan', 'Andres', 'Miguel', 'Pablo', 'Raul', 'Enrique'];
+const FEMALE_VOICE_NAMES = ['Paulina', 'Monica', 'Lucia', 'Marisol', 'Helena', 'Sabina', 'Conchita', 'Maria', 'Elena'];
+
 function speakSpanish(text: string, gender: 'male' | 'female' = 'female') {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
-  utterance.rate = 0.92;
-  utterance.pitch = gender === 'female' ? 1.1 : 0.95;
-  const voices = window.speechSynthesis.getVoices();
+  utterance.rate = 0.9;
+  utterance.pitch = gender === 'female' ? 1.1 : 0.75;
+  const spanishVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('es'));
 
-  const femalePreferred = ['Paulina', 'Monica', 'Lucia', 'Microsoft Helena', 'Microsoft Sabina', 'Google español'];
-  const malePreferred = ['Jorge', 'Diego', 'Juan', 'Microsoft Pablo', 'Google español'];
-  const preferred = gender === 'female' ? femalePreferred : malePreferred;
-
-  let best = voices.find(v =>
-    preferred.some(p => v.name.includes(p)) && v.lang.startsWith('es')
-  );
-  if (!best) best = voices.find(v => v.lang === 'es-ES');
-  if (!best) best = voices.find(v => v.lang.startsWith('es'));
+  let best: SpeechSynthesisVoice | undefined;
+  if (gender === 'male') {
+    best = spanishVoices.find(v => MALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    if (!best) best = spanishVoices.find(v => !FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
+  } else {
+    best = spanishVoices.find(v => FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
+  }
+  if (!best) best = spanishVoices[0];
   if (best) utterance.voice = best;
   window.speechSynthesis.speak(utterance);
 }
@@ -148,6 +150,11 @@ export function SpeakingPractice() {
   const recognitionRef = useRef<any>(null);
   const spokenMsgIds = useRef<Set<string>>(new Set());
   const gotResultRef = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number>(0);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(messages));
@@ -235,7 +242,53 @@ export function SpeakingPractice() {
     }
   }, [messages, scenario, charInfo]);
 
-  function startRecording() {
+  function cleanupAudio() {
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
+    if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
+    audioCtxRef.current = null;
+    analyserRef.current = null;
+    mediaStreamRef.current = null;
+  }
+
+  function drawWaveform() {
+    const canvas = canvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas || !analyser) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+
+    const bufLen = analyser.frequencyBinCount;
+    const data = new Uint8Array(bufLen);
+    analyser.getByteFrequencyData(data);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const barCount = 40;
+    const gap = 3;
+    const barWidth = (canvas.width - (barCount - 1) * gap) / barCount;
+    const step = Math.floor(bufLen / barCount);
+
+    for (let i = 0; i < barCount; i++) {
+      const val = data[i * step] / 255;
+      const barH = Math.max(3, val * canvas.height * 0.85);
+      const x = i * (barWidth + gap);
+      const y = (canvas.height - barH) / 2;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(x, y, barWidth, barH, 2);
+      ctx.fill();
+    }
+
+    animFrameRef.current = requestAnimationFrame(drawWaveform);
+  }
+
+  async function startRecording() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert('Speech recognition is not supported in this browser. Please use Chrome.');
@@ -243,6 +296,22 @@ export function SpeakingPractice() {
     }
     setVoiceTranscript(null);
     gotResultRef.current = false;
+    setIsRecording(true);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.7;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      drawWaveform();
+    } catch {}
+
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-ES';
     recognition.interimResults = false;
@@ -252,30 +321,34 @@ export function SpeakingPractice() {
       const transcript = event.results[0][0].transcript;
       setVoiceTranscript(transcript);
       setIsRecording(false);
+      cleanupAudio();
     };
     recognition.onerror = () => {
       gotResultRef.current = false;
       setIsRecording(false);
+      cleanupAudio();
     };
     recognition.onend = () => {
       if (!gotResultRef.current) {
         setIsRecording(false);
+        cleanupAudio();
       }
     };
     recognitionRef.current = recognition;
     recognition.start();
-    setIsRecording(true);
   }
 
   function stopRecording() {
     recognitionRef.current?.stop();
     setIsRecording(false);
+    cleanupAudio();
   }
 
   function discardRecording() {
     recognitionRef.current?.stop();
     setIsRecording(false);
     setVoiceTranscript(null);
+    cleanupAudio();
   }
 
   function sendVoiceTranscript() {
@@ -529,9 +602,9 @@ export function SpeakingPractice() {
                       className="w-11 h-11 bg-white/80 rounded-xl flex items-center justify-center hover:bg-white transition-colors shrink-0 border border-[#FCA5A5]">
                       <Trash2 className="w-5 h-5 text-[#EF4444]" />
                     </button>
-                    <div className="flex-1 px-4 py-3 rounded-xl flex items-center justify-center gap-2 bg-[#FF4D01] text-white">
-                      <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
-                      <span className="font-medium text-[16px]">{t('speakWrite.listening')}</span>
+                    <div className="flex-1 h-11 rounded-xl overflow-hidden bg-[#FF4D01] relative flex items-center justify-center">
+                      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+                      <span className="relative z-10 font-medium text-[14px] text-white drop-shadow-sm">{t('speakWrite.listening')}</span>
                     </div>
                     <button onClick={stopRecording}
                       className="px-5 py-3 bg-[#FFFDE6] rounded-xl flex items-center justify-center gap-2 hover:bg-white transition-colors shrink-0">
