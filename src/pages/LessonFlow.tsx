@@ -332,19 +332,6 @@ export function LessonFlow() {
     localStorage.setItem(sessionKey(state.subunitId, user.id), JSON.stringify(data));
   }, [queueIndex, queue, newFlashcardCount, state.subunitId, user, loading]);
 
-  useEffect(() => {
-    if (loading || initialModeApplied.current) return;
-    if (queue.length === 0 || termsMap.size === 0) return;
-    initialModeApplied.current = true;
-    const firstId = queue[queueIndex];
-    if (!firstId) return;
-    const tp = progressMap.get(firstId);
-    if (tp && tp.status !== 'not_seen') {
-      totalQuizzesRef.current++;
-      setupRandomQuiz(firstId);
-    }
-  }, [loading, queue, queueIndex, termsMap, progressMap, setupRandomQuiz]);
-
   const currentTermId = queueIndex < queue.length ? queue[queueIndex] : null;
   const currentTerm = currentTermId ? termsMap.get(currentTermId) || null : null;
   const currentProgress = currentTermId ? progressMap.get(currentTermId) : undefined;
@@ -443,6 +430,19 @@ export function LessonFlow() {
     else if (roll < 0.75) setupListenWrite(termId);
     else setupListenSpeak(termId);
   }, [setupMultiChoice, setupListenWrite, setupListenSpeak]);
+
+  useEffect(() => {
+    if (loading || initialModeApplied.current) return;
+    if (queue.length === 0 || termsMap.size === 0) return;
+    initialModeApplied.current = true;
+    const firstId = queue[queueIndex];
+    if (!firstId) return;
+    const tp = progressMap.get(firstId);
+    if (tp && tp.status !== 'not_seen') {
+      totalQuizzesRef.current++;
+      setupRandomQuiz(firstId);
+    }
+  }, [loading, queue, queueIndex, termsMap, progressMap, setupRandomQuiz]);
 
   const finishLesson = useCallback(() => {
     if (state.subunitId && user) {
