@@ -291,7 +291,8 @@ export async function saveTermProgress(
   userId: string,
   termId: number,
   status: TermStatus,
-  sm2: SM2Data
+  sm2: SM2Data,
+  markedAsKnown: boolean = false
 ): Promise<void> {
   const [progressResult, sm2Result] = await Promise.all([
     supabase.from('user_term_progress').upsert(
@@ -299,6 +300,7 @@ export async function saveTermProgress(
         user_id: userId,
         term_id: termId,
         status,
+        marked_known: markedAsKnown,
         last_reviewed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },

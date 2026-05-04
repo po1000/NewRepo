@@ -55,7 +55,8 @@ export function Badges() {
           .from('user_term_progress')
           .select('term_id', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .in('status', ['learning', 'reinforced', 'learnt']),
+          .in('status', ['learning', 'reinforced', 'learnt'])
+          .eq('marked_known', false),
       ]);
 
       const earnedMap = new Map<number, string>();

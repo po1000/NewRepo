@@ -1,0 +1,2 @@
+ALTER TABLE user_term_progress
+  ADD COLUMN IF NOT EXISTS marked_known BOOLEAN NOT NULL DEFAULT FALSE;

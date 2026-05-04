@@ -603,7 +603,7 @@ export function LessonFlow() {
     };
 
     const result = processAnswer(tp.status, tp.sm2, 5, 'flashcard', true);
-    await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2);
+    await saveTermProgress(user.id, currentTerm.term_id, result.newStatus, result.sm2, true);
 
     setProgressMap(prev => {
       const next = new Map(prev);
@@ -902,7 +902,8 @@ export function LessonFlow() {
         .from('user_term_progress')
         .select('term_id', { count: 'exact', head: true })
         .eq('user_id', user!.id)
-        .in('status', ['learning', 'reinforced', 'learnt']);
+        .in('status', ['learning', 'reinforced', 'learnt'])
+        .eq('marked_known', false);
 
       const progressLookup: Record<string, number> = {
         lessons_completed: newLessonsCompleted,

@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { scenarios, PracticeScenario } from './SpeakAndWrite';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useLanguage } from '../context/LanguageContext';
-import { findSpellingError } from '../lib/spelling';
+import { findSpellingError, SPANISH_DICT } from '../lib/spelling';
 
 interface ChatMessage {
   id: string;
@@ -126,18 +126,46 @@ function SpellCheckedText({ text }: { text: string }) {
         return (
           <span
             key={i}
-            className="spelling-error relative group cursor-help"
-            style={{ textDecoration: 'underline wavy red', textDecorationThickness: '1.5px', textUnderlineOffset: '3px' }}
+            className="relative group cursor-help"
+            style={{
+              textDecorationLine: 'underline',
+              textDecorationStyle: 'wavy',
+              textDecorationColor: '#EF4444',
+              textDecorationThickness: '2px',
+              textUnderlineOffset: '3px',
+            }}
           >
             {token}
-            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-[#1F2937] text-white text-[11px] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
-              Did you mean &apos;{result.suggestion}&apos; ({result.translation})?
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#1F2937] text-white text-[12px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
+              Did you mean '{result.suggestion}' ({result.translation})?
+              <span className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1F2937] rotate-45 -mt-1" />
             </span>
           </span>
         );
       })}
     </>
   );
+}
+
+function translateUserMessage(text: string): React.ReactNode[] {
+  const tokens = text.split(/(\s+)/);
+  return tokens.map((token, i) => {
+    if (/^\s+$/.test(token)) return <span key={i}>{' '}</span>;
+    const clean = token.toLowerCase().replace(/[^a-záéíóúñü]/g, '');
+    if (clean.length < 2) return <span key={i}>{token} </span>;
+    const dictEntry = SPANISH_DICT.get(clean);
+    if (dictEntry) return <span key={i}>{dictEntry} </span>;
+    const error = findSpellingError(token);
+    if (error) {
+      return (
+        <span key={i} className="inline-flex items-center mx-0.5" title={`Unknown: "${token}"`}>
+          <span className="inline-flex items-center justify-center w-5 h-5 bg-[#EF4444] rounded text-white text-[11px] font-bold">?</span>
+          {' '}
+        </span>
+      );
+    }
+    return <span key={i}>{token} </span>;
+  });
 }
 
 export function SpeakingPractice() {
@@ -467,9 +495,14 @@ export function SpeakingPractice() {
               </div>
 
               <div className={`flex flex-col ${msg.role === 'user' ? 'items-start' : 'items-end'} gap-1 max-w-[75%]`}>
-                {showTranslations && msg.translation && (
+                {showTranslations && msg.role === 'ai' && msg.translation && (
                   <span lang="en" className="text-[14.6px] leading-[20px] text-[#1D4ED8]/80 font-medium">
                     {msg.translation}
+                  </span>
+                )}
+                {showTranslations && msg.role === 'user' && (
+                  <span lang="en" className="text-[14.6px] leading-[20px] text-[#1D4ED8]/80 font-medium flex flex-wrap items-center gap-0.5">
+                    {translateUserMessage(msg.text)}
                   </span>
                 )}
                 <div className={`px-4 py-3 ${
@@ -589,6 +622,9 @@ export function SpeakingPractice() {
                   onChange={(e) => setTextInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendMessage(textInput, 'text')}
                   placeholder="Escribe en español..."
+                  spellCheck={false}
+                  autoCorrect="off"
+                  autoComplete="off"
                   className="flex-1 px-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-[16px] text-[#372213] focus:outline-none focus:border-[#FF6200]"
                 />
                 <button onClick={() => sendMessage(textInput, 'text')}
