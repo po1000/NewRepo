@@ -30,7 +30,6 @@ interface UnitRow {
   subunits: SubunitRow[];
 }
 
-// Map CEFR level + subunit code to exact background colors
 const SUBUNIT_COLORS: Record<string, string> = {
   'A1:1.1': '#FB3D3E', 'A1:1.2': '#FF8543', 'A1:2.1': '#1AD2CC', 'A1:2.2': '#6499FC',
   'A1:3.1': '#FF5B1F', 'A1:4.1': '#015CE7',
@@ -41,7 +40,7 @@ interface SubunitProgress {
   totalTerms: number;
   seenTerms: number;
   masteredTerms: number;
-  weightedProgress: number; // sum of weighted status values (0..totalTerms)
+  weightedProgress: number;
 }
 
 export function Dashboard() {
@@ -59,14 +58,12 @@ export function Dashboard() {
   const [lastLesson, setLastLesson] = useState<{ subunitId: number; subunitCode: string; title: string; goalText: string; vocabPreview: string; progressPercent: number } | null>(null);
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Learner';
 
-  // Force refetch when navigating back to dashboard
   useEffect(() => {
     setFetchKey(prev => prev + 1);
   }, [location.key]);
 
   useEffect(() => {
     async function fetchData() {
-      // Fetch units with their subunits and CEFR level
       const { data: units, error } = await supabase
         .from('units')
         .select(`
@@ -82,7 +79,6 @@ export function Dashboard() {
         return;
       }
 
-      // Fetch user stats (read-only — streak only increments on lesson completion)
       if (user) {
         const [
           { data: stats },
@@ -114,30 +110,25 @@ export function Dashboard() {
         });
       }
 
-      // Gather all subunit IDs to fetch progress
       const allSubunitIds: number[] = [];
       (units as UnitRow[])?.forEach(unit => {
         unit.subunits?.forEach(sub => allSubunitIds.push(sub.subunit_id));
       });
 
-      // Fetch term counts per subunit and user progress
       const progressMap: Record<number, SubunitProgress> = {};
 
       if (allSubunitIds.length > 0) {
-        // Get total terms per subunit
         const { data: subunitTermCounts } = await supabase
           .from('subunit_terms')
           .select('subunit_id, term_id')
           .in('subunit_id', allSubunitIds);
 
-        // Group by subunit
         const termsBySubunit: Record<number, number[]> = {};
         subunitTermCounts?.forEach((st: any) => {
           if (!termsBySubunit[st.subunit_id]) termsBySubunit[st.subunit_id] = [];
           termsBySubunit[st.subunit_id].push(st.term_id);
         });
 
-        // Get user progress for all terms
         if (user) {
           const allTermIds = subunitTermCounts?.map((st: any) => st.term_id) || [];
           const uniqueTermIds = [...new Set(allTermIds)];
@@ -154,9 +145,6 @@ export function Dashboard() {
               termStatusMap[p.term_id] = p.status;
             });
 
-            // Calculate progress per subunit
-            // Weighted by status: not_seen=0, seen=0.25, learning=0.5, reinforced=0.75, learnt=1.0
-            // 100% only reached when ALL terms are 'learnt'
             const STATUS_WEIGHT: Record<string, number> = {
               not_seen: 0,
               seen: 0.25,
@@ -183,7 +171,6 @@ export function Dashboard() {
           }
         }
 
-        // Fill in subunits without progress data
         for (const subId of allSubunitIds) {
           if (!progressMap[subId]) {
             progressMap[subId] = { totalTerms: termsBySubunit[subId]?.length || 0, seenTerms: 0, masteredTerms: 0, weightedProgress: 0 };
@@ -194,7 +181,6 @@ export function Dashboard() {
       setRawUnits((units as UnitRow[]) || []);
       setSubunitProgressMap(progressMap);
 
-      // Load last lesson for "Continue Lesson" card
       if (user) {
         try {
           const raw = localStorage.getItem(`last_lesson_${user.id}`);
@@ -275,9 +261,7 @@ export function Dashboard() {
         longestStreak: userStats.longest_streak,
       }}
     >
-      {/* Main Content */}
       <main className="flex flex-col items-center gap-6 px-4 pb-12">
-        {/* Welcome Back message */}
         <h1 className="w-full max-w-[632px] mx-auto font-inter font-normal text-[28px] leading-[36px] text-[#372213] text-center mt-8">
           {t('ui.welcomeBack')}, {username}
         </h1>
@@ -289,7 +273,6 @@ export function Dashboard() {
             </p>
           </div>
         )}
-        {/* Continue Lesson Card */}
         {!loading && lastLesson && (
           <div className="w-full max-w-[632px] mx-auto bg-[#FFFDF5] rounded-[16px] p-5 shadow-sm border-2 border-[#FFE082]">
             <div className="flex justify-between items-start mb-1">
@@ -304,7 +287,6 @@ export function Dashboard() {
             <p className="font-inter text-[13px] text-[#372213] mb-2">
               {t('resume.vocab')} {lastLesson.vocabPreview}....
             </p>
-            {/* Progress bar */}
             <div className="flex items-center gap-2 mb-3">
               <div className="flex-1 h-[8px] bg-gray-200 rounded-full overflow-hidden">
                 <div
@@ -352,7 +334,6 @@ export function Dashboard() {
           })
         )}
 
-        {/* Sign Out */}
         <div className="w-full max-w-[632px] mx-auto flex justify-center pt-4">
           <button
             type="button"

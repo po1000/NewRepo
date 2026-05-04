@@ -45,21 +45,19 @@ export function LessonModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       onClick={onClose}>
-      
+
       <div
         className="relative w-full max-w-[662px] bg-[#FFF4A2] rounded-[16px] shadow-[0px_2px_10px_rgba(0,0,0,0.25)] p-5 max-h-[90vh] overflow-y-auto flex flex-col gap-6"
         onClick={(e) => e.stopPropagation()}>
-        
-        {/* Close Button - Moved to top left to avoid overlap */}
+
         <button
           onClick={onClose}
           className="absolute top-4 left-4 p-2 hover:bg-black/5 rounded-full transition-colors z-10"
           aria-label="Close modal">
-          
+
           <X className="w-6 h-6 text-[#372213]" />
         </button>
 
-        {/* Header */}
         <div className="flex flex-col gap-2 mt-8">
           <div className="flex flex-row justify-between items-start">
             <div className="flex flex-col gap-1 flex-1 pr-4">
@@ -79,7 +77,6 @@ export function LessonModal({
           </div>
         </div>
 
-        {/* Words & Phrases Section */}
         <div className="bg-[#FFFEF4] rounded-[16px] p-4">
           <h3 className="font-inter font-bold text-[18px] leading-[28px] text-[#372213] mb-4">
             Words & Phrases
@@ -90,7 +87,7 @@ export function LessonModal({
             <div
               key={index}
               className="flex flex-row justify-between items-center py-2">
-              
+
                 <span className="font-inter font-semibold text-[16px] leading-[28px] text-[#372213] flex-1">
                   {item.term}
                 </span>
@@ -107,11 +104,10 @@ export function LessonModal({
           </div>
         </div>
 
-        {/* Start Lesson Button */}
         <button
           onClick={onStartLesson}
           className="w-full py-3 bg-[#FF4D01] hover:bg-[#e64500] transition-colors rounded-xl text-white font-inter font-bold text-[16px] leading-[24px]">
-          
+
           Start Lesson
         </button>
       </div>

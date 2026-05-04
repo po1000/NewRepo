@@ -93,7 +93,6 @@ export function Pronouns() {
               </p>
 
               <div className="bg-white rounded-2xl overflow-hidden shadow-lg">
-                {/* Table Header */}
                 <div className="grid grid-cols-[1fr_1fr_2fr] bg-[#FFE43C] px-4 py-3">
                   <span className="font-inter font-bold text-[13px] text-[#372213]">Spanish</span>
                   <span className="font-inter font-bold text-[13px] text-[#372213]">English</span>
@@ -122,7 +121,6 @@ export function Pronouns() {
             </div>
           ))}
 
-          {/* Tips Section */}
           <div className="mt-12 mb-8">
             <h2 className="font-inter font-bold text-[20px] text-white mb-4">
               Key Tips

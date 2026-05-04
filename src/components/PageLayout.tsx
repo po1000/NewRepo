@@ -22,7 +22,6 @@ export function PageLayout({ children, stats, backgroundColor = '#FFF799', navOv
 
   return (
     <div className="min-h-screen font-inter" style={{ backgroundColor }}>
-      {/* Top Bar */}
       <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between max-w-[900px] mx-auto relative z-50">
         <UserProfile
           username={username}
@@ -39,7 +38,6 @@ export function PageLayout({ children, stats, backgroundColor = '#FFF799', navOv
         )}
       </header>
 
-      {/* Navigation */}
       <div className={navOverrideClass || ''}>
         <Navigation
           onLearnLessonsClick={() => navigate('/dashboard')}

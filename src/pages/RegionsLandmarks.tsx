@@ -149,13 +149,10 @@ export function RegionsLandmarks({
   const activeData = activeView ? DETAIL_DATA[activeView] : null;
   return (
     <PageLayout backgroundColor="#E2F4FF">
-      {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
-      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
         <div className="max-w-[690px] mx-auto mt-12 pb-20">
-          {/* Header Section */}
           <div className="bg-white rounded-t-[12px] border border-[#DBEAFE] p-6">
             <h1 className="font-inter font-bold text-[20.4px] leading-[32px] text-[#372213] mb-2">
               Regions & Landmarks
@@ -167,9 +164,7 @@ export function RegionsLandmarks({
             </p>
           </div>
 
-          {/* Content Section */}
           <div className="bg-white rounded-b-[12px] border border-t-0 border-[#E5E7EB] overflow-hidden flex flex-col">
-            {/* Map Area (Always rendered) */}
             <div
               className="relative w-full overflow-hidden"
               style={{
@@ -185,7 +180,6 @@ export function RegionsLandmarks({
                 className="absolute inset-0 w-full h-full object-cover" />
 
 
-              {/* Interactive clickable areas with hand-drawn circle hover effect */}
               {CLICKABLE_ITEMS.map((item) =>
               <motion.button
                 key={item.id}
@@ -205,7 +199,6 @@ export function RegionsLandmarks({
                 }}
                 aria-label={item.name}>
 
-                  {/* Hand-drawn circle image indicator */}
                   <AnimatePresence>
                     {(hoveredItem === item.id || activeView === item.id) &&
                   <motion.img
@@ -235,7 +228,6 @@ export function RegionsLandmarks({
                 </motion.button>
               )}
 
-              {/* Small Overlay ON TOP of the map */}
               <AnimatePresence>
                 {activeView && !showStreetView && activeData &&
                 <motion.div
@@ -302,7 +294,6 @@ export function RegionsLandmarks({
                 }
               </AnimatePresence>
 
-              {/* Full Map Takeover for Street View */}
               <AnimatePresence>
                 {showStreetView && activeData?.type === 'landmark' &&
                 <motion.div
@@ -335,7 +326,6 @@ export function RegionsLandmarks({
               </AnimatePresence>
             </div>
 
-            {/* Description Area below map */}
             <AnimatePresence>
               {activeView && activeData &&
               <motion.div

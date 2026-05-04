@@ -179,12 +179,9 @@ export function History() {
   };
   return (
     <PageLayout backgroundColor="#E2F4FF">
-      {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
-      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
-        {/* Header Section */}
         <div className="max-w-[690px] mx-auto mt-12 mb-3">
           <div className="bg-white rounded-[12px] border border-[#DBEAFE] p-6 shadow-sm">
             <h1 className="font-inter font-bold text-[22px] leading-[32px] text-[#372213] mb-2">
@@ -198,7 +195,6 @@ export function History() {
           </div>
         </div>
 
-        {/* Drag to explore hint */}
         <div className="max-w-[690px] mx-auto mb-0 flex items-center justify-center">
           <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-5 py-2 rounded-full shadow-sm text-[#372213] font-inter font-medium text-[13px]">
             <ChevronLeftIcon className="w-4 h-4 animate-pulse" />
@@ -208,9 +204,7 @@ export function History() {
         </div>
       </div>
 
-      {/* Timeline Scroll Area */}
       <div className="w-full pb-20 relative">
-        {/* Scroll Container */}
         <div
           ref={scrollRef}
           className={`w-full overflow-x-auto overflow-y-hidden hide-scrollbar select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
@@ -223,7 +217,6 @@ export function History() {
           }}>
 
           <div className="flex items-center min-w-max px-4 sm:px-[calc(50vw-345px)] pt-4 pb-8 relative">
-            {/* Connecting Line (gradient) */}
             <div
               className="absolute top-1/2 left-0 right-0 h-1.5 -translate-y-1/2 z-0 rounded-full"
               style={{
@@ -232,16 +225,13 @@ export function History() {
               }} />
 
 
-            {/* Timeline Items */}
             <div className="flex items-center gap-6 relative z-10">
               {TIMELINE_DATA.map((item, index) =>
               <div
                 key={item.id}
                 className="relative flex flex-col items-center">
 
-                  {/* Timeline Node removed */}
 
-                  {/* Card */}
                   <div
                   className={`w-[240px] sm:w-[280px] rounded-xl overflow-hidden flex flex-col shadow-lg border-2 ${item.isFunFact ? 'my-0' : index % 2 === 0 ? 'mb-[260px]' : 'mt-[260px]'}`}
                   style={{
@@ -249,7 +239,6 @@ export function History() {
                     borderColor: item.borderColor
                   }}>
 
-                    {/* Fun Fact Header */}
                     {item.isFunFact &&
                   <div
                     className="px-4 py-2 flex items-center gap-2"
@@ -264,7 +253,6 @@ export function History() {
                       </div>
                   }
 
-                    {/* Clipart Image */}
                     {!item.isFunFact && item.imageUrl &&
                   <div
                     className="w-full h-[130px] flex items-center justify-center relative"
@@ -289,7 +277,6 @@ export function History() {
                       </div>
                   }
 
-                    {/* Content */}
                     <div className="p-4 flex-1 flex flex-col">
                       <h3
                       className="font-inter font-bold text-[16px] leading-tight mb-2"
@@ -311,7 +298,6 @@ export function History() {
         </div>
       </div>
 
-      {/* Hide scrollbar styles */}
       <style
         dangerouslySetInnerHTML={{
           __html: `

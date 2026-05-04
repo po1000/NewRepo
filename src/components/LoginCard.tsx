@@ -34,7 +34,6 @@ export function LoginCard({ onNavigate }: LoginCardProps) {
       aria-labelledby="login-title"
       className="w-full max-w-[448px] bg-white rounded-xl border border-[#E5E7EB] p-8 flex flex-col gap-8 shadow-sm">
 
-      {/* Header */}
       <div className="text-center flex flex-col gap-1">
         <h1 id="login-title" className="text-[20.4px] font-bold text-[#111827] leading-8">
           Welcome Back
@@ -44,14 +43,12 @@ export function LoginCard({ onNavigate }: LoginCardProps) {
         </p>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-[13px] px-4 py-3 rounded-lg" role="alert">
           {error}
         </div>
       )}
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <label htmlFor="login-email" className="block text-[11.9px] font-medium text-[#374151] leading-5 mb-2">
@@ -108,7 +105,6 @@ export function LoginCard({ onNavigate }: LoginCardProps) {
         </button>
       </form>
 
-      {/* Footer */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-row items-center justify-center gap-4">
           <span className="text-[13.6px] text-[#374151] leading-6">Or log in with:</span>

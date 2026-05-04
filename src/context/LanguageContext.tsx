@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 type Language = 'en' | 'es';
 
 const translations: Record<string, Record<Language, string>> = {
-  // Navigation
   'nav.learn': { en: 'Learn', es: 'Aprender' },
   'nav.lessons': { en: 'Lessons', es: 'Lecciones' },
   'nav.speakAndWrite': { en: 'Speaking and Writing', es: 'Hablar y Escribir' },
@@ -11,12 +10,10 @@ const translations: Record<string, Record<Language, string>> = {
   'nav.culture': { en: 'Culture', es: 'Cultura' },
   'nav.community': { en: 'Community', es: 'Comunidad' },
 
-  // Dashboard
   'dashboard.title': { en: 'Dashboard', es: 'Panel' },
   'dashboard.startLesson': { en: 'Start Lesson', es: 'Iniciar Lección' },
   'dashboard.wordsAndPhrases': { en: 'Words & Phrases', es: 'Palabras y Frases' },
 
-  // Lesson flow
   'lesson.flashcard': { en: 'Flashcard', es: 'Tarjeta' },
   'lesson.quiz': { en: 'Quiz', es: 'Prueba' },
   'lesson.listening': { en: 'Listening', es: 'Escuchar' },
@@ -45,14 +42,12 @@ const translations: Record<string, Record<Language, string>> = {
   'lesson.wordsProgressed': { en: 'Words Progressed', es: 'Palabras Progresadas' },
   'lesson.loading': { en: 'Loading lessons...', es: 'Cargando lecciones...' },
 
-  // Lesson statuses
   'status.notSeen': { en: 'Not Seen', es: 'No Visto' },
   'status.seen': { en: 'Seen', es: 'Visto' },
   'status.learning': { en: 'Learning', es: 'Aprendiendo' },
   'status.reinforced': { en: 'Reinforced', es: 'Reforzado' },
   'status.learnt': { en: 'Learnt', es: 'Aprendido' },
 
-  // General UI
   'ui.signOut': { en: 'Sign Out', es: 'Cerrar Sesión' },
   'ui.search': { en: 'Search', es: 'Buscar' },
   'ui.loading': { en: 'Loading...', es: 'Cargando...' },
@@ -66,7 +61,6 @@ const translations: Record<string, Record<Language, string>> = {
   'ui.completed': { en: 'Completed!', es: '¡Completado!' },
   'ui.earned': { en: 'Earned', es: 'Ganado' },
 
-  // Page headings
   'page.grammar': { en: 'Grammar', es: 'Gramática' },
   'page.culture': { en: 'Culture Area', es: 'Área Cultural' },
   'page.cultureSubtitle': { en: 'Discover the richness of Spanish traditions', es: 'Descubre la riqueza de las tradiciones españolas' },
@@ -75,7 +69,6 @@ const translations: Record<string, Record<Language, string>> = {
   'page.communitySubtitle': { en: 'Ask questions, share tips, and learn together with fellow Spanish learners', es: 'Haz preguntas, comparte consejos y aprende junto con otros estudiantes de español' },
   'page.startPractice': { en: 'Start Practice', es: 'Iniciar Práctica' },
 
-  // Grammar page
   'grammar.conjugations': { en: 'Conjugations', es: 'Conjugaciones' },
   'grammar.topics': { en: 'Topics', es: 'Temas' },
   'grammar.searchTopics': { en: 'Search topics...', es: 'Buscar temas...' },
@@ -85,21 +78,17 @@ const translations: Record<string, Record<Language, string>> = {
   'grammar.pronounsCol': { en: 'Pronouns', es: 'Pronombres' },
   'grammar.searchVerbs': { en: 'Search verbs...', es: 'Buscar verbos...' },
 
-  // Continue Lesson card
   'resume.continueLesson': { en: 'Continue Lesson', es: 'Continuar Lección' },
   'resume.xpReward': { en: 'XP Reward', es: 'Recompensa XP' },
   'resume.vocab': { en: 'Vocab:', es: 'Vocab:' },
 
-  // SubunitDetailModal
   'modal.goal': { en: 'Goal:', es: 'Objetivo:' },
   'modal.noGrammarHints': { en: 'No grammar hints yet for this subunit.', es: 'Aún no hay consejos gramaticales para esta sublección.' },
   'modal.loadingTerms': { en: 'Loading terms...', es: 'Cargando términos...' },
   'modal.noTerms': { en: 'No terms found.', es: 'No se encontraron términos.' },
 
-  // Badge labels
   'badge.completed': { en: 'Completed', es: 'Completado' },
 
-  // Speak & Write
   'speakWrite.title': { en: 'Speak & Write', es: 'Hablar y Escribir' },
   'speakWrite.context': { en: 'Context', es: 'Contexto' },
   'speakWrite.help': { en: 'Help', es: 'Ayuda' },
@@ -109,7 +98,6 @@ const translations: Record<string, Record<Language, string>> = {
   'speakWrite.tapToSpeak': { en: 'Tap to speak', es: 'Toca para hablar' },
   'speakWrite.listening': { en: 'Listening...', es: 'Escuchando...' },
 
-  // Roleplay complete
   'roleplay.complete': { en: 'Roleplay Complete!', es: '¡Juego de Roles Completado!' },
   'roleplay.summary': { en: 'Summary', es: 'Resumen' },
   'roleplay.reviewConversation': { en: 'Review Conversation', es: 'Revisar Conversación' },
@@ -119,57 +107,46 @@ const translations: Record<string, Record<Language, string>> = {
   'roleplay.xpEarned': { en: 'XP Earned', es: 'XP Ganado' },
   'roleplay.duration': { en: 'Duration', es: 'Duración' },
 
-  // Grammar
   'grammar.title': { en: 'Grammar', es: 'Gramática' },
   'grammar.pronouns': { en: 'Pronouns', es: 'Pronombres' },
   'grammar.hints': { en: 'Grammar Hints', es: 'Consejos Gramaticales' },
 
-  // Culture
   'culture.title': { en: 'Culture', es: 'Cultura' },
   'culture.games': { en: 'Games', es: 'Juegos' },
 
-  // Community
   'community.title': { en: 'The Community', es: 'La Comunidad' },
   'community.askQuestion': { en: 'Ask a Question', es: 'Hacer una Pregunta' },
   'community.search': { en: 'Search topics, questions, or grammar rules...', es: 'Buscar temas, preguntas o reglas gramaticales...' },
 
-  // Badges
   'badges.title': { en: 'Badges', es: 'Insignias' },
 
-  // Word Tiles game
   'tiles.title': { en: 'Word Tiles', es: 'Azulejos de Palabras' },
   'tiles.howToPlay': { en: 'How to Play', es: 'Cómo Jugar' },
   'tiles.play': { en: 'Play', es: 'Jugar' },
   'tiles.playAgain': { en: 'Play Again', es: 'Jugar de Nuevo' },
   'tiles.menu': { en: 'Menu', es: 'Menú' },
 
-  // Settings
   'settings.title': { en: 'Settings', es: 'Ajustes' },
   'settings.language': { en: 'Interface Language', es: 'Idioma de Interfaz' },
   'settings.instructions': { en: 'Show Instructions', es: 'Mostrar Instrucciones' },
   'settings.instructionsHint': { en: 'Toggle off to hide helpful tips on all pages. You can re-enable this anytime in Settings.', es: 'Desactiva para ocultar consejos útiles en todas las páginas. Puedes reactivar esto en cualquier momento en Ajustes.' },
 
-  // CEFR Levels
   'cefr.Beginner': { en: 'Beginner', es: 'Principiante' },
   'cefr.Elementary': { en: 'Elementary', es: 'Elemental' },
   'cefr.Pre-Intermediate': { en: 'Pre-Intermediate', es: 'Pre-Intermedio' },
 
-  // Structural labels
   'label.unit': { en: 'Unit', es: 'Unidad' },
 
-  // A1 Unit titles
   'unit.First Impressions': { en: 'First Impressions', es: 'Primeras Impresiones' },
   'unit.Asking for Help': { en: 'Asking for Help', es: 'Pidiendo Ayuda' },
   'unit.Getting What You Need': { en: 'Getting What You Need', es: 'Consiguiendo Lo Que Necesitas' },
   'unit.Getting Around': { en: 'Getting Around', es: 'Moviéndote' },
 
-  // A2 Unit titles
   'unit.Preferences & Who You Know': { en: 'Preferences & Who You Know', es: 'Preferencias y a Quién Conoces' },
   'unit.Your Routine': { en: 'Your Routine', es: 'Tu Rutina' },
   'unit.Plans and The Past': { en: 'Plans and The Past', es: 'Planes y el Pasado' },
   'unit.Life Admin': { en: 'Life Admin', es: 'Trámites' },
 
-  // A1 Subunit titles
   'sub.Hola, How\'s It Going?': { en: 'Hola, How\'s It Going?', es: '¡Hola! ¿Cómo te va?' },
   'sub.Putting Names to Faces': { en: 'Putting Names to Faces', es: 'Poniendo Nombres a las Caras' },
   'sub.Lost in Translation': { en: 'Lost in Translation', es: 'Perdido en la Traducción' },
@@ -177,7 +154,6 @@ const translations: Record<string, Record<Language, string>> = {
   'sub.Day at the Café': { en: 'Day at the Café', es: 'Un Día en el Café' },
   'sub.Map Mode': { en: 'Map Mode', es: 'Modo Mapa' },
 
-  // A2 Subunit titles
   'sub.Relative Truths: Family': { en: 'Relative Truths: Family', es: 'Verdades Relativas: Familia' },
   'sub.Clock In, Clock Out': { en: 'Clock In, Clock Out', es: 'Fichar Entrada, Fichar Salida' },
   'sub.Last Weekend': { en: 'Last Weekend', es: 'El Fin de Semana Pasado' },
@@ -186,7 +162,6 @@ const translations: Record<string, Record<Language, string>> = {
   'sub.Fill Me In': { en: 'Fill Me In', es: 'Ponme al Día' },
   'sub.Tap and Go': { en: 'Tap and Go', es: 'Toca y Avanza' },
 
-  // Instructions / helper text
   'instructions.dashboard': { en: 'Tap any lesson tile to preview its vocabulary, then hit "Start Lesson" to begin. Lessons and units can be taken in any order!', es: '¡Toca cualquier lección para ver su vocabulario, luego presiona "Iniciar Lección" para empezar. ¡Las lecciones y unidades se pueden tomar en cualquier orden!' },
   'instructions.speakWrite': { en: 'Choose a scenario and practice having a real conversation in Spanish. Tap the microphone to speak, or type your response. The AI will respond naturally and help you improve.', es: 'Elige un escenario y practica una conversación real en español. Toca el micrófono para hablar o escribe tu respuesta. La IA responderá naturalmente y te ayudará a mejorar.' },
   'instructions.grammar': { en: 'Browse grammar topics organized by level. Tap any topic to see rules, examples, and conjugation tables. Practice what you learn in the lessons!', es: 'Explora temas de gramática organizados por nivel. Toca cualquier tema para ver reglas, ejemplos y tablas de conjugación. ¡Practica lo que aprendes en las lecciones!' },

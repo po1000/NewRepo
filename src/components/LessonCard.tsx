@@ -35,23 +35,21 @@ export function LessonCard({
         </div>
       </div>
 
-      {/* Progress Bar */}
       <div
         className="w-full h-2 bg-[#EBEBEB] rounded-full overflow-hidden"
         role="progressbar"
         aria-valuenow={progressPercent}
         aria-valuemin={0}
         aria-valuemax={100}>
-        
+
         <div
           className="h-full bg-[#FF4D01] rounded-full transition-all duration-500 ease-in-out"
           style={{
             width: `${progressPercent}%`
           }} />
-        
+
       </div>
 
-      {/* CTA Button */}
       <button className="flex flex-row items-center justify-center gap-2 w-full py-3 bg-[#FF4D01] hover:bg-[#e64500] transition-colors rounded-xl text-white font-inter font-bold text-[13.6px] leading-[24px]">
         <Play className="w-5 h-5 fill-current" aria-hidden="true" />
         Continue Lesson

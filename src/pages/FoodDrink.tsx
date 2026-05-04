@@ -203,13 +203,10 @@ export function FoodDrink({
   };
   return (
     <PageLayout backgroundColor="#E2F4FF">
-      {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
-      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
         <div className="max-w-[690px] mx-auto mt-12 pb-20">
-          {/* Header Section */}
           <div className="bg-white rounded-t-[12px] border border-[#DBEAFE] p-6">
             <h1 className="font-inter font-bold text-[20.4px] leading-[32px] text-[#372213] mb-2">
               Food & Drink
@@ -221,14 +218,12 @@ export function FoodDrink({
             </p>
           </div>
 
-          {/* Menu Section */}
           <div className="bg-[#FFFDF8] rounded-b-[12px] border border-t-0 border-[#E5E7EB] overflow-hidden p-6 sm:p-8">
             {MENU_DATA.map((section, sIndex) =>
             <div
               key={section.title}
               className={sIndex > 0 ? 'mt-12' : 'mt-2'}>
 
-                {/* Section Header */}
                 <div className="flex items-center justify-center gap-4 mb-8">
                   <div className="h-[1px] flex-1 bg-[#D1D5DB]" />
                   <h2 className="font-serif font-bold text-[22px] tracking-widest text-[#92400E]">
@@ -237,7 +232,6 @@ export function FoodDrink({
                   <div className="h-[1px] flex-1 bg-[#D1D5DB]" />
                 </div>
 
-                {/* Section Items */}
                 <div className="flex flex-col gap-6">
                   {section.items.map((item) =>
                 <div
@@ -246,7 +240,6 @@ export function FoodDrink({
                   onClick={() => item.videoUrl && toggleItem(item.id)}>
 
                       <div className="flex gap-4 p-4">
-                        {/* Food Image */}
                         <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] shrink-0 rounded-lg overflow-hidden relative">
                           <img
                         src={item.imageUrl}
@@ -260,7 +253,6 @@ export function FoodDrink({
                       }
                         </div>
 
-                        {/* Item Details */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
                           <div className="flex items-start justify-between gap-2">
                             <h3 className="font-serif font-bold text-[16px] sm:text-[18px] text-[#372213] leading-tight">
@@ -299,7 +291,6 @@ export function FoodDrink({
                         </div>
                       </div>
 
-                      {/* Expandable Video & Recipe Section */}
                       <AnimatePresence>
                         {item.videoUrl && expandedItems[item.id] &&
                     <motion.div
@@ -318,7 +309,6 @@ export function FoodDrink({
                       className="overflow-hidden border-t border-[#FEF3C7]">
 
                             <div className="p-4 bg-[#FFFBEB] rounded-b-xl">
-                              {/* Video Embed */}
                               <div className="w-full aspect-video bg-black rounded-lg overflow-hidden mb-4">
                                 <iframe
                             src={item.videoUrl}
@@ -329,7 +319,6 @@ export function FoodDrink({
 
                               </div>
 
-                              {/* Ingredients Toggle */}
                               {item.ingredients &&
                         <div className="bg-white rounded-lg border border-[#FDE68A] overflow-hidden">
                                   <button

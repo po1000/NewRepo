@@ -54,7 +54,6 @@ interface GrammarHint {
 
 type LessonMode = 'flashcard' | 'multi_choice' | 'listen_write' | 'listen_speak';
 
-// English = royal blue, Spanish = blood orange
 const ENGLISH_COLOR = '#1D4ED8';
 const SPANISH_COLOR = '#DC2626';
 
@@ -88,14 +87,11 @@ function speakEnglish(text: string) {
   window.speechSynthesis.speak(utterance);
 }
 
-// XP constants
 const XP_MULTI_CHOICE = 5;
 const XP_FREE_TYPE = 10;
 
-// Max NEW terms to introduce before cycling quizzes
 const MAX_NEW_TERMS_PER_SESSION = 3;
 
-// Sound effects for correct/incorrect answers (Web Audio API — no external files)
 function playCorrectSound() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -106,9 +102,8 @@ function playCorrectSound() {
     osc.type = 'sine';
     gain.gain.setValueAtTime(0.18, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    // Two-tone ascending chime
-    osc.frequency.setValueAtTime(523, ctx.currentTime);       // C5
-    osc.frequency.setValueAtTime(659, ctx.currentTime + 0.12); // E5
+    osc.frequency.setValueAtTime(523, ctx.currentTime);
+    osc.frequency.setValueAtTime(659, ctx.currentTime + 0.12);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.35);
   } catch {}
@@ -124,7 +119,6 @@ function playIncorrectSound() {
     osc.type = 'sine';
     gain.gain.setValueAtTime(0.18, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-    // Descending buzz
     osc.frequency.setValueAtTime(350, ctx.currentTime);
     osc.frequency.setValueAtTime(220, ctx.currentTime + 0.15);
     osc.start(ctx.currentTime);
@@ -132,7 +126,6 @@ function playIncorrectSound() {
   } catch {}
 }
 
-// Shuffle array helper
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -142,7 +135,6 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// Session state persistence key
 function sessionKey(subunitId: number, userId: string) {
   return `lesson_session_${userId}_${subunitId}`;
 }
@@ -173,7 +165,6 @@ export function LessonFlow() {
   const [reportText, setReportText] = useState('');
   const [reportSent, setReportSent] = useState(false);
 
-  // Question mode state
   const [mode, setMode] = useState<LessonMode>('flashcard');
   const [newFlashcardCount, setNewFlashcardCount] = useState(0);
   const [mcOptions, setMcOptions] = useState<{ termId: number; text: string }[]>([]);
@@ -182,13 +173,11 @@ export function LessonFlow() {
   const [mcAnswered, setMcAnswered] = useState(false);
   const [mcDirection, setMcDirection] = useState<'es_to_en' | 'en_to_es'>('es_to_en');
 
-  // Listen & Write state
   const [lwAnswer, setLwAnswer] = useState('');
   const [lwSubmitted, setLwSubmitted] = useState(false);
   const [lwCorrect, setLwCorrect] = useState(false);
   const [lwTargetId, setLwTargetId] = useState<number | null>(null);
 
-  // Listen & Speak state
   const [lsRecording, setLsRecording] = useState(false);
   const [lsTranscript, setLsTranscript] = useState('');
   const [lsSubmitted, setLsSubmitted] = useState(false);
@@ -196,20 +185,16 @@ export function LessonFlow() {
   const [lsTargetId, setLsTargetId] = useState<number | null>(null);
   const lsRecogRef = useRef<any>(null);
 
-  // Listen & Write direction
   const [lwDirection, setLwDirection] = useState<'hear_es_type_en' | 'hear_en_type_es'>('hear_es_type_en');
 
-  // Waveform visualization refs
   const waveformRef = useRef<HTMLDivElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number>(0);
 
-  // Quiz counter for session cap
   const totalQuizzesRef = useRef(0);
 
-  // XP & lesson completion state
   const [sessionXp, setSessionXp] = useState(0);
   const [xpPopup, setXpPopup] = useState<{ amount: number; key: number } | null>(null);
   const [lessonComplete, setLessonComplete] = useState(false);
@@ -217,7 +202,6 @@ export function LessonFlow() {
   const [correctAnswersThisSession, setCorrectAnswersThisSession] = useState(0);
   const [streakUpdated, setStreakUpdated] = useState(false);
   const [newStreak, setNewStreak] = useState(0);
-  // Track status changes for "graduated words" display on lesson complete
   const initialStatusRef = useRef<Map<number, string>>(new Map());
   const [graduatedWords, setGraduatedWords] = useState<{ term: Term; from: string; to: string }[]>([]);
   const [showCompletionDelay, setShowCompletionDelay] = useState(false);
@@ -227,7 +211,6 @@ export function LessonFlow() {
   const initialModeApplied = useRef(false);
   const lessonCompletionHandled = useRef(false);
 
-  // Load terms + progress, build queue (resume if possible)
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
@@ -238,7 +221,6 @@ export function LessonFlow() {
         return;
       }
 
-      // Fetch terms for subunit
       const { data: subunitTerms } = await supabase
         .from('subunit_terms')
         .select('term_id, sort_order, terms ( term_id, spanish_text, english_text, part_of_speech, image_url, example_sentence_es, example_sentence_en )')
@@ -269,10 +251,8 @@ export function LessonFlow() {
 
       setTermsMap(tMap);
 
-      // Load existing progress
       const pMap = await loadTermProgress(user.id, termIds);
 
-      // Apply memory decay
       for (const [tid, tp] of pMap) {
         if (tp.status === 'reinforced' || tp.status === 'learnt') {
           const { displayStatus, strength } = applyDecay(tp.status, tp.sm2);
@@ -286,25 +266,21 @@ export function LessonFlow() {
 
       setProgressMap(pMap);
 
-      // Capture initial statuses for graduated-words tracking
       for (const [tid, tp] of pMap) {
         initialStatusRef.current.set(tid, tp.status);
       }
-      // Also capture not_seen for terms that have no progress yet
       for (const tid of termIds) {
         if (!initialStatusRef.current.has(tid)) {
           initialStatusRef.current.set(tid, 'not_seen');
         }
       }
 
-      // Try to restore saved session
       const savedRaw = localStorage.getItem(sessionKey(state.subunitId, user.id));
       let restored = false;
 
       if (savedRaw) {
         try {
           const saved: SavedSession = JSON.parse(savedRaw);
-          // Validate saved queue still has valid term IDs
           const validQueue = saved.queue.filter(id => tMap.has(id));
           if (validQueue.length > 0 && saved.queueIndex < validQueue.length) {
             setQueue(validQueue);
@@ -313,7 +289,6 @@ export function LessonFlow() {
             restored = true;
           }
         } catch {
-          // Invalid saved data, start fresh
         }
       }
 
@@ -331,7 +306,6 @@ export function LessonFlow() {
         setQueue(limitedQueue);
       }
 
-      // Save last lesson info for "Continue Lesson" card on dashboard
       const vocabPreview = Array.from(tMap.values()).slice(0, 4).map(t => t.spanish_text).join(', ');
       localStorage.setItem(`last_lesson_${user.id}`, JSON.stringify({
         subunitId: state.subunitId,
@@ -352,16 +326,12 @@ export function LessonFlow() {
     }
   }, [state.subunitId, user]);
 
-  // Save session state whenever queue position changes
   useEffect(() => {
     if (!state.subunitId || !user || loading || queue.length === 0) return;
     const data: SavedSession = { queueIndex, queue, newFlashcardCount };
     localStorage.setItem(sessionKey(state.subunitId, user.id), JSON.stringify(data));
   }, [queueIndex, queue, newFlashcardCount, state.subunitId, user, loading]);
 
-  // One-shot: when the queue is first ready, if the starting term is already
-  // seen (or beyond), open with a quiz instead of a flashcard. Flashcards
-  // should only ever be shown for brand-new (not_seen) terms.
   useEffect(() => {
     if (loading || initialModeApplied.current) return;
     if (queue.length === 0 || termsMap.size === 0) return;
@@ -375,12 +345,10 @@ export function LessonFlow() {
     }
   }, [loading, queue, queueIndex, termsMap, progressMap, setupRandomQuiz]);
 
-  // Current term
   const currentTermId = queueIndex < queue.length ? queue[queueIndex] : null;
   const currentTerm = currentTermId ? termsMap.get(currentTermId) || null : null;
   const currentProgress = currentTermId ? progressMap.get(currentTermId) : undefined;
 
-  // Fetch grammar hints for current term
   useEffect(() => {
     if (!currentTermId) return;
 
@@ -401,7 +369,6 @@ export function LessonFlow() {
     setHintsExpanded(false);
   }, [currentTermId]);
 
-  // Gather all seen/learning terms for MC distractors
   const seenTermIds = useMemo(() => {
     const ids: number[] = [];
     for (const [tid, tp] of progressMap) {
@@ -410,26 +377,21 @@ export function LessonFlow() {
     return ids;
   }, [progressMap]);
 
-  // Progress bar — based on queue position so it reaches 100% when lesson ends
   const progressPercent = queue.length > 0
     ? Math.min((queueIndex / queue.length) * 100, 100)
     : 0;
 
-  // ── Setup multiple choice question ──────────────────────────
 
   const setupMultiChoice = useCallback((targetTermId: number) => {
     const targetTerm = termsMap.get(targetTermId);
     if (!targetTerm) return;
 
-    // Pick direction randomly
     const dir = Math.random() < 0.5 ? 'es_to_en' : 'en_to_es';
     setMcDirection(dir);
 
-    // Get distractor pool (all terms in this subunit)
     const pool = Array.from(termsMap.keys()).filter(id => id !== targetTermId);
     const distractorIds = shuffle(pool).slice(0, 3);
 
-    // Build options
     const options = [targetTermId, ...distractorIds].map(id => {
       const t = termsMap.get(id)!;
       return {
@@ -445,7 +407,6 @@ export function LessonFlow() {
     setMode('multi_choice');
   }, [termsMap, seenTermIds]);
 
-  // ── Setup Listen & Write (bidirectional) ──────────────────
   const setupListenWrite = useCallback((targetTermId: number) => {
     setLwTargetId(targetTermId);
     setLwAnswer('');
@@ -466,7 +427,6 @@ export function LessonFlow() {
     }
   }, [termsMap]);
 
-  // ── Setup Translate & Speak (English text → speak Spanish) ──
   const setupListenSpeak = useCallback((targetTermId: number) => {
     setLsTargetId(targetTermId);
     setLsTranscript('');
@@ -476,9 +436,7 @@ export function LessonFlow() {
     setMode('listen_speak');
   }, []);
 
-  // ── Handlers ──────────────────────────────────────────────
 
-  // Helper: pick a random quiz type for a term
   const setupRandomQuiz = useCallback((termId: number) => {
     const roll = Math.random();
     if (roll < 0.5) setupMultiChoice(termId);
@@ -486,7 +444,6 @@ export function LessonFlow() {
     else setupListenSpeak(termId);
   }, [setupMultiChoice, setupListenWrite, setupListenSpeak]);
 
-  // Helper: finish the lesson
   const finishLesson = useCallback(() => {
     if (state.subunitId && user) {
       localStorage.removeItem(sessionKey(state.subunitId, user.id));
@@ -518,7 +475,6 @@ export function LessonFlow() {
   }, [state.subunitId, user, progressMap, termsMap]);
 
   const advanceQueue = useCallback(() => {
-    // 1) After every new flashcard, inject a quiz WITHOUT advancing queueIndex
     if (newFlashcardCount >= 1 && seenTermIds.length >= 1) {
       const quizCandidates = seenTermIds.filter(id => {
         const tp = progressMap.get(id);
@@ -533,7 +489,6 @@ export function LessonFlow() {
       }
     }
 
-    // 2) After max new terms, force quizzes WITHOUT advancing
     if (termsSeenThisSession >= MAX_NEW_TERMS_PER_SESSION && seenTermIds.length >= 1) {
       const allReinforced = seenTermIds.every(id => {
         const tp = progressMap.get(id);
@@ -556,13 +511,11 @@ export function LessonFlow() {
       return;
     }
 
-    // 3) End-of-queue check
     if (queueIndex + 1 >= queue.length) {
       finishLesson();
       return;
     }
 
-    // 4) Normal advance — flashcard for new terms, quiz for any already-seen term
     const nextIndex = queueIndex + 1;
     const nextTermId = queue[nextIndex];
     const nextProgress = progressMap.get(nextTermId);
@@ -582,9 +535,6 @@ export function LessonFlow() {
     }
   }, [queueIndex, queue, progressMap, newFlashcardCount, seenTermIds, setupRandomQuiz, termsSeenThisSession, finishLesson]);
 
-  // "Got it!" / "Next" — flashcard handler
-  // First encounter: only mark as seen (no processAnswer — don't advance status yet)
-  // Already seen: score q=4 as flashcard review
   const handleNext = useCallback(async () => {
     if (!currentTerm || !user) {
       navigate('/dashboard');
@@ -594,7 +544,6 @@ export function LessonFlow() {
     const isNew = !currentProgress || currentProgress.status === 'not_seen';
 
     if (isNew) {
-      // First time seeing this term — only mark as seen, do NOT score
       await markSeen(user.id, currentTerm.term_id);
       setProgressMap(prev => {
         const next = new Map(prev);
@@ -617,7 +566,6 @@ export function LessonFlow() {
       setNewFlashcardCount(prev => prev + 1);
       setTermsSeenThisSession(prev => prev + 1);
     } else {
-      // Already-seen term — score as flashcard review (q=4)
       const tp = progressMap.get(currentTerm.term_id);
       if (tp) {
         const result = processAnswer(tp.status, tp.sm2, 4, 'flashcard', false);
@@ -641,7 +589,6 @@ export function LessonFlow() {
     advanceQueue();
   }, [currentTerm, currentProgress, user, progressMap, queueIndex, advanceQueue]);
 
-  // Thumbs up → mark as known
   const handleKnown = useCallback(async () => {
     if (!currentTerm || !user) return;
 
@@ -667,7 +614,6 @@ export function LessonFlow() {
     advanceQueue();
   }, [currentTerm, user, progressMap, advanceQueue]);
 
-  // Multiple choice answer — quiz the term that mcCorrectId points to
   const handleMcSelect = useCallback(async (selectedTermId: number) => {
     if (mcAnswered || !mcCorrectId || !user) return;
 
@@ -677,7 +623,6 @@ export function LessonFlow() {
     const correct = selectedTermId === mcCorrectId;
     const q = multiChoiceQuality(correct, false);
 
-    // Process answer for the QUIZZED term (mcCorrectId), not necessarily currentTerm
     const quizzedTermId = mcCorrectId;
     const tp = progressMap.get(quizzedTermId);
     if (tp) {
@@ -712,7 +657,6 @@ export function LessonFlow() {
     advanceQueue();
   }, [advanceQueue]);
 
-  // ── Listen & Write handler (bidirectional) ──────────────
   const handleLwSubmit = useCallback(async () => {
     if (lwSubmitted || !lwTargetId || !user) return;
     const term = termsMap.get(lwTargetId);
@@ -744,7 +688,6 @@ export function LessonFlow() {
     }
   }, [lwSubmitted, lwTargetId, lwAnswer, user, progressMap, queueIndex, termsMap, lwDirection]);
 
-  // ── Translate & Speak handler ─────────────────────────
   const cleanupAudio = useCallback(() => {
     cancelAnimationFrame(animFrameRef.current);
     if (mediaStreamRef.current) {
@@ -762,7 +705,6 @@ export function LessonFlow() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { alert('Speech recognition not supported. Use Chrome.'); return; }
 
-    // Start media stream for waveform visualization
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
@@ -803,7 +745,6 @@ export function LessonFlow() {
     const expected = norm(term.spanish_text);
     const got = norm(lsTranscript);
 
-    // Levenshtein distance for better similarity scoring
     function levenshtein(a: string, b: string): number {
       const m = a.length, n = b.length;
       const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
@@ -842,7 +783,6 @@ export function LessonFlow() {
     }
   }, [lsSubmitted, lsTargetId, lsTranscript, user, progressMap, queueIndex, termsMap]);
 
-  // Waveform animation: directly manipulate DOM bars at 60fps
   useEffect(() => {
     if (!lsRecording || !analyserRef.current || !waveformRef.current) return;
     const analyser = analyserRef.current;
@@ -890,7 +830,6 @@ export function LessonFlow() {
     }, 1500);
   }, [reportText, user, currentTerm, state.subunitId]);
 
-  // Handle lesson completion: update XP, streak, lessons_completed in DB
   useEffect(() => {
     if (!lessonComplete || lessonCompletionHandled.current || !user) return;
     lessonCompletionHandled.current = true;
@@ -928,7 +867,6 @@ export function LessonFlow() {
       const newTotalXp = currentXp + sessionXp;
       const newLessonsCompleted = currentLessons + 1;
 
-      // Save stats: try UPDATE first; if no row exists, INSERT
       const statsPayload = {
         total_xp: newTotalXp,
         lessons_completed: newLessonsCompleted,
@@ -960,7 +898,6 @@ export function LessonFlow() {
         if (xpErr) console.error('XP event save error:', xpErr);
       }
 
-      // Check and award badges
       const { count: correctAnswerCount } = await supabase
         .from('user_term_progress')
         .select('term_id', { count: 'exact', head: true })
@@ -1000,7 +937,6 @@ export function LessonFlow() {
     completeLesson();
   }, [lessonComplete, user, sessionXp, state.subunitId]);
 
-  // ── Render ────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -1011,7 +947,6 @@ export function LessonFlow() {
     );
   }
 
-  // Delay screen — progress bar at 100% with a short pause
   if (showCompletionDelay) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center font-inter"
@@ -1028,7 +963,6 @@ export function LessonFlow() {
     );
   }
 
-  // End of lesson screen
   if (lessonComplete || !currentTerm) {
     const STATUS_LABELS: Record<string, string> = {
       not_seen: 'Not Seen',
@@ -1041,7 +975,6 @@ export function LessonFlow() {
     return (
       <div className="min-h-screen w-full flex items-center justify-center font-inter overflow-y-auto py-8 relative"
         style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
-        {/* Confetti */}
         {confettiPieces.length > 0 && (
           <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
             {confettiPieces.map((p) => (
@@ -1072,7 +1005,6 @@ export function LessonFlow() {
         )}
 
         <div className="w-full max-w-[420px] mx-4">
-          {/* Trophy */}
           <div className="flex justify-center mb-6">
             <div className="w-24 h-24 bg-[#FFFDE6] rounded-full flex items-center justify-center shadow-lg">
               <Trophy className="w-12 h-12 text-[#FF4D01]" />
@@ -1086,7 +1018,6 @@ export function LessonFlow() {
             {state.title || 'Great work!'}
           </p>
 
-          {/* Stats cards — white for contrast */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-white rounded-xl p-4 flex flex-col items-center shadow-md border border-[#E5E7EB]">
               <Zap className="w-7 h-7 text-[#16A34A] fill-[#16A34A] mb-1" />
@@ -1112,7 +1043,6 @@ export function LessonFlow() {
             </div>
           </div>
 
-          {/* Graduated Words — only words that changed status */}
           {graduatedWords.length > 0 && (
             <div className="bg-white rounded-xl p-4 mb-6 shadow-md border border-[#E5E7EB]">
               <h3 className="text-[#372213] font-bold text-[15px] mb-3">{t('lesson.wordsProgressed')}</h3>
@@ -1134,7 +1064,6 @@ export function LessonFlow() {
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="flex gap-3">
             <button onClick={() => navigate('/dashboard')}
               className="flex-1 py-4 bg-white rounded-xl shadow-md border border-[#E5E7EB] text-[#372213] font-bold text-[15px] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
@@ -1142,7 +1071,6 @@ export function LessonFlow() {
               {t('lesson.home')}
             </button>
             <button onClick={() => {
-              // Reset state for next lesson batch
               setLessonComplete(false);
               lessonCompletionHandled.current = false;
               setSessionXp(0);
@@ -1152,7 +1080,6 @@ export function LessonFlow() {
               setGraduatedWords([]);
               setQueueIndex(0);
 
-              // Rebuild queue from current progress (limited to 3 new terms)
               const termIds = Array.from(termsMap.keys());
               const newQueue = buildSessionQueue(termIds, progressMap);
               let nextUnseenCount = 0;
@@ -1167,8 +1094,6 @@ export function LessonFlow() {
               setQueue(limitedNewQueue);
               totalQuizzesRef.current = 0;
 
-              // Open the next batch with the right mode — quiz if the first
-              // term has already been seen, otherwise flashcard.
               const firstId = limitedNewQueue[0];
               const firstTp = firstId ? progressMap.get(firstId) : undefined;
               if (firstId && firstTp && firstTp.status !== 'not_seen') {
@@ -1178,7 +1103,6 @@ export function LessonFlow() {
                 setMode('flashcard');
               }
 
-              // Re-capture initial statuses from current progress
               initialStatusRef.current = new Map();
               for (const [tid, tp] of progressMap) {
                 initialStatusRef.current.set(tid, tp.status);
@@ -1206,7 +1130,6 @@ export function LessonFlow() {
       style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
 
       <div className="w-full max-w-[684px] min-h-[688px] relative flex flex-col p-8">
-        {/* Top Bar */}
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => {
             navigate('/dashboard');
@@ -1222,7 +1145,6 @@ export function LessonFlow() {
           </button>
         </div>
 
-        {/* XP Popup Animation */}
         {xpPopup && (
           <div
             key={xpPopup.key}
@@ -1245,7 +1167,6 @@ export function LessonFlow() {
           }
         `}</style>
 
-        {/* Report Popup */}
         {showReport && (
           <div className="absolute top-20 right-8 w-[280px] bg-[#FFFDE6] rounded-xl p-4 shadow-xl z-50">
             <h3 className="font-bold text-[14px] text-[#372213] mb-2">Report an Issue</h3>
@@ -1265,7 +1186,6 @@ export function LessonFlow() {
           </div>
         )}
 
-        {/* ─── FLASHCARD MODE ─── */}
         {mode === 'flashcard' && (
           <>
             <div className="flex-1 flex flex-col items-center">
@@ -1297,13 +1217,11 @@ export function LessonFlow() {
                   {currentTerm.english_text}
                 </span>
 
-                {/* Thumbs up */}
                 <button onClick={handleKnown} title="I already know this word"
                   className="absolute bottom-0 left-0 w-12 h-10 rounded-tr-2xl rounded-bl-2xl flex items-center justify-center transition-colors bg-[#FF4D01] hover:bg-[#3BBC00]">
                   <ThumbsUp className="w-5 h-5 text-[#FFFDE6]" />
                 </button>
 
-                {/* Turtle */}
                 <button onClick={() => setSlowAudio(!slowAudio)} title={slowAudio ? 'Normal speed' : 'Slow audio'}
                   className={`absolute bottom-0 right-0 w-12 h-10 rounded-tl-2xl rounded-br-2xl flex items-center justify-center transition-colors ${
                     slowAudio ? 'bg-[#3BBC00]' : 'bg-[#FF4D01]'
@@ -1312,7 +1230,6 @@ export function LessonFlow() {
                 </button>
               </div>
 
-              {/* Example Sentence */}
               {(currentTerm.example_sentence_es || currentTerm.example_sentence_en) && (
                 <div className="text-center mb-4">
                   {currentTerm.example_sentence_es && (
@@ -1329,9 +1246,7 @@ export function LessonFlow() {
               )}
             </div>
 
-            {/* Bottom Actions */}
             <div className="flex items-center justify-between mt-8 w-full max-w-[448px] mx-auto">
-              {/* Grammar Hint */}
               <div className="flex-1 mr-4">
                 {grammarHints.length > 0 && (
                   <div>
@@ -1367,7 +1282,6 @@ export function LessonFlow() {
           </>
         )}
 
-        {/* ─── MULTIPLE CHOICE MODE ─── */}
         {mode === 'multi_choice' && mcCorrectId && (() => {
           const quizzedTerm = termsMap.get(mcCorrectId);
           if (!quizzedTerm) return null;
@@ -1379,7 +1293,6 @@ export function LessonFlow() {
               </span>
             </div>
 
-            {/* Question prompt */}
             <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
               <p className="text-[14px] text-[#372213] mb-2">
                 {mcDirection === 'es_to_en' ? 'What does this mean?' : 'How do you say this in Spanish?'}
@@ -1395,7 +1308,6 @@ export function LessonFlow() {
               )}
             </div>
 
-            {/* Options */}
             <div className="w-full max-w-[422px] flex flex-col gap-3 mb-8">
               {mcOptions.map((opt) => {
                 let optClass = 'bg-white/90 border-2 border-white/50 hover:border-[#FF4D01] text-[#372213]';
@@ -1430,7 +1342,6 @@ export function LessonFlow() {
               })}
             </div>
 
-            {/* Feedback + Continue — always show correct answer */}
             {mcAnswered && (
               <div className="flex flex-col items-center gap-3">
                 {mcSelectedId === mcCorrectId ? (
@@ -1460,7 +1371,6 @@ export function LessonFlow() {
           );
         })()}
 
-        {/* ─── LISTEN & WRITE MODE (bidirectional) ─── */}
         {mode === 'listen_write' && lwTargetId && (() => {
           const lwTerm = termsMap.get(lwTargetId);
           if (!lwTerm) return null;
@@ -1534,7 +1444,6 @@ export function LessonFlow() {
           );
         })()}
 
-        {/* ─── TRANSLATE & SPEAK MODE (English text → speak Spanish) ─── */}
         {mode === 'listen_speak' && lsTargetId && (() => {
           const lsTerm = termsMap.get(lsTargetId);
           if (!lsTerm) return null;
@@ -1571,7 +1480,6 @@ export function LessonFlow() {
                 {!lsTranscript ? (
                   lsRecording ? (
                     <div className="flex flex-col items-center gap-3">
-                      {/* Waveform visualization */}
                       <div ref={waveformRef} className="flex items-center justify-center gap-[3px] h-[44px]">
                         {Array.from({ length: 24 }, (_, i) => (
                           <div key={i} className="w-[4px] rounded-full bg-[#FFFDE6]" style={{ height: '4px' }} />

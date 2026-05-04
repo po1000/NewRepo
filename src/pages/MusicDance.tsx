@@ -127,13 +127,10 @@ export function MusicDance() {
   };
   return (
     <PageLayout backgroundColor="#E2F4FF">
-      {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
-      {/* Main Content */}
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
         <div className="max-w-[690px] mx-auto mt-12 pb-20">
-          {/* Header Section */}
           <div className="bg-white rounded-t-[12px] border border-[#DBEAFE] p-6">
             <h1 className="font-inter font-bold text-[20.4px] leading-[32px] text-[#372213] mb-2">
               Music & Dance
@@ -145,7 +142,6 @@ export function MusicDance() {
             </p>
           </div>
 
-          {/* Content Section */}
           <div className="bg-white rounded-b-[12px] border border-t-0 border-[#E5E7EB] overflow-hidden">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
@@ -160,7 +156,6 @@ export function MusicDance() {
                   ease: 'easeInOut'
                 }}>
 
-                {/* Video Container */}
                 <div className="w-full aspect-video bg-[#111827]">
                   <iframe
                     src={entry.videoUrl}
@@ -171,7 +166,6 @@ export function MusicDance() {
 
                 </div>
 
-                {/* Description Section */}
                 <div className="p-6 relative min-h-[220px]">
                   <h2 className="font-inter font-bold text-[17px] leading-[28px] text-[#372213] mb-4">
                     {entry.number}. {entry.title}
@@ -193,7 +187,6 @@ export function MusicDance() {
               </motion.div>
             </AnimatePresence>
 
-            {/* Pagination Controls */}
             <div className="flex items-center justify-between px-6 pb-5 pt-1">
               <button
                 onClick={goPrev}
@@ -204,7 +197,6 @@ export function MusicDance() {
                 Previous
               </button>
 
-              {/* Page dots */}
               <div className="flex items-center gap-2">
                 {DANCE_ENTRIES.map((_, i) =>
                 <button

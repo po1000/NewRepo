@@ -56,11 +56,9 @@ export function Culture() {
 
   return (
     <PageLayout backgroundColor="#E2F4FF">
-      {/* Blue Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[108px] bg-[#9EDAFF] rounded-b-[50%] -translate-y-1/2 opacity-50 pointer-events-none" />
 
       <div className="max-w-[940px] mx-auto px-4 sm:px-6 relative z-10">
-        {/* Header */}
         <div className="flex flex-col items-center gap-2 mt-8 mb-12">
           <h1 className="font-inter font-bold text-[25.5px] leading-[36px] text-[#372213] text-center">
             {t('page.culture')}
@@ -77,7 +75,6 @@ export function Culture() {
           </div>
         )}
 
-        {/* Culture Categories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[605px] mx-auto pb-20">
           {categories.map((category) => (
             <div

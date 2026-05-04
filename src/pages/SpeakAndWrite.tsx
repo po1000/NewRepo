@@ -9,7 +9,7 @@ import { useLanguage } from '../context/LanguageContext';
 export interface ScenarioCriteria {
   id: string;
   text: string;
-  keywords: string[]; // words/phrases user must include to satisfy
+  keywords: string[];
 }
 
 export interface PracticeScenario {
@@ -144,7 +144,6 @@ export function SpeakAndWrite({}: SpeakAndWriteProps) {
                 <h3 className="font-bold text-[15.3px] leading-[28px] text-[#372213]">{scenario.title}</h3>
                 <p className="text-[11.9px] leading-[20px] text-[#372213]">{scenario.description}</p>
 
-                {/* Criteria preview */}
                 <div className="flex flex-col gap-1">
                   {scenario.criteria.map(c => (
                     <div key={c.id} className="flex items-center gap-1.5">

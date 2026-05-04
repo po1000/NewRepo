@@ -24,12 +24,12 @@ interface AnalysisData {
 interface DifficultWord {
   said: string;
   expected: string;
-  modes: Set<'speaking' | 'writing'>; // both icons if same word fails in both
+  modes: Set<'speaking' | 'writing'>;
 }
 
 interface Grade {
   name: string;
-  score: number; // 1-5
+  score: number;
   feedback: string;
 }
 
@@ -37,23 +37,7 @@ interface RoleplayCompleteProps {
   onBack?: () => void;
 }
 
-// ════════════════════════════════════════════════════════════════════
-// EVALUATION ALGORITHM
-// ════════════════════════════════════════════════════════════════════
-// Speaking criteria:
-//   - Fluency & Spontaneity         — based on avg words/message, hesitation
-//   - Vocabulary & Range            — type-token ratio (unique words / total)
-//   - Grammar + Structure Accuracy  — tense markers, conjunctions, length
-//   - Pronunciation & Intonation    — accent words spoken correctly proxy
-//   - Relevance                     — % of scenario keywords used per message
-//
-// Writing criteria:
-//   - Accent Marks (Tildes)         — correctly accented / total expected accents
-//   - Spelling & Mechanics          — ñ, ¿/¡ pairs, gender agreement heuristic
-//   - Sentence Structure            — connectives, sentence variety, length
-// ════════════════════════════════════════════════════════════════════
 
-// Words that require accents — maps unaccented form to correct form
 const ACCENT_MAP: Record<string, string> = {
   'cafe': 'café', 'tambien': 'también', 'como': 'cómo',
   'donde': 'dónde', 'que': 'qué', 'cuanto': 'cuánto',
@@ -65,52 +49,37 @@ const ACCENT_MAP: Record<string, string> = {
 };
 const ACCENTED_FORMS = new Set(Object.values(ACCENT_MAP));
 
-// Common Spanish words that the user might attempt — used as a "valid words" allowlist
-// for catching typos / mis-pronunciations. Not exhaustive — just covers core curriculum.
 const COMMON_WORDS = new Set([
-  // greetings / basics
   'hola', 'adios', 'gracias', 'por', 'favor', 'si', 'no', 'bien', 'mal',
   'buenos', 'buenas', 'dias', 'tardes', 'noches', 'que', 'tal', 'como',
-  // pronouns
   'yo', 'tu', 'el', 'ella', 'nosotros', 'vosotros', 'ellos', 'ellas', 'usted',
-  // common verbs
   'soy', 'eres', 'es', 'somos', 'sois', 'son', 'estoy', 'estas', 'esta',
   'estamos', 'estais', 'estan', 'tengo', 'tienes', 'tiene', 'tenemos',
   'quiero', 'quieres', 'quiere', 'queremos', 'puedo', 'puedes', 'puede',
   'hablo', 'hablas', 'habla', 'hablamos', 'hablan', 'hablado',
   'como', 'comes', 'come', 'comemos', 'comen', 'comido',
   'voy', 'vas', 'va', 'vamos', 'vais', 'van', 'fue', 'fui', 'fueron',
-  // food + drink
   'agua', 'cafe', 'leche', 'te', 'zumo', 'pan', 'tostada', 'churro',
   'cerveza', 'vino', 'sopa', 'ensalada', 'comida', 'desayuno',
-  // cafe / restaurant
   'mesa', 'cuenta', 'menu', 'plato', 'tenedor', 'cuchara', 'cuchillo',
   'camarero', 'restaurante', 'bar',
-  // money / numbers
   'euro', 'euros', 'dolar', 'dolares', 'cuanto', 'cuesta', 'precio',
   'caro', 'barato', 'pagar', 'pago', 'tarjeta', 'efectivo',
   'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez',
-  // directions
   'donde', 'aqui', 'alli', 'cerca', 'lejos', 'derecha', 'izquierda', 'recto',
   'calle', 'plaza', 'museo', 'estacion', 'aeropuerto', 'hotel',
-  // family
   'familia', 'padre', 'madre', 'hermano', 'hermana', 'hijo', 'hija',
   'abuelo', 'abuela', 'tio', 'tia', 'primo', 'prima',
-  // adjectives
   'grande', 'pequeno', 'alto', 'bajo', 'gordo', 'delgado', 'simpatico',
   'antipatico', 'inteligente', 'guapo', 'bonito', 'feo', 'nuevo', 'viejo',
-  // articles + connectives
   'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas',
   'pero', 'porque', 'aunque', 'sin', 'embargo', 'entonces', 'tambien',
   'muy', 'mucho', 'poco', 'algo', 'nada', 'siempre', 'nunca',
-  // misc
   'me', 'te', 'le', 'nos', 'os', 'les', 'mi', 'tu', 'su',
   'con', 'de', 'a', 'en', 'para', 'por', 'sobre', 'entre',
-  // accented forms accepted
   ...Array.from(ACCENTED_FORMS),
 ]);
 
-// Levenshtein distance for typo detection
 function levenshtein(a: string, b: string): number {
   const m = a.length, n = b.length;
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
@@ -128,9 +97,8 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
-// Find closest valid word from a candidate list, if within edit distance
 function findClosest(word: string, dict: Set<string>): string | null {
-  if (dict.has(word)) return null; // already valid
+  if (dict.has(word)) return null;
   let best: string | null = null;
   let bestDist = Infinity;
   for (const candidate of dict) {
@@ -141,7 +109,6 @@ function findClosest(word: string, dict: Set<string>): string | null {
       best = candidate;
     }
   }
-  // Only return suggestion if reasonably close (1 or 2 edits)
   if (best && bestDist <= 2 && bestDist > 0 && word.length >= 3) {
     return best;
   }
@@ -174,10 +141,8 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
   const writtenMsgs = userMessages.filter(m => m.inputMode === 'text');
   const spokenMsgs = userMessages.filter(m => m.inputMode === 'voice');
 
-  // Build dictionary of valid words for this scenario
   const validWords = new Set([...COMMON_WORDS, ...scenarioKeywords.map(k => k.toLowerCase())]);
 
-  // Tokenize all messages
   const tokenize = (text: string) => text.toLowerCase()
     .split(/\s+/)
     .map(w => w.replace(/[^a-záéíóúñü]/g, ''))
@@ -187,13 +152,12 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
   const writtenWords = writtenMsgs.flatMap(m => tokenize(m.text));
   const spokenWords = spokenMsgs.flatMap(m => tokenize(m.text));
 
-  // ── Difficult words detection ──────────────────────────────
   const diffMap = new Map<string, DifficultWord>();
   for (const msg of userMessages) {
     const words = tokenize(msg.text);
     const mode = msg.inputMode === 'voice' ? 'speaking' : 'writing';
     for (const w of words) {
-      if (w.length < 3) continue; // skip very short tokens
+      if (w.length < 3) continue;
       const closest = findClosest(w, validWords);
       if (closest) {
         const key = w;
@@ -208,13 +172,9 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
   }
   const difficultWords = Array.from(diffMap.values()).slice(0, 6);
 
-  // ════════════════════════════════════════════════════════════
-  // SPEAKING CRITERIA
-  // ════════════════════════════════════════════════════════════
   const speaking: Grade[] = [];
 
   if (spokenMsgs.length > 0) {
-    // Fluency & Spontaneity: avg words per message (3-15+ scaled)
     const avgWordsPerMsg = spokenWords.length / spokenMsgs.length;
     const fluencyPct = Math.min(100, (avgWordsPerMsg / 8) * 100);
     speaking.push({
@@ -227,7 +187,6 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
           : 'Responses are short — practise speaking longer phrases.',
     });
 
-    // Vocabulary & Range: unique words / total words (type-token ratio)
     const uniqueSpoken = new Set(spokenWords).size;
     const ttrPct = spokenWords.length > 0 ? Math.min(100, (uniqueSpoken / spokenWords.length) * 130) : 0;
     speaking.push({
@@ -240,7 +199,6 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
           : 'Try using a wider variety of words next time.',
     });
 
-    // Grammar + Structure: presence of tense markers and conjunctions
     const TENSE_MARKERS = ['fue', 'fui', 'fueron', 'era', 'eran', 'estaba', 'estaban', 'iré', 'iras', 'voy', 'vamos', 'comí', 'comiste', 'hablé', 'hablado'];
     const CONJUNCTIONS = ['porque', 'pero', 'aunque', 'sin embargo', 'entonces', 'también', 'cuando', 'mientras'];
     const allSpokenText = spokenMsgs.map(m => m.text.toLowerCase()).join(' ');
@@ -258,7 +216,6 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
           : 'Mostly present tense; mix in past or future where you can.',
     });
 
-    // Pronunciation: ratio of recognised words / total spoken (proxy via difficult words)
     const spokenDiff = difficultWords.filter(d => d.modes.has('speaking')).length;
     const pronPct = spokenWords.length > 0
       ? Math.max(0, Math.min(100, ((spokenWords.length - spokenDiff * 2) / spokenWords.length) * 100))
@@ -273,7 +230,6 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
           : 'Some pronunciation issues — try slower, clearer enunciation.',
     });
 
-    // Relevance: % of scenario keywords mentioned per spoken message
     const keywordsHit = scenarioKeywords.filter(k => allSpokenText.includes(k.toLowerCase())).length;
     const relevancePct = scenarioKeywords.length > 0
       ? Math.min(100, (keywordsHit / scenarioKeywords.length) * 100 + 30)
@@ -289,21 +245,17 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
     });
   }
 
-  // ════════════════════════════════════════════════════════════
-  // WRITING CRITERIA
-  // ════════════════════════════════════════════════════════════
   const writing: Grade[] = [];
 
   if (writtenMsgs.length > 0) {
     const allWrittenText = writtenMsgs.map(m => m.text).join(' ');
     const allWrittenLower = allWrittenText.toLowerCase();
 
-    // Accent Marks (Tildes): correctly accented / total accent-eligible
     let accentTotal = 0;
     let accentCorrect = 0;
     for (const w of writtenWords) {
       if (ACCENT_MAP[w]) {
-        accentTotal++; // wrote unaccented version
+        accentTotal++;
       } else if (ACCENTED_FORMS.has(w)) {
         accentTotal++;
         accentCorrect++;
@@ -322,7 +274,6 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
             : 'Most accents missing — review tilde rules for common words.',
     });
 
-    // Spelling & Mechanics: ñ usage, ¿¡ pairs, gender markers
     const hasInvertedQ = /¿/.test(allWrittenText);
     const usedQ = /\?/.test(allWrittenText);
     const hasInvertedE = /¡/.test(allWrittenText);
@@ -350,7 +301,6 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
           : 'Several mechanics issues — review ¿/¡, ñ, and spelling.',
     });
 
-    // Sentence Structure: connectives, sentence count, avg length
     const CONNECTIVES = ['porque', 'pero', 'aunque', 'sin embargo', 'también', 'cuando', 'que', 'mientras'];
     const sentences = allWrittenText.split(/[.!?]+/).filter(s => s.trim().length > 2);
     const avgSentLen = sentences.length > 0 ? writtenWords.length / sentences.length : 0;
@@ -372,12 +322,10 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
     });
   }
 
-  // Overall score: average of all criteria
   const allGrades = [...speaking, ...writing];
   const overallScore = allGrades.length > 0
     ? allGrades.reduce((sum, g) => sum + g.score, 0) / allGrades.length
     : 0;
-  // Convert 1-5 average to a percentage display
   const overallPct = Math.round((overallScore / 5) * 100);
 
   return {
@@ -391,9 +339,6 @@ function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[])
   };
 }
 
-// ════════════════════════════════════════════════════════════════════
-// COMPONENT
-// ════════════════════════════════════════════════════════════════════
 
 export function RoleplayComplete(_props: RoleplayCompleteProps) {
   usePageTitle('Roleplay Complete');
@@ -454,7 +399,6 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
     navigate(`/speak-and-write/${next.id}`);
   }
 
-  // ============ REVIEW CONVERSATION MODE ============
   if (mode === 'review') {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-[#FF1500] to-[#FFD905] font-inter flex flex-col">
@@ -526,7 +470,6 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
     );
   }
 
-  // ============ SUMMARY MODE ============
   return (
     <div className="min-h-screen w-full font-inter"
       style={{ background: 'radial-gradient(circle at top right, #FF1500 0%, #FFD905 100%)' }}>
@@ -539,7 +482,6 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
       </div>
 
       <div className="max-w-[605px] mx-auto pt-12 pb-20 px-4 flex flex-col items-center">
-        {/* Header */}
         <div className="flex flex-col items-center gap-4 mb-8">
           <div className="w-[82px] h-[82px] bg-[#3BBC00] rounded-full flex items-center justify-center shadow-lg">
             <Check className="w-10 h-10 text-white" strokeWidth={3} />
@@ -554,7 +496,6 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="w-full max-w-[448px] flex gap-4 mb-6">
           <div className="flex-1 bg-white rounded-xl p-4 flex flex-col items-center justify-center shadow-md border border-[#E5E7EB]">
             <span className="text-[11.9px] text-[#372213] mb-1">{t('roleplay.xpEarned')}</span>
@@ -566,7 +507,6 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
           </div>
         </div>
 
-        {/* Overall score banner */}
         <div className="w-full max-w-[632px] rounded-t-xl py-3 px-6 text-center"
           style={{ backgroundColor: scoreColor(evaluation.overallScore) }}>
           <p className="font-bold text-[18px] text-white">
@@ -574,11 +514,9 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
           </p>
         </div>
 
-        {/* Evaluation Card */}
         <div className="w-full max-w-[632px] bg-white rounded-b-xl p-6 shadow-md border border-[#E5E7EB] mb-8">
           <h3 className="font-bold text-[18.6px] text-[#372213] mb-4">Summary</h3>
 
-          {/* Writing Section */}
           {evaluation.hasWriting && (
             <div className="mb-5">
               <button
@@ -606,7 +544,6 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
             </div>
           )}
 
-          {/* Speaking Section */}
           {evaluation.hasSpeaking && (
             <div className="mb-5">
               <button
@@ -634,7 +571,6 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
             </div>
           )}
 
-          {/* Difficult Words */}
           {evaluation.difficultWords.length > 0 && (
             <div className="flex flex-col gap-3 pt-4 border-t border-[#E5E7EB]">
               <h4 className="font-bold text-[15.6px] text-[#372213]">Difficult Words</h4>
@@ -666,7 +602,6 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
           )}
         </div>
 
-        {/* Bottom Actions */}
         <div className="w-full max-w-[632px] flex flex-col sm:flex-row gap-3">
           <button onClick={() => setMode('review')}
             className="flex-1 py-3 bg-white border-2 border-[#FF6200] rounded-xl font-bold text-[16px] text-[#FF6200] hover:bg-[#FFF7ED] transition-colors">

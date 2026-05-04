@@ -315,11 +315,9 @@ export function Community() {
 
   return (
     <PageLayout backgroundColor="#FFDFFC">
-      {/* Decorative Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#FFB2F7] origin-top-left -skew-y-3 pointer-events-none" />
 
       <div className="max-w-[684px] mx-auto px-4 sm:px-6 pt-8 pb-20 relative z-10">
-        {/* Header */}
         <div className="flex flex-col items-center gap-2 mb-10 text-center">
           <h1 className="font-inter font-bold text-[25.5px] leading-[36px] text-[#372213]">
             {t('community.title')}
@@ -336,7 +334,6 @@ export function Community() {
           </div>
         )}
 
-        {/* Search Bar */}
         <div className="w-full bg-white rounded-xl border border-[#E5E7EB] flex items-center px-4 py-3 gap-3 shadow-sm mb-8">
           <Search className="w-5 h-5 text-[#9CA3AF]" />
           <input
@@ -346,7 +343,6 @@ export function Community() {
           />
         </div>
 
-        {/* Forum Sections — functional filter */}
         <div className="flex gap-3 overflow-x-auto pb-4 mb-6 no-scrollbar">
           {['All Topics', 'Grammar Help', 'Pronunciation', 'Culture Exchange', 'Study Tips'].map(
             (section) => (
@@ -365,7 +361,6 @@ export function Community() {
           )}
         </div>
 
-        {/* New Post Button */}
         <button
           onClick={() => setShowNewPostForm(true)}
           className="w-full bg-[#FF4D01] hover:bg-[#E64401] text-white rounded-xl px-6 py-4 font-inter font-semibold text-[16px] flex items-center justify-center gap-2 shadow-sm transition-colors mb-6"
@@ -374,7 +369,6 @@ export function Community() {
           {t('community.askQuestion')}
         </button>
 
-        {/* New Post Form */}
         <AnimatePresence>
           {showNewPostForm && (
             <motion.div
@@ -454,7 +448,6 @@ export function Community() {
           )}
         </AnimatePresence>
 
-        {/* Forum Posts */}
         {loading ? (
           <p className="text-center text-[#372213] py-8">Loading posts...</p>
         ) : (
@@ -464,13 +457,11 @@ export function Community() {
               key={post.id}
               className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm overflow-hidden"
             >
-              {/* Post Header */}
               <div
                 className="p-5 cursor-pointer hover:bg-gray-50 transition-colors"
                 onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
               >
                 <div className="flex items-start gap-4">
-                  {/* Upvotes */}
                   <div className="flex flex-col items-center gap-1">
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePostVote(post.id, 'up'); }}
@@ -487,7 +478,6 @@ export function Community() {
                     </button>
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1 flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-[#FFDFFC] rounded-full flex items-center justify-center">
@@ -525,7 +515,6 @@ export function Community() {
                 </div>
               </div>
 
-              {/* Expanded Responses */}
               {expandedPost === post.id && (
                 <div className="border-t border-[#E5E7EB] bg-gray-50/50 p-5">
                   {post.comments.length > 0 && (
@@ -573,7 +562,6 @@ export function Community() {
                     </>
                   )}
 
-                  {/* Comment Input */}
                   <div className="flex gap-3 items-start">
                     <div className="w-6 h-6 bg-[#FFDFFC] rounded-full flex items-center justify-center flex-shrink-0 mt-2">
                       <User className="w-3.5 h-3.5 text-[#FF4D01]" />

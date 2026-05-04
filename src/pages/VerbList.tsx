@@ -14,7 +14,7 @@ interface VerbItem {
 }
 
 interface VerbListProps {
-  categoryFilter: string; // 'ar' | 'er' | 'ir'
+  categoryFilter: string;
 }
 
 const CHIP_COLORS: Record<string, string> = {
@@ -38,18 +38,15 @@ export function VerbList({ categoryFilter }: VerbListProps) {
 
   useEffect(() => {
     async function loadVerbs() {
-      // Load verbs that end with the category suffix, OR are in that category
       const { data } = await supabase
         .from('verbs')
         .select('verb_id, infinitive, english_meaning, is_irregular, grammar_verb_categories ( name )')
         .order('infinitive');
 
       if (data) {
-        // Filter: include verbs whose infinitive ends with -ar/-er/-ir, or whose category matches
         const filtered = data.filter((v: any) => {
           const catName = v.grammar_verb_categories?.name;
           const ending = v.infinitive.slice(-2);
-          // llamarse → strip 'se' → llamar → 'ar'
           const baseEnding = v.infinitive.replace(/se$/, '').slice(-2);
           return catName === categoryFilter || ending === categoryFilter || baseEnding === categoryFilter;
         });

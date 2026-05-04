@@ -7,7 +7,6 @@ import { PublicRoute } from './components/PublicRoute';
 import { AuthCallback } from './components/AuthCallback';
 import { SetNewPasswordCard } from './components/SetNewPasswordCard';
 
-// Lazy-loaded pages
 const AuthPage = React.lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const DashboardPage = React.lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
 const LessonFlowPage = React.lazy(() => import('./pages/LessonFlow').then(m => ({ default: m.LessonFlow })));
@@ -44,16 +43,13 @@ export function App() {
         <LanguageProvider>
         <React.Suspense fallback={<LoadingFallback />}>
           <Routes>
-            {/* Public auth routes */}
             <Route path="/" element={<PublicRoute><AuthPage /></PublicRoute>} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/reset-password" element={<SetNewPasswordCard />} />
 
-            {/* Protected routes */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/lesson" element={<ProtectedRoute><LessonFlowPage /></ProtectedRoute>} />
 
-            {/* Grammar */}
             <Route path="/grammar" element={<ProtectedRoute><GrammarPage /></ProtectedRoute>} />
             <Route path="/grammar/ar-verbs" element={<ProtectedRoute><ARVerbsPage /></ProtectedRoute>} />
             <Route path="/grammar/er-verbs" element={<ProtectedRoute><ERVerbsPage /></ProtectedRoute>} />
@@ -63,23 +59,19 @@ export function App() {
             <Route path="/grammar/ir-verbs/:verb" element={<ProtectedRoute><VerbConjugationPage /></ProtectedRoute>} />
             <Route path="/grammar/pronouns" element={<ProtectedRoute><PronounsPage /></ProtectedRoute>} />
 
-            {/* Culture */}
             <Route path="/culture" element={<ProtectedRoute><CulturePage /></ProtectedRoute>} />
             <Route path="/culture/music-dance" element={<ProtectedRoute><MusicDancePage /></ProtectedRoute>} />
             <Route path="/culture/food-drink" element={<ProtectedRoute><FoodDrinkPage /></ProtectedRoute>} />
             <Route path="/culture/regions-landmarks" element={<ProtectedRoute><RegionsLandmarksPage /></ProtectedRoute>} />
             <Route path="/culture/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
 
-            {/* Speak & Write */}
             <Route path="/speak-and-write" element={<ProtectedRoute><SpeakAndWritePage /></ProtectedRoute>} />
             <Route path="/speak-and-write/practice/:scenarioId" element={<ProtectedRoute><SpeakingPracticePage /></ProtectedRoute>} />
             <Route path="/speak-and-write/roleplay-complete" element={<ProtectedRoute><RoleplayCompletePage /></ProtectedRoute>} />
 
-            {/* Community & Badges */}
             <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
             <Route path="/badges" element={<ProtectedRoute><BadgesPage /></ProtectedRoute>} />
 
-            {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </React.Suspense>

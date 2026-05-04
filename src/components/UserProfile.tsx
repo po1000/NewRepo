@@ -22,7 +22,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(() => {
     const id = userId || localStorage.getItem('last_user_id');
     if (id) {
-      // Try remote URL first, then base64 fallback
       const stored = localStorage.getItem(`avatar_url_${id}`);
       if (stored) return stored;
       const b64 = localStorage.getItem(`avatar_b64_${id}`);
@@ -33,7 +32,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
   const [imgKey, setImgKey] = useState(0);
   const [imgError, setImgError] = useState(false);
 
-  // When userId becomes available (auth loaded), cache it and read stored avatar
   useEffect(() => {
     if (!userId) return;
     localStorage.setItem('last_user_id', userId);
@@ -45,10 +43,8 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
     }
   }, [userId]);
 
-  // Sync from parent prop when it becomes non-null (auth loaded with metadata URL)
   useEffect(() => {
     if (avatarUrl) {
-      // Only override if we don't already have a localStorage value
       const stored = userId ? localStorage.getItem(`avatar_url_${userId}`) : null;
       if (!stored) {
         setLocalAvatarUrl(avatarUrl);
@@ -64,13 +60,11 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
     setUploading(true);
     setMenuOpen(false);
 
-    // Immediately show preview via object URL
     const previewUrl = URL.createObjectURL(file);
     setLocalAvatarUrl(previewUrl);
     setImgKey(prev => prev + 1);
     setImgError(false);
 
-    // Always store base64 first as reliable fallback
     const b64Promise = new Promise<string | null>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
@@ -86,7 +80,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
       setImgKey(prev => prev + 1);
     }
 
-    // Try uploading to Supabase Storage
     const fileExt = file.name.split('.').pop();
     const filePath = `${userId}/avatar.${fileExt}`;
 
@@ -124,7 +117,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
 
   return (
     <div className="relative">
-      {/* File input lives outside the menu so it persists */}
       <input
         ref={fileInputRef}
         type="file"
@@ -145,7 +137,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
             alt="Profile"
             className="w-[25px] h-[25px] rounded-full object-cover flex-shrink-0"
             onError={() => {
-              // If remote URL fails, try base64 fallback before showing initials
               const id = userId || localStorage.getItem('last_user_id');
               if (id && !imgError) {
                 const b64 = localStorage.getItem(`avatar_b64_${id}`);
@@ -196,7 +187,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
               {t('ui.myBadges')}
             </button>
 
-            {/* Interface Language */}
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100">
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-[#FF4D01]" />
@@ -213,7 +203,6 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
               </button>
             </div>
 
-            {/* Show Instructions */}
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-50">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-[#FF4D01]" />

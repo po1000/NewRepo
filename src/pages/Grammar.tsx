@@ -13,11 +13,9 @@ interface GrammarItem {
 }
 
 const grammarItems: GrammarItem[] = [
-  // Conjugations
   { label: '-ar Verbs', path: '/grammar/ar-verbs', category: 'conjugation', keywords: ['ar', 'verbs', 'conjugation', 'hablar', 'regular'] },
   { label: '-er Verbs', path: '/grammar/er-verbs', category: 'conjugation', keywords: ['er', 'verbs', 'conjugation', 'comer', 'regular'] },
   { label: '-ir Verbs', path: '/grammar/ir-verbs', category: 'conjugation', keywords: ['ir', 'verbs', 'conjugation', 'vivir', 'regular'] },
-  // Topics
   { label: 'Pronouns', path: '/grammar/pronouns', category: 'topic', keywords: ['pronouns', 'yo', 'tu', 'el', 'ella', 'subject', 'object'] },
   { label: 'Gender Rules', path: '/grammar/gender-rules', category: 'topic', keywords: ['gender', 'rules', 'masculine', 'feminine', 'el', 'la'] },
   { label: 'Ser vs Estar', path: '/grammar/er-verbs/ser', category: 'topic', keywords: ['ser', 'estar', 'to be', 'being', 'difference'] },
@@ -36,19 +34,14 @@ function fuzzyMatch(query: string, item: GrammarItem): boolean {
   const normalizedKeywords = item.keywords.join(' ').toLowerCase();
   const searchable = `${normalizedLabel} ${normalizedKeywords}`;
 
-  // Check if the full query is a substring of the searchable text
   if (searchable.includes(normalizedQuery)) return true;
 
-  // Check if every word in the query appears somewhere in the searchable text
   const queryWords = normalizedQuery.split(/\s+/).filter(Boolean);
   if (queryWords.length > 1 && queryWords.every(word => searchable.includes(word))) return true;
 
-  // Check each query word individually for fuzzy matching (allow small edit distance)
   return queryWords.every(word => {
-    // Direct substring check per word
     if (searchable.includes(word)) return true;
 
-    // Check edit distance against each token in the searchable text
     const tokens = searchable.split(/\s+/);
     return tokens.some(token => {
       const maxDist = word.length <= 3 ? 1 : 2;
@@ -90,7 +83,6 @@ export function Grammar() {
 
   return (
     <PageLayout backgroundColor="#FF4D01" navOverrideClass="[&_a]:text-white [&_button]:text-white [&_svg]:text-white">
-      {/* Diagonal Swoosh Background */}
       <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#FF7032] origin-top-left -skew-y-3 pointer-events-none" />
 
       <div className="max-w-[620px] mx-auto px-4 sm:px-6 pt-8 pb-20 relative z-10">
@@ -102,7 +94,6 @@ export function Grammar() {
           </div>
         )}
 
-        {/* Header & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h1 className="font-inter font-bold text-[25.5px] leading-[36px] text-white">
             {t('page.grammar')}
@@ -118,7 +109,6 @@ export function Grammar() {
           </div>
         </div>
 
-        {/* Search Results */}
         {searchQuery.trim() ? (
           <div className="flex flex-col gap-2">
             {filteredItems.length > 0 ? (
@@ -144,9 +134,7 @@ export function Grammar() {
             )}
           </div>
         ) : (
-          /* Cards Container */
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Conjugations Card */}
             <div className="w-full md:w-[219px] bg-[#FFE43C] rounded-xl p-6 flex flex-col gap-6">
               <h2 className="font-inter font-bold text-[16.3px] leading-[28px] text-[#372213]">
                 {t('grammar.conjugations')}
@@ -176,7 +164,6 @@ export function Grammar() {
               </div>
             </div>
 
-            {/* Topics Card */}
             <div className="flex-1 bg-[#FFE43C] rounded-xl p-6 flex flex-col gap-6">
               <h2 className="font-inter font-bold text-[16.3px] leading-[28px] text-[#372213]">
                 {t('grammar.topics')}

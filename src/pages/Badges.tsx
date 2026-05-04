@@ -32,7 +32,6 @@ export function Badges() {
     async function fetchBadges() {
       if (!user) return;
 
-      // Fetch all badges, user earned badges, user stats, and correct answer count in parallel
       const [
         { data: allBadges },
         { data: userBadges },
@@ -52,7 +51,6 @@ export function Badges() {
           .select('lessons_completed, current_streak')
           .eq('user_id', user.id)
           .maybeSingle(),
-        // Count terms where the user has answered correctly (status beyond 'seen')
         supabase
           .from('user_term_progress')
           .select('term_id', { count: 'exact', head: true })
@@ -65,14 +63,12 @@ export function Badges() {
         earnedMap.set(ub.badge_id, ub.earned_at);
       });
 
-      // Build a lookup for current progress by criteria_type
       const progressLookup: Record<string, number> = {
         lessons_completed: stats?.lessons_completed || 0,
         streak_days: stats?.current_streak || 0,
         correct_answers: correctAnswerCount || 0,
       };
 
-      // Cleanup: remove any phantom badges where criteria aren't actually met
       const allBadgeMap = new Map<number, any>();
       (allBadges || []).forEach((b: any) => allBadgeMap.set(b.badge_id, b));
 
@@ -90,7 +86,6 @@ export function Badges() {
         }
       }
 
-      // Self-heal: auto-award any missing badges whose criteria are met
       for (const b of (allBadges || [])) {
         if (!earnedMap.has(b.badge_id)) {
           const progress = progressLookup[b.criteria_type] || 0;
@@ -188,7 +183,6 @@ export function Badges() {
                     {badge.description}
                   </p>
 
-                  {/* Progress bar or green tick */}
                   <div className="w-full mt-3">
                     {badge.earned ? (
                       <div className="flex items-center justify-center gap-1.5">

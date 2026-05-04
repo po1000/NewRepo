@@ -15,7 +15,6 @@ export function UserStats({ xp, hearts, streak, longestStreak = 0 }: UserStatsPr
 
   return (
     <div className="flex flex-row gap-2 items-center">
-      {/* XP Badge */}
       <div
         title="XP earned"
         className="flex flex-row items-center gap-1.5 px-3 py-2 bg-white rounded-xl shadow-[2px_2px_4px_rgba(0,0,0,0.06)]"
@@ -26,7 +25,6 @@ export function UserStats({ xp, hearts, streak, longestStreak = 0 }: UserStatsPr
         </span>
       </div>
 
-      {/* Badges Badge — clickable */}
       <button
         title="Badges earned"
         onClick={() => navigate('/badges')}
@@ -43,7 +41,6 @@ export function UserStats({ xp, hearts, streak, longestStreak = 0 }: UserStatsPr
         </span>
       </button>
 
-      {/* Streak Badge — with hover tooltip */}
       <div
         className="relative"
         onMouseEnter={() => setShowStreakTip(true)}

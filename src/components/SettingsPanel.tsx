@@ -29,7 +29,6 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         </div>
 
         <div className="p-4 flex flex-col gap-4">
-          {/* Language Toggle */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-[#FF4D01]" />
@@ -43,7 +42,6 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </button>
           </div>
 
-          {/* Instructions Toggle */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-[#FF4D01]" />

@@ -14,7 +14,6 @@ interface ChatMessage {
   inputMode: 'text' | 'voice';
 }
 
-// Character info: avatar (human face) + gender for voice matching
 const CHARACTER_INFO: Record<string, { avatar: string; gender: 'male' | 'female'; name: string }> = {
   'ordering-cafe': {
     avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face',
@@ -47,7 +46,6 @@ function speakSpanish(text: string, gender: 'male' | 'female' = 'female') {
   utterance.pitch = gender === 'female' ? 1.1 : 0.95;
   const voices = window.speechSynthesis.getVoices();
 
-  // Gender-specific voice preference
   const femalePreferred = ['Paulina', 'Monica', 'Lucia', 'Microsoft Helena', 'Microsoft Sabina', 'Google español'];
   const malePreferred = ['Jorge', 'Diego', 'Juan', 'Microsoft Pablo', 'Google español'];
   const preferred = gender === 'female' ? femalePreferred : malePreferred;
@@ -61,13 +59,10 @@ function speakSpanish(text: string, gender: 'male' | 'female' = 'female') {
   window.speechSynthesis.speak(utterance);
 }
 
-// Contextual AI response generator — reacts to what the user actually said
-// Tracks used responses via the usedTexts set to avoid repeating the same line
 function generateAiResponse(scenario: PracticeScenario, userMessages: ChatMessage[], usedTexts: Set<string>): { es: string; en: string } {
   const msgCount = userMessages.filter(m => m.role === 'user').length;
   const lastUserMsg = userMessages[userMessages.length - 1]?.text.toLowerCase() || '';
 
-  // Helper: pick first unused response, fallback to last option if all used
   function pick(...options: { es: string; en: string }[]): { es: string; en: string } {
     for (const opt of options) {
       if (!usedTexts.has(opt.es)) {
@@ -75,7 +70,6 @@ function generateAiResponse(scenario: PracticeScenario, userMessages: ChatMessag
         return opt;
       }
     }
-    // All used — return last option anyway to keep conversation flowing
     const last = options[options.length - 1];
     usedTexts.add(last.es);
     return last;
@@ -182,7 +176,6 @@ function generateAiResponse(scenario: PracticeScenario, userMessages: ChatMessag
     );
   }
 
-  // shopping-market
   if (lastUserMsg.match(/cuanto|cuánto|cuesta|vale|precio/))
     return pick(
       { es: 'Las naranjas estan a dos euros el kilo. Las manzanas a uno cincuenta. Y los platanos a uno ochenta. ¿Que le pongo?', en: 'Oranges are two euros per kilo. Apples are one fifty. And bananas are one eighty. What shall I get you?' },
@@ -229,7 +222,6 @@ export function SpeakingPractice() {
   const storedAvatar = user?.id ? localStorage.getItem(`avatar_url_${user.id}`) : null;
   const userAvatar = storedAvatar || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
 
-  // Load saved messages from localStorage
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -247,7 +239,7 @@ export function SpeakingPractice() {
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
   const [textInput, setTextInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null); // transcript preview
+  const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
   const [criteriaComplete, setCriteriaComplete] = useState<Set<string>>(new Set());
   const [startTime] = useState(Date.now());
   const [showHelp, setShowHelp] = useState(false);
@@ -259,17 +251,14 @@ export function SpeakingPractice() {
   const usedResponses = useRef<Set<string>>(new Set());
   const gotResultRef = useRef(false);
 
-  // Persist messages to localStorage
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(messages));
   }, [messages, storageKey]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // TTS: speak new AI messages when they first appear (gender-matched voice)
   useEffect(() => {
     const lastMsg = messages[messages.length - 1];
     if (lastMsg?.role === 'ai' && !spokenMsgIds.current.has(lastMsg.id)) {
@@ -278,12 +267,10 @@ export function SpeakingPractice() {
     }
   }, [messages, charInfo.gender]);
 
-  // Preload voices
   useEffect(() => {
     if (window.speechSynthesis) window.speechSynthesis.getVoices();
   }, []);
 
-  // Check criteria — track which are complete but DON'T auto-finish
   useEffect(() => {
     const allUserText = messages.filter(m => m.role === 'user').map(m => m.text.toLowerCase()).join(' ');
     const completed = new Set<string>();
@@ -327,7 +314,6 @@ export function SpeakingPractice() {
     setMessages(updatedMessages);
     setTextInput('');
 
-    // Show typing indicator then respond
     setIsTyping(true);
     setTimeout(() => {
       const response = generateAiResponse(scenario, updatedMessages, usedResponses.current);
@@ -357,7 +343,6 @@ export function SpeakingPractice() {
     recognition.onresult = (event: any) => {
       gotResultRef.current = true;
       const transcript = event.results[0][0].transcript;
-      // Show transcript for review instead of sending immediately
       setVoiceTranscript(transcript);
       setIsRecording(false);
     };
@@ -366,8 +351,6 @@ export function SpeakingPractice() {
       setIsRecording(false);
     };
     recognition.onend = () => {
-      // Only reset to idle if we never got a result (e.g. silence timeout)
-      // If onresult already fired, the transcript is showing — don't clobber it
       if (!gotResultRef.current) {
         setIsRecording(false);
       }
@@ -402,7 +385,6 @@ export function SpeakingPractice() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#FF1500] to-[#FFD905] font-inter flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 shrink-0">
         <button onClick={() => navigate('/speak-and-write')} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
           <ArrowLeft className="w-6 h-6 text-[#FFFDE6]" />
@@ -418,7 +400,6 @@ export function SpeakingPractice() {
         </button>
       </div>
 
-      {/* Context Box */}
       <div className="max-w-[600px] mx-auto px-4 mb-3 shrink-0">
         <div className="border border-[#FFFDE6] rounded-xl p-3">
           <p className="text-[13.5px] leading-[20px] text-[#FFFDE6]">
@@ -428,7 +409,6 @@ export function SpeakingPractice() {
         </div>
       </div>
 
-      {/* Criteria chips */}
       <div className="max-w-[600px] mx-auto px-4 mb-3 shrink-0">
         <div className="flex flex-wrap gap-2">
           {scenario.criteria.map(c => (
@@ -461,12 +441,10 @@ export function SpeakingPractice() {
         )}
       </div>
 
-      {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-4">
         <div className="max-w-[600px] mx-auto flex flex-col gap-3 pb-4">
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'flex-row' : 'flex-row-reverse'} items-end gap-2`}>
-              {/* Avatar */}
               <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-300">
                 {msg.role === 'user' ? (
                   userAvatar ? (
@@ -481,9 +459,7 @@ export function SpeakingPractice() {
                 )}
               </div>
 
-              {/* Message bubble */}
               <div className={`flex flex-col ${msg.role === 'user' ? 'items-start' : 'items-end'} gap-1 max-w-[75%]`}>
-                {/* Translation above (toggle) — 1pt smaller than message text */}
                 {showTranslations && msg.translation && (
                   <span lang="en" className="text-[14.6px] leading-[20px] text-[#1D4ED8]/80 font-medium">
                     {msg.translation}
@@ -503,7 +479,6 @@ export function SpeakingPractice() {
                     <span className="text-[9px] text-[#372213] mt-1 block">🎙 spoken</span>
                   )}
                 </div>
-                {/* Replay audio button for AI messages */}
                 {msg.role === 'ai' && (
                   <button
                     onClick={() => speakSpanish(msg.text, charInfo.gender)}
@@ -517,7 +492,6 @@ export function SpeakingPractice() {
             </div>
           ))}
 
-          {/* Typing indicator */}
           {isTyping && (
             <div className="flex flex-row-reverse items-end gap-2">
               <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
@@ -537,7 +511,6 @@ export function SpeakingPractice() {
         </div>
       </div>
 
-      {/* Finish Roleplay Button — shown when all criteria are met */}
       {criteriaComplete.size === scenario.criteria.length && messages.filter(m => m.role === 'user').length >= 2 && (
         <div className="shrink-0 px-4 pb-2">
           <div className="max-w-[600px] mx-auto bg-[#FFFDE6] border-2 border-[#3BBC00] rounded-xl p-3 flex items-center justify-between gap-3 shadow-lg">
@@ -553,7 +526,6 @@ export function SpeakingPractice() {
         </div>
       )}
 
-      {/* Input Area */}
       <div className="shrink-0 px-4 pb-4">
         <div className="max-w-[600px] mx-auto flex items-center gap-2 mb-2">
           <button
@@ -591,7 +563,6 @@ export function SpeakingPractice() {
           </button>
         </div>
         <div className="max-w-[600px] mx-auto flex gap-2">
-          {/* Mode toggle */}
           <div className="relative w-20 h-11 bg-[#F3F4F6] rounded-lg flex items-center p-1 shrink-0">
             <div className="absolute top-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-white rounded-md shadow-sm transition-all duration-200"
               style={{ left: inputMode === 'voice' ? '4px' : 'calc(50%)' }} />
@@ -621,7 +592,6 @@ export function SpeakingPractice() {
                 </button>
               </div>
             ) : voiceTranscript ? (
-              /* Transcript preview — user can send, discard, or re-record */
               <div className="flex flex-col gap-2">
                 <div className="bg-[#FFFDE6] rounded-xl px-4 py-3 border-2 border-[#FF6200]">
                   <p className="text-[13px] font-semibold text-[#372213] mb-1">Your transcript:</p>
@@ -646,7 +616,6 @@ export function SpeakingPractice() {
                 </div>
               </div>
             ) : (
-              /* Recording / tap to speak */
               <div className="flex gap-2">
                 {isRecording ? (
                   <>

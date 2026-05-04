@@ -21,12 +21,11 @@ export function UnitSection({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   return (
     <div className="flex flex-col w-full max-w-[632px] mx-auto bg-[#FF4D01] rounded-[16px] p-4 sm:p-5 transition-all duration-300">
-      {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex flex-row items-center justify-between w-full mb-4 group"
         aria-expanded={isExpanded}>
-        
+
         <div className="flex flex-row items-center gap-3">
           <h2 className="font-inter font-bold text-[20.4px] leading-[32px] text-white">
             {level}
@@ -41,7 +40,6 @@ export function UnitSection({
         </div>
       </button>
 
-      {/* Content Area */}
       {isExpanded &&
       <div className="flex flex-col gap-8 bg-white rounded-[16px] p-4 sm:p-5">
           {units.map((unit, index) =>
@@ -54,7 +52,6 @@ export function UnitSection({
             <LessonTile key={lesson.unitNumber} {...lesson} />
             )}
               </div>
-              {/* Separator line between units (except last one) */}
               {index < units.length - 1 &&
           <div className="w-full h-px bg-gray-100 mt-4" />
           }

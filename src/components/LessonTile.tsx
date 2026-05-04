@@ -33,39 +33,34 @@ export function LessonTile({
           backgroundColor: color
         }}
         onClick={onClick}>
-        
-        {/* Unit Badge */}
+
         <div className="absolute top-2.5 left-2.5 z-10 bg-white rounded-lg shadow-[0px_4px_4px_rgba(0,0,0,0.1)] px-2 py-0.5 min-w-[36px] text-center">
           <span className="font-inter font-semibold text-[16px] leading-[28px] tracking-[1.3px] text-[#372213]">
             {unitNumber}
           </span>
         </div>
 
-        {/* Illustration */}
         <div className="absolute inset-0 flex items-center justify-center p-4 pt-8">
           <img
             src={imageUrl}
             alt={`Illustration for ${title}`}
             className="w-full h-full object-contain" />
-          
+
         </div>
 
-        {/* Status Overlays */}
         {status === 'completed' &&
         <div className="absolute inset-0 flex items-center justify-center bg-black/10">
             <div className="w-[58px] h-[58px] rounded-full bg-[#09BD00] flex items-center justify-center shadow-lg">
               <Check
               className="w-8 h-8 text-white stroke-[3]"
               aria-hidden="true" />
-            
+
             </div>
           </div>
         }
 
-        {/* Progress bar below tile only — no overlay */}
       </div>
 
-      {/* Progress indicator below tile */}
       {status === 'in-progress' && (
         <div className="flex items-center gap-2 mt-1">
           <div className="flex-1 h-[6px] bg-gray-200 rounded-full overflow-hidden">

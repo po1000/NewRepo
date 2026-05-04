@@ -91,7 +91,6 @@ function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
         <span lang="es" className="text-[#DC2626]">{verb.infinitive}</span> - <span lang="en" className="text-[#1D4ED8]">{verb.english}</span>
       </p>
 
-      {/* Tense tabs */}
       <div className="flex flex-wrap gap-1 mb-2">
         {verb.tenses.map((tense, i) => (
           <div key={tense.tense_id} className="relative">
@@ -107,7 +106,6 @@ function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
             >
               {tense.english_name}
             </button>
-            {/* Hover tooltip */}
             {hoveredTense === i && tense.description && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-48 p-2 bg-[#372213] text-white text-[11px] leading-[14px] rounded-lg shadow-lg z-10 font-inter">
                 {tense.description}
@@ -118,7 +116,6 @@ function ConjugationTable({ verb }: { verb: GrammarHint['verb'] }) {
         ))}
       </div>
 
-      {/* Conjugation grid */}
       {currentTense && (
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
           {currentTense.conjugations.map((c, i) => (
@@ -150,14 +147,12 @@ export function SubunitDetailModal({
 
   useEffect(() => {
     async function fetchSubunitData() {
-      // Fetch terms linked to this subunit
       const { data: subunitTerms } = await supabase
         .from('subunit_terms')
         .select('term_id, sort_order, terms ( term_id, spanish_text, english_text, part_of_speech )')
         .eq('subunit_id', subunitId)
         .order('sort_order');
 
-      // Fetch user progress with SM2 data for decay-adjusted display
       let displayStatusMap: Record<number, TermStatus> = {};
       if (userId && subunitTerms?.length) {
         const termIds = subunitTerms.map((st: any) => st.term_id);
@@ -182,7 +177,6 @@ export function SubunitDetailModal({
 
       setTerms(termsList);
 
-      // Fetch grammar hints linked to these terms
       if (termsList.length) {
         const termIds = termsList.map(t => t.term_id);
         const { data: hintLinks } = await supabase
@@ -201,7 +195,6 @@ export function SubunitDetailModal({
 
             const hintData: GrammarHint = { ...hint };
 
-            // Check if this hint is linked to a verb
             if (hint.hint_type === 'conjugation') {
               const { data: verbLinks } = await supabase
                 .from('grammar_hint_verb_links')
@@ -210,7 +203,6 @@ export function SubunitDetailModal({
 
               if (verbLinks?.length) {
                 const verb = (verbLinks[0] as any).verbs;
-                // Fetch all conjugations for this verb
                 const { data: conjugations } = await supabase
                   .from('verb_conjugations')
                   .select('conjugated_form, tenses ( tense_id, name, english_name, description, sort_order ), pronouns ( pronoun_text, sort_order )')
@@ -218,7 +210,6 @@ export function SubunitDetailModal({
                   .order('tense_id');
 
                 if (conjugations?.length) {
-                  // Group by tense
                   const tenseMap = new Map<number, TenseData>();
                   for (const c of conjugations) {
                     const t = (c as any).tenses;
@@ -238,7 +229,6 @@ export function SubunitDetailModal({
                     });
                   }
 
-                  // Sort tenses by sort_order, sort conjugations by pronoun sort_order
                   const tenses = Array.from(tenseMap.values());
                   tenses.sort((a, b) => {
                     const aConj = conjugations.find((c: any) => (c as any).tenses.tense_id === a.tense_id);
@@ -283,7 +273,6 @@ export function SubunitDetailModal({
         style={{ background: 'linear-gradient(to bottom, #FFF8E1, #FFFDF5)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
@@ -291,9 +280,7 @@ export function SubunitDetailModal({
           <X className="w-5 h-5 text-[#6B7280]" />
         </button>
 
-        {/* Scrollable content */}
         <div className="overflow-y-auto flex-1">
-          {/* Header */}
           <div className="px-5 pt-5 pb-3">
             <div className="flex items-start justify-between pr-8">
               <h2 className="font-inter font-bold text-[18px] leading-[24px] text-[#372213]">
@@ -318,7 +305,6 @@ export function SubunitDetailModal({
             )}
           </div>
 
-          {/* Grammar Hints Section */}
           {showGrammar && (
             <div className="mx-5 mb-3 p-3 bg-white/80 rounded-[12px] border border-[#F97316]/20">
               <div className="flex items-center justify-between mb-2">
@@ -350,7 +336,6 @@ export function SubunitDetailModal({
             </div>
           )}
 
-          {/* Words & Phrases */}
           <div className="mx-5 mb-4 bg-white rounded-[16px] p-4">
             <h3 className="font-inter font-bold text-[15px] text-[#372213] mb-3">{t('dashboard.wordsAndPhrases')}</h3>
 
@@ -383,7 +368,6 @@ export function SubunitDetailModal({
           </div>
         </div>
 
-        {/* Start Lesson Button */}
         <div className="px-5 pb-5 pt-2">
           <button
             onClick={onStartLesson}

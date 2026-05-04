@@ -18,7 +18,7 @@ interface ConjugationRow {
   pronoun_text: string;
   person_group: string;
   sort_order: number;
-  forms: Record<string, string>; // tense_name -> conjugated_form
+  forms: Record<string, string>;
 }
 
 interface VerbInfo {
@@ -46,7 +46,6 @@ export function VerbConjugation() {
   const { t } = useLanguage();
   const { verb: verbSlug } = useParams<{ verb: string }>();
   const location = useLocation();
-  // Extract category from URL path: /grammar/er-verbs/ser → 'er'
   const pathCategory = location.pathname.match(/\/grammar\/(\w+)-verbs\//)?.[1] || 'er';
   const [verb, setVerb] = useState<VerbInfo | null>(null);
   const [tenses, setTenses] = useState<TenseInfo[]>([]);
@@ -58,7 +57,6 @@ export function VerbConjugation() {
     async function load() {
       if (!verbSlug) return;
 
-      // Fetch the verb
       const { data: verbData } = await supabase
         .from('verbs')
         .select('verb_id, infinitive, english_meaning, is_irregular, grammar_verb_categories ( name )')
@@ -79,7 +77,6 @@ export function VerbConjugation() {
         category_name: catName,
       });
 
-      // Fetch all tenses
       const { data: tenseData } = await supabase
         .from('tenses')
         .select('tense_id, name, english_name, description, sort_order')
@@ -87,14 +84,12 @@ export function VerbConjugation() {
 
       if (tenseData) setTenses(tenseData);
 
-      // Fetch conjugations for this verb
       const { data: conjData } = await supabase
         .from('verb_conjugations')
         .select('conjugated_form, tenses ( name, sort_order ), pronouns ( pronoun_text, person_group, sort_order )')
         .eq('verb_id', verbData.verb_id);
 
       if (conjData?.length) {
-        // Group by pronoun
         const pronMap = new Map<string, ConjugationRow>();
 
         for (const c of conjData) {
@@ -122,7 +117,6 @@ export function VerbConjugation() {
     load();
   }, [verbSlug]);
 
-  // Filter tenses that have at least one conjugation for this verb
   const activeTenses = tenses.filter(t => rows.some(r => r.forms[t.name]));
 
   const catLabel = CATEGORY_LABELS[pathCategory] || (verb ? CATEGORY_LABELS[verb.category_name] : '') || 'Verbs';
@@ -168,7 +162,6 @@ export function VerbConjugation() {
                 <p className="text-white/80 text-[14px]">No conjugation data available yet for this verb.</p>
               ) : (
                 <div className="w-full overflow-x-auto">
-                  {/* Table Headers */}
                   <div className="flex mb-4 ml-[45px] min-w-fit">
                     <div className="w-[100px] flex justify-center shrink-0">
                       <span className="font-inter font-medium text-[14px] leading-[28px] text-white">
@@ -196,7 +189,6 @@ export function VerbConjugation() {
                   </div>
 
                   <div className="flex gap-3 min-w-fit">
-                    {/* Singular/Plural sidebar */}
                     <div className="w-[33px] flex flex-col gap-4 shrink-0">
                       {singularRows.length > 0 && (
                         <div
@@ -220,7 +212,6 @@ export function VerbConjugation() {
                       )}
                     </div>
 
-                    {/* Pronouns column */}
                     <div className="w-[100px] flex flex-col gap-4 shrink-0">
                       <div className="flex flex-col gap-2">
                         {singularRows.map(r => (
@@ -242,7 +233,6 @@ export function VerbConjugation() {
                       </div>
                     </div>
 
-                    {/* Tense columns */}
                     {activeTenses.map(t => (
                       <div key={t.tense_id} className="w-[100px] flex flex-col gap-4 shrink-0">
                         <div className="flex flex-col gap-2">
