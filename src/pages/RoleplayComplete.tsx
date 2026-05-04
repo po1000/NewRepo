@@ -435,6 +435,15 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (user?.id && scenarioId) {
+      localStorage.setItem(`roleplay_done_${user.id}_${scenarioId}`, JSON.stringify({
+        pct: evaluation.overallPct,
+        ts: Date.now(),
+      }));
+    }
+  }, [user, scenarioId, evaluation.overallPct]);
+
   const minutes = Math.floor(data.elapsed / 60);
   const seconds = data.elapsed % 60;
   const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')} mins`;

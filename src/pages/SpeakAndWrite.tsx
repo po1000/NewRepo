@@ -1,10 +1,11 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageLayout } from '../components/PageLayout';
 import { STORAGE_URL } from '../lib/storage';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 export interface ScenarioCriteria {
   id: string;
@@ -104,6 +105,22 @@ export function SpeakAndWrite({}: SpeakAndWriteProps) {
   usePageTitle('Speak & Write');
   const navigate = useNavigate();
   const { t, showInstructions } = useLanguage();
+  const { user } = useAuth();
+
+  function getCompletion(scenarioId: string): { pct: number } | null {
+    if (!user?.id) return null;
+    try {
+      const raw = localStorage.getItem(`roleplay_done_${user.id}_${scenarioId}`);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  }
+
+  function handleRetry(scenarioId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (user?.id) localStorage.removeItem(`chat_${user.id}_${scenarioId}`);
+    navigate(`/speak-and-write/practice/${scenarioId}`);
+  }
   return (
     <PageLayout>
 
@@ -125,43 +142,80 @@ export function SpeakAndWrite({}: SpeakAndWriteProps) {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {scenarios.map((scenario) => (
-            <div key={scenario.id}
-              className="bg-white rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate(`/speak-and-write/practice/${scenario.id}`)}>
+          {scenarios.map((scenario) => {
+            const completion = getCompletion(scenario.id);
+            return (
+              <div key={scenario.id}
+                className="bg-white rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => navigate(`/speak-and-write/practice/${scenario.id}`)}>
 
-              <div className="w-full h-[138px] relative" style={{ backgroundColor: scenario.color }}>
-                <img src={scenario.imageUrl} alt={scenario.title}
-                  className="w-full h-full object-cover rounded-t-lg p-1.5" />
-              </div>
-
-              <div className="p-4 flex flex-col gap-3">
-                <div className="inline-flex">
-                  <span className="bg-[#FFF9B5] text-[#FF4D01] font-bold text-[10.2px] leading-[16px] px-2 py-1 rounded-full">
-                    {scenario.level}
-                  </span>
-                </div>
-                <h3 className="font-bold text-[15.3px] leading-[28px] text-[#372213]">{scenario.title}</h3>
-                <p className="text-[11.9px] leading-[20px] text-[#372213]">{scenario.description}</p>
-
-                <div className="flex flex-col gap-1">
-                  {scenario.criteria.map(c => (
-                    <div key={c.id} className="flex items-center gap-1.5">
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-[#D1D5DB]" />
-                      <span className="text-[10.5px] text-[#372213]">{c.text}</span>
+                <div className="w-full h-[138px] relative" style={{ backgroundColor: scenario.color }}>
+                  <img src={scenario.imageUrl} alt={scenario.title}
+                    className="w-full h-full object-cover rounded-t-lg p-1.5" />
+                  {completion && (
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 bg-[#16A34A] text-white px-2.5 py-1 rounded-full shadow-md">
+                      <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                      <span className="font-bold text-[11px]">{completion.pct}%</span>
                     </div>
-                  ))}
+                  )}
                 </div>
 
-                <button className="flex flex-row items-center gap-2 mt-2 group">
-                  <span className="font-medium text-[11.9px] leading-[20px] text-[#FF4D01] group-hover:underline">
-                    {t('page.startPractice')}
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-[#FF4D01]" />
-                </button>
+                <div className="p-4 flex flex-col gap-3">
+                  <div className="inline-flex gap-2">
+                    <span className="bg-[#FFF9B5] text-[#FF4D01] font-bold text-[10.2px] leading-[16px] px-2 py-1 rounded-full">
+                      {scenario.level}
+                    </span>
+                    {completion && (
+                      <span className="bg-[#D0FFC4] text-[#16A34A] font-bold text-[10.2px] leading-[16px] px-2 py-1 rounded-full">
+                        Completed
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-bold text-[15.3px] leading-[28px] text-[#372213]">{scenario.title}</h3>
+                  <p className="text-[11.9px] leading-[20px] text-[#372213]">{scenario.description}</p>
+
+                  <div className="flex flex-col gap-1">
+                    {scenario.criteria.map(c => (
+                      <div key={c.id} className="flex items-center gap-1.5">
+                        {completion ? (
+                          <Check className="w-3.5 h-3.5 text-[#16A34A]" strokeWidth={3} />
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded-full border-2 border-[#D1D5DB]" />
+                        )}
+                        <span className={`text-[10.5px] ${completion ? 'text-[#16A34A]' : 'text-[#372213]'}`}>{c.text}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3 mt-2">
+                    {completion ? (
+                      <>
+                        <button className="flex items-center gap-2 group" onClick={(e) => handleRetry(scenario.id, e)}>
+                          <RotateCcw className="w-4 h-4 text-[#FF4D01]" />
+                          <span className="font-medium text-[11.9px] leading-[20px] text-[#FF4D01] group-hover:underline">
+                            Retry
+                          </span>
+                        </button>
+                        <button className="flex items-center gap-2 group">
+                          <span className="font-medium text-[11.9px] leading-[20px] text-[#FF4D01] group-hover:underline">
+                            Continue
+                          </span>
+                          <ArrowRight className="w-4 h-4 text-[#FF4D01]" />
+                        </button>
+                      </>
+                    ) : (
+                      <button className="flex items-center gap-2 group">
+                        <span className="font-medium text-[11.9px] leading-[20px] text-[#FF4D01] group-hover:underline">
+                          {t('page.startPractice')}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-[#FF4D01]" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </PageLayout>
