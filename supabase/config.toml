@@ -1,12 +1,4 @@
-[project]
-id = ""
+project_id = ""
 
-[api]
-enabled = true
-port = 54321
-
-[db]
-port = 54322
-
-[functions]
+[functions.roleplay-chat]
 verify_jwt = false
