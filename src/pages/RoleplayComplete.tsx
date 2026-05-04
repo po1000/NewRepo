@@ -136,6 +136,51 @@ function scoreColor(score: number): string {
   return '#EF4444';
 }
 
+function AnnotatedUserText({ text }: { text: string }) {
+  const tokens = text.split(/(\s+)/);
+  return (
+    <>
+      {tokens.map((token, i) => {
+        if (/^\s+$/.test(token)) return <span key={i}>{token}</span>;
+        const clean = token.toLowerCase().replace(/[^a-záéíóúñü]/g, '');
+        if (clean.length < 2) return <span key={i}>{token}</span>;
+
+        const accentedForm = ACCENT_MAP[clean];
+        if (accentedForm) {
+          return (
+            <span key={i} className="relative group cursor-help"
+              style={{ textDecorationLine: 'underline', textDecorationStyle: 'wavy', textDecorationColor: '#F59E0B', textDecorationThickness: '2px', textUnderlineOffset: '3px' }}>
+              {token}
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#1F2937] text-white text-[12px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
+                Missing accent: {accentedForm}
+                <span className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1F2937] rotate-45 -mt-1" />
+              </span>
+            </span>
+          );
+        }
+
+        if (!COMMON_WORDS.has(clean) && !ACCENTED_FORMS.has(clean)) {
+          const closest = findClosest(clean, COMMON_WORDS);
+          if (closest) {
+            return (
+              <span key={i} className="relative group cursor-help"
+                style={{ textDecorationLine: 'underline', textDecorationStyle: 'wavy', textDecorationColor: '#EF4444', textDecorationThickness: '2px', textUnderlineOffset: '3px' }}>
+                {token}
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#1F2937] text-white text-[12px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
+                  Did you mean '{closest}'?
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1F2937] rotate-45 -mt-1" />
+                </span>
+              </span>
+            );
+          }
+        }
+
+        return <span key={i}>{token}</span>;
+      })}
+    </>
+  );
+}
+
 function evaluateRoleplay(messages: ReviewMessage[], scenarioKeywords: string[]) {
   const userMessages = messages.filter(m => m.role === 'user');
   const writtenMsgs = userMessages.filter(m => m.inputMode === 'text');
@@ -371,7 +416,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
 
   const [mode, setMode] = useState<'summary' | 'review'>('summary');
   const [showTranslations, setShowTranslations] = useState(false);
-  const [expandedCriterion, setExpandedCriterion] = useState<string | null>(null);
+  const [expandedCriteria, setExpandedCriteria] = useState<Set<string>>(new Set());
   const [writingExpanded, setWritingExpanded] = useState(true);
   const [speakingExpanded, setSpeakingExpanded] = useState(true);
   const [confetti, setConfetti] = useState<{ id: number; left: number; size: number; color: string; delay: number }[]>([]);
@@ -418,8 +463,9 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-[#FF1500] to-[#FFD905] font-inter flex flex-col">
         <div className="flex items-center justify-between px-4 py-4 shrink-0">
-          <button onClick={() => setMode('summary')} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <ArrowLeft className="w-6 h-6 text-[#FFFDE6]" />
+          <button onClick={() => setMode('summary')} className="flex items-center gap-1.5 px-3 py-2 hover:bg-white/10 rounded-lg transition-colors">
+            <ArrowLeft className="w-5 h-5 text-[#FFFDE6]" />
+            <span className="font-medium text-[13px] text-[#FFFDE6]">Back to Grade</span>
           </button>
           <h1 className="font-bold text-[15px] leading-[24px] text-[#FFFDE6] text-center flex-1">
             Review: {data.scenarioTitle}
@@ -435,6 +481,20 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
             {showTranslations ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             {showTranslations ? 'Hide English' : 'Show English'}
           </button>
+        </div>
+
+        <div className="px-4 py-2 shrink-0">
+          <div className="max-w-[600px] mx-auto flex items-center gap-4 text-[11px] text-[#FFFDE6]/80">
+            <span className="flex items-center gap-1.5">
+              <span style={{ textDecorationLine: 'underline', textDecorationStyle: 'wavy', textDecorationColor: '#F59E0B', textDecorationThickness: '2px' }}>abc</span>
+              = missing accent
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span style={{ textDecorationLine: 'underline', textDecorationStyle: 'wavy', textDecorationColor: '#EF4444', textDecorationThickness: '2px' }}>abc</span>
+              = spelling error
+            </span>
+            <span className="text-[#FFFDE6]/60">(hover for details)</span>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-6">
@@ -470,7 +530,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
                     <p lang="es" className={`text-[15.6px] leading-[24px] ${
                       msg.role === 'ai' ? 'font-medium text-[#1F2937]' : 'text-[#372213]'
                     }`}>
-                      {msg.text}
+                      {msg.role === 'user' ? <AnnotatedUserText text={msg.text} /> : msg.text}
                     </p>
                     {msg.role === 'user' && msg.inputMode === 'voice' && (
                       <span className="text-[9px] text-[#372213] mt-1 block">🎙 spoken</span>
@@ -549,7 +609,7 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
         <div className="w-full max-w-[632px] rounded-t-xl py-3 px-6 text-center"
           style={{ backgroundColor: scoreColor(evaluation.overallScore) }}>
           <p className="font-bold text-[18px] text-white">
-            Accuracy Score: {evaluation.overallPct}% &mdash; {scoreLabel(evaluation.overallScore)}
+            Accuracy Score: {evaluation.overallPct}%
           </p>
         </div>
 
@@ -574,8 +634,13 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
                     <CriterionRow
                       key={g.name}
                       grade={g}
-                      isExpanded={expandedCriterion === `w-${g.name}`}
-                      onToggle={() => setExpandedCriterion(expandedCriterion === `w-${g.name}` ? null : `w-${g.name}`)}
+                      isExpanded={expandedCriteria.has(`w-${g.name}`)}
+                      onToggle={() => setExpandedCriteria(prev => {
+                        const next = new Set(prev);
+                        if (next.has(`w-${g.name}`)) next.delete(`w-${g.name}`);
+                        else next.add(`w-${g.name}`);
+                        return next;
+                      })}
                     />
                   ))}
                 </div>
@@ -601,8 +666,13 @@ export function RoleplayComplete(_props: RoleplayCompleteProps) {
                     <CriterionRow
                       key={g.name}
                       grade={g}
-                      isExpanded={expandedCriterion === `s-${g.name}`}
-                      onToggle={() => setExpandedCriterion(expandedCriterion === `s-${g.name}` ? null : `s-${g.name}`)}
+                      isExpanded={expandedCriteria.has(`s-${g.name}`)}
+                      onToggle={() => setExpandedCriteria(prev => {
+                        const next = new Set(prev);
+                        if (next.has(`s-${g.name}`)) next.delete(`s-${g.name}`);
+                        else next.add(`s-${g.name}`);
+                        return next;
+                      })}
                     />
                   ))}
                 </div>

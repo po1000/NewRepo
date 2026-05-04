@@ -51,20 +51,22 @@ function speakSpanish(text: string, gender: 'male' | 'female' = 'female') {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
-  utterance.rate = gender === 'female' ? 0.9 : 0.88;
-  utterance.pitch = gender === 'female' ? 1.15 : 0.55;
+  utterance.rate = gender === 'female' ? 0.9 : 0.92;
+  utterance.pitch = gender === 'female' ? 1.1 : 1.0;
   const voices = window.speechSynthesis.getVoices();
   const spanishVoices = voices.filter(v => v.lang.startsWith('es'));
-  const systemVoices = spanishVoices.filter(v => !v.name.includes('Google'));
+  const googleVoices = spanishVoices.filter(v => v.name.includes('Google'));
+  const nonGoogleVoices = spanishVoices.filter(v => !v.name.includes('Google'));
 
   let best: SpeechSynthesisVoice | undefined;
   if (gender === 'male') {
-    best = systemVoices.find(v => MALE_VOICE_NAMES.some(n => v.name.includes(n)));
-    if (!best) best = systemVoices.find(v => !FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
-    if (!best) best = systemVoices[0] || spanishVoices[0];
+    best = googleVoices.find(v => v.name.includes('Google español'));
+    if (!best) best = nonGoogleVoices.find(v => MALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    if (!best) best = nonGoogleVoices.find(v => !FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    if (!best) best = googleVoices[0] || spanishVoices[0];
   } else {
-    best = systemVoices.find(v => FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
-    if (!best) best = systemVoices[0] || spanishVoices[0];
+    best = nonGoogleVoices.find(v => FEMALE_VOICE_NAMES.some(n => v.name.includes(n)));
+    if (!best) best = googleVoices[0] || spanishVoices[0];
   }
   if (best) utterance.voice = best;
   window.speechSynthesis.speak(utterance);
@@ -199,7 +201,7 @@ export function SpeakingPractice() {
   const [isRecording, setIsRecording] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
   const [criteriaComplete, setCriteriaComplete] = useState<Set<string>>(new Set());
-  const [startTime] = useState(Date.now());
+  const firstMessageTimeRef = useRef<number | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -245,7 +247,9 @@ export function SpeakingPractice() {
   }, [messages]);
 
   function handleFinishRoleplay() {
-    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    const elapsed = firstMessageTimeRef.current
+      ? Math.round((Date.now() - firstMessageTimeRef.current) / 1000)
+      : 0;
     navigate(`/speak-and-write/${scenario.id}/complete`, {
       state: {
         scenarioId: scenario.id,
@@ -264,6 +268,7 @@ export function SpeakingPractice() {
 
   const sendMessage = useCallback(async (text: string, mode: 'text' | 'voice') => {
     if (!text.trim()) return;
+    if (!firstMessageTimeRef.current) firstMessageTimeRef.current = Date.now();
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
