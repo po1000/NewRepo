@@ -22,7 +22,7 @@ const MusicDancePage = React.lazy(() => import('./pages/MusicDance').then(m => (
 const FoodDrinkPage = React.lazy(() => import('./pages/FoodDrink').then(m => ({ default: m.FoodDrink })));
 const RegionsLandmarksPage = React.lazy(() => import('./pages/RegionsLandmarks').then(m => ({ default: m.RegionsLandmarks })));
 const HistoryPage = React.lazy(() => import('./pages/History').then(m => ({ default: m.History })));
-const PianoTilesGamePage = React.lazy(() => import('./pages/PianoTilesGame').then(m => ({ default: m.PianoTilesGame })));
+
 const SpeakAndWritePage = React.lazy(() => import('./pages/SpeakAndWrite').then(m => ({ default: m.SpeakAndWrite })));
 const SpeakingPracticePage = React.lazy(() => import('./pages/SpeakingPractice').then(m => ({ default: m.SpeakingPractice })));
 const RoleplayCompletePage = React.lazy(() => import('./pages/RoleplayComplete').then(m => ({ default: m.RoleplayComplete })));
@@ -69,7 +69,6 @@ export function App() {
             <Route path="/culture/food-drink" element={<ProtectedRoute><FoodDrinkPage /></ProtectedRoute>} />
             <Route path="/culture/regions-landmarks" element={<ProtectedRoute><RegionsLandmarksPage /></ProtectedRoute>} />
             <Route path="/culture/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-            <Route path="/culture/games/piano-tiles" element={<ProtectedRoute><PianoTilesGamePage /></ProtectedRoute>} />
 
             {/* Speak & Write */}
             <Route path="/speak-and-write" element={<ProtectedRoute><SpeakAndWritePage /></ProtectedRoute>} />
