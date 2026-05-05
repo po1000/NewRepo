@@ -195,6 +195,11 @@ export function LessonFlow() {
 
   const totalQuizzesRef = useRef(0);
 
+  const [audioSkippedToday, setAudioSkippedToday] = useState(() => {
+    const stored = localStorage.getItem('audio_skipped_date');
+    return stored === new Date().toLocaleDateString('en-CA');
+  });
+
   const [sessionXp, setSessionXp] = useState(0);
   const [xpPopup, setXpPopup] = useState<{ amount: number; key: number } | null>(null);
   const [lessonComplete, setLessonComplete] = useState(false);
@@ -425,11 +430,15 @@ export function LessonFlow() {
 
 
   const setupRandomQuiz = useCallback((termId: number) => {
+    if (audioSkippedToday) {
+      setupMultiChoice(termId);
+      return;
+    }
     const roll = Math.random();
     if (roll < 0.5) setupMultiChoice(termId);
     else if (roll < 0.75) setupListenWrite(termId);
     else setupListenSpeak(termId);
-  }, [setupMultiChoice, setupListenWrite, setupListenSpeak]);
+  }, [setupMultiChoice, setupListenWrite, setupListenSpeak, audioSkippedToday]);
 
   useEffect(() => {
     if (loading || initialModeApplied.current) return;
@@ -810,6 +819,12 @@ export function LessonFlow() {
     };
   }, [lsRecording]);
 
+  const skipAudioForDay = useCallback(() => {
+    localStorage.setItem('audio_skipped_date', new Date().toLocaleDateString('en-CA'));
+    setAudioSkippedToday(true);
+    advanceQueue();
+  }, [advanceQueue]);
+
   const handlePlayAudio = useCallback(() => {
     if (currentTerm) speakSpanish(currentTerm.spanish_text, slowAudio);
   }, [currentTerm, slowAudio]);
@@ -1141,6 +1156,13 @@ export function LessonFlow() {
             <div className="h-full bg-[#FFFDE6] rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }} />
           </div>
+          {audioSkippedToday && (
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 mr-2">
+              <span className="text-[11px] text-[#FFFDE6]">Audio off today</span>
+              <button onClick={() => { localStorage.removeItem('audio_skipped_date'); setAudioSkippedToday(false); }}
+                className="text-[11px] text-[#FFFDE6] underline hover:text-white">Undo</button>
+            </div>
+          )}
           <button onClick={() => setShowReport(!showReport)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <Flag className="w-6 h-6 text-[#FFFDE6]" />
           </button>
@@ -1413,7 +1435,7 @@ export function LessonFlow() {
                   className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg disabled:opacity-50">
                   Check
                 </button>
-                <button onClick={advanceQueue}
+                <button onClick={skipAudioForDay}
                   className="text-[#FFFDE6]/60 text-[13px] hover:text-[#FFFDE6] transition-colors">
                   Can't listen right now
                 </button>
@@ -1505,7 +1527,7 @@ export function LessonFlow() {
                         <Mic className="w-5 h-5 text-[#FF4D01]" />
                         <span className="font-medium text-[14px]">Tap to speak</span>
                       </button>
-                      <button onClick={advanceQueue}
+                      <button onClick={skipAudioForDay}
                         className="text-[#FFFDE6]/60 text-[13px] hover:text-[#FFFDE6] transition-colors">
                         Can't speak right now
                       </button>
