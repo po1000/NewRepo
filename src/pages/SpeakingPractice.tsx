@@ -449,7 +449,7 @@ export function SpeakingPractice() {
         </div>
       </div>
 
-      <div className="max-w-[600px] mx-auto px-4 mb-3 shrink-0">
+      <div className="max-w-[600px] mx-auto px-4 mb-5 sm:mb-3 shrink-0">
         <div className="flex flex-wrap gap-2">
           {scenario.criteria.map(c => (
             <div key={c.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${

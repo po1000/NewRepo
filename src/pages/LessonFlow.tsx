@@ -30,6 +30,9 @@ import {
   multiChoiceQuality,
   listenWriteQuality,
   listenSpeakQuality,
+  saveSessionToDb,
+  loadSessionFromDb,
+  clearSessionFromDb,
   TermProgress,
   TermStatus,
 } from '../lib/srs';
@@ -195,10 +198,7 @@ export function LessonFlow() {
 
   const totalQuizzesRef = useRef(0);
 
-  const [audioSkippedToday, setAudioSkippedToday] = useState(() => {
-    const stored = localStorage.getItem('audio_skipped_date');
-    return stored === new Date().toLocaleDateString('en-CA');
-  });
+  const [audioSkippedSession, setAudioSkippedSession] = useState(false);
 
   const [sessionXp, setSessionXp] = useState(0);
   const [xpPopup, setXpPopup] = useState<{ amount: number; key: number } | null>(null);
@@ -298,6 +298,19 @@ export function LessonFlow() {
       }
 
       if (!restored) {
+        const dbSession = await loadSessionFromDb(user.id, state.subunitId);
+        if (dbSession) {
+          const validQueue = dbSession.queue.filter(id => tMap.has(id));
+          if (validQueue.length > 0 && dbSession.queueIndex < validQueue.length) {
+            setQueue(validQueue);
+            setQueueIndex(dbSession.queueIndex);
+            setNewFlashcardCount(dbSession.newFlashcardCount || 0);
+            restored = true;
+          }
+        }
+      }
+
+      if (!restored) {
         const sessionQueue = buildSessionQueue(termIds, pMap);
         let unseenCount = 0;
         const limitedQueue = sessionQueue.filter(tid => {
@@ -335,7 +348,11 @@ export function LessonFlow() {
     if (!state.subunitId || !user || loading || queue.length === 0) return;
     const data: SavedSession = { queueIndex, queue, newFlashcardCount };
     localStorage.setItem(sessionKey(state.subunitId, user.id), JSON.stringify(data));
-  }, [queueIndex, queue, newFlashcardCount, state.subunitId, user, loading]);
+    const tid = queueIndex < queue.length ? queue[queueIndex] : null;
+    saveSessionToDb(user.id, state.subunitId, {
+      queueIndex, queue, newFlashcardCount, mode, currentTermId: tid,
+    });
+  }, [queueIndex, queue, newFlashcardCount, state.subunitId, user, loading, mode]);
 
   const currentTermId = queueIndex < queue.length ? queue[queueIndex] : null;
   const currentTerm = currentTermId ? termsMap.get(currentTermId) || null : null;
@@ -430,7 +447,7 @@ export function LessonFlow() {
 
 
   const setupRandomQuiz = useCallback((termId: number) => {
-    if (audioSkippedToday) {
+    if (audioSkippedSession) {
       setupMultiChoice(termId);
       return;
     }
@@ -438,7 +455,7 @@ export function LessonFlow() {
     if (roll < 0.5) setupMultiChoice(termId);
     else if (roll < 0.75) setupListenWrite(termId);
     else setupListenSpeak(termId);
-  }, [setupMultiChoice, setupListenWrite, setupListenSpeak, audioSkippedToday]);
+  }, [setupMultiChoice, setupListenWrite, setupListenSpeak, audioSkippedSession]);
 
   useEffect(() => {
     if (loading || initialModeApplied.current) return;
@@ -456,6 +473,7 @@ export function LessonFlow() {
   const finishLesson = useCallback(() => {
     if (state.subunitId && user) {
       localStorage.removeItem(sessionKey(state.subunitId, user.id));
+      clearSessionFromDb(user.id, state.subunitId);
     }
     const STATUS_ORDER = ['not_seen', 'seen', 'learning', 'reinforced', 'learnt'];
     const graduated: { term: Term; from: string; to: string }[] = [];
@@ -710,9 +728,12 @@ export function LessonFlow() {
     analyserRef.current = null;
   }, []);
 
+  const [micError, setMicError] = useState('');
+
   const startLsRecording = useCallback(async () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { alert('Speech recognition not supported. Use Chrome.'); return; }
+    setMicError('');
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -724,7 +745,10 @@ export function LessonFlow() {
       analyser.fftSize = 256;
       source.connect(analyser);
       analyserRef.current = analyser;
-    } catch {}
+    } catch (err: any) {
+      setMicError('Mic unavailable — close other apps using your microphone (e.g. Teams, Zoom) and try again.');
+      return;
+    }
 
     const recog = new SR();
     recog.lang = 'es-ES';
@@ -737,7 +761,15 @@ export function LessonFlow() {
       setLsRecording(false);
       cleanupAudio();
     };
-    recog.onerror = () => { setLsRecording(false); cleanupAudio(); };
+    recog.onerror = (e: any) => {
+      setLsRecording(false);
+      cleanupAudio();
+      if (e.error === 'no-speech') {
+        setMicError('No speech detected — speak louder or check your microphone.');
+      } else if (e.error === 'not-allowed') {
+        setMicError('Microphone access denied. Check browser permissions.');
+      }
+    };
     recog.onend = () => { if (!gotResult) { setLsRecording(false); cleanupAudio(); } };
     lsRecogRef.current = recog;
     recog.start();
@@ -819,9 +851,8 @@ export function LessonFlow() {
     };
   }, [lsRecording]);
 
-  const skipAudioForDay = useCallback(() => {
-    localStorage.setItem('audio_skipped_date', new Date().toLocaleDateString('en-CA'));
-    setAudioSkippedToday(true);
+  const skipAudioForSession = useCallback(() => {
+    setAudioSkippedSession(true);
     advanceQueue();
   }, [advanceQueue]);
 
@@ -1156,10 +1187,10 @@ export function LessonFlow() {
             <div className="h-full bg-[#FFFDE6] rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }} />
           </div>
-          {audioSkippedToday && (
+          {audioSkippedSession && (
             <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 mr-2">
-              <span className="text-[11px] text-[#FFFDE6]">Audio off today</span>
-              <button onClick={() => { localStorage.removeItem('audio_skipped_date'); setAudioSkippedToday(false); }}
+              <span className="text-[11px] text-[#FFFDE6]">Audio off</span>
+              <button onClick={() => setAudioSkippedSession(false)}
                 className="text-[11px] text-[#FFFDE6] underline hover:text-white">Undo</button>
             </div>
           )}
@@ -1318,7 +1349,9 @@ export function LessonFlow() {
 
             <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
               <p className="text-[14px] text-[#372213] mb-2">
-                {mcDirection === 'es_to_en' ? 'What does this mean?' : 'How do you say this in Spanish?'}
+                {mcDirection === 'es_to_en'
+                  ? <span>What does this mean in <strong>English</strong>?</span>
+                  : <span>How do you say this in <strong>Spanish</strong>?</span>}
               </p>
               <h2 className="font-bold text-[24px] leading-[36px] text-[#372213] text-center">
                 {mcDirection === 'es_to_en' ? quizzedTerm.spanish_text : quizzedTerm.english_text}
@@ -1399,8 +1432,8 @@ export function LessonFlow() {
           if (!lwTerm) return null;
           const isHearEsTypeEn = lwDirection === 'hear_es_type_en';
           const promptText = isHearEsTypeEn
-            ? 'Listen to the Spanish and type the English meaning'
-            : 'Listen to the English and type the Spanish word';
+            ? <span>Listen to the Spanish and type the <strong>English</strong> meaning</span>
+            : <span>Listen to the English and type the <strong>Spanish</strong> word</span>;
           const placeholder = isHearEsTypeEn ? 'Type in English...' : 'Type in Spanish...';
           const correctAnswer = isHearEsTypeEn ? lwTerm.english_text : lwTerm.spanish_text;
           return (
@@ -1435,7 +1468,7 @@ export function LessonFlow() {
                   className="px-8 py-3 bg-[#FFFDE6] rounded-xl text-[#FF4D01] font-bold text-[14.6px] hover:bg-white transition-colors shadow-lg disabled:opacity-50">
                   Check
                 </button>
-                <button onClick={skipAudioForDay}
+                <button onClick={skipAudioForSession}
                   className="text-[#FFFDE6]/60 text-[13px] hover:text-[#FFFDE6] transition-colors">
                   Can't listen right now
                 </button>
@@ -1479,7 +1512,7 @@ export function LessonFlow() {
             </div>
 
             <div className="w-full max-w-[422px] bg-[#FFFDE6] rounded-2xl p-6 flex flex-col items-center shadow-lg mb-6">
-              <p className="text-[14px] text-[#372213] mb-3">Say this in Spanish:</p>
+              <p className="text-[14px] text-[#372213] mb-3">Say this in <strong>Spanish</strong>:</p>
 
               {lsTerm.image_url && (
                 <img src={lsTerm.image_url} alt={lsTerm.english_text}
@@ -1527,7 +1560,10 @@ export function LessonFlow() {
                         <Mic className="w-5 h-5 text-[#FF4D01]" />
                         <span className="font-medium text-[14px]">Tap to speak</span>
                       </button>
-                      <button onClick={skipAudioForDay}
+                      {micError && (
+                        <p className="text-[#FFFDE6] text-[12px] text-center max-w-[300px] bg-red-500/30 rounded-lg px-3 py-2">{micError}</p>
+                      )}
+                      <button onClick={skipAudioForSession}
                         className="text-[#FFFDE6]/60 text-[13px] hover:text-[#FFFDE6] transition-colors">
                         Can't speak right now
                       </button>

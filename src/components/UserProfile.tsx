@@ -162,7 +162,7 @@ export function UserProfile({ username, avatarUrl, userId, onAvatarChange }: Use
         <span className="font-inter font-semibold text-[13px] leading-[20px] text-[#372213]">
           {username}
         </span>
-        <ChevronDown className="w-4 h-4 text-[#372213]" aria-hidden="true" />
+        <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-[#372213]" aria-hidden="true" />
       </button>
 
       {menuOpen && (

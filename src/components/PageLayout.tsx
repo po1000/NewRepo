@@ -22,7 +22,7 @@ export function PageLayout({ children, stats, backgroundColor = '#FFF799', navOv
 
   return (
     <div className="min-h-screen font-inter" style={{ backgroundColor }}>
-      <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between max-w-[900px] mx-auto relative z-50">
+      <header className="w-full px-4 sm:px-8 py-4 flex items-center justify-between gap-3 sm:gap-4 max-w-[900px] mx-auto relative z-50">
         <UserProfile
           username={username}
           avatarUrl={avatarUrl}

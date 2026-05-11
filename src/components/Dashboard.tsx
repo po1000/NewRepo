@@ -282,7 +282,7 @@ export function Dashboard() {
               <p className="font-inter font-semibold text-[13px] text-[#FF4D01] shrink-0">+20 {t('resume.xpReward')}</p>
             </div>
             {lastLesson.goalText && (
-              <p className="font-inter italic text-[12px] text-[#372213] mb-1">"{lastLesson.goalText}"</p>
+              <p className="font-inter italic text-[12px] text-[#372213] mb-2 sm:mb-1">"{lastLesson.goalText}"</p>
             )}
             <p className="font-inter text-[13px] text-[#372213] mb-2">
               {t('resume.vocab')} {lastLesson.vocabPreview}....

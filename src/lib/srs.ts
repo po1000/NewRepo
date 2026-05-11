@@ -94,14 +94,26 @@ export function listenWriteQuality(
   skipped: boolean
 ): number {
   if (skipped) return 0;
-  const norm = (s: string) => s.trim().toLowerCase();
-  if (norm(answer) === norm(expected)) return 5;
+  const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+  const expandOptional = (s: string): string[] => {
+    const match = s.match(/^(.*?)\(([^)]+)\)\s*(.*)$/);
+    if (!match) return [norm(s)];
+    const [, before, optional, after] = match;
+    return [
+      norm(`${before}${optional} ${after}`),
+      norm(`${before}${after}`),
+    ];
+  };
+  const variants = expandOptional(expected);
+
+  if (variants.some(v => norm(answer) === v)) return 5;
 
   const stripAccents = (s: string) =>
     s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-  if (stripAccents(answer) === stripAccents(expected)) return 4;
+  if (variants.some(v => stripAccents(answer) === stripAccents(v))) return 4;
 
-  if (levenshtein(norm(answer), norm(expected)) <= 2) return 3;
+  const minDist = Math.min(...variants.map(v => levenshtein(norm(answer), v)));
+  if (minDist <= 2) return 3;
 
   return 1;
 }
@@ -356,7 +368,8 @@ export function buildSessionQueue(
 ): number[] {
   const overdue: { id: number; strength: number }[] = [];
   const weakened: { id: number; strength: number }[] = [];
-  const unseen: number[] = [];
+  const seen: number[] = [];
+  const notSeen: number[] = [];
   const rest: number[] = [];
 
   const today = new Date();
@@ -364,12 +377,12 @@ export function buildSessionQueue(
   for (const tid of allTermIds) {
     const tp = progressMap.get(tid);
     if (!tp || tp.status === 'not_seen') {
-      unseen.push(tid);
+      notSeen.push(tid);
       continue;
     }
 
     if (tp.status === 'seen') {
-      unseen.push(tid);
+      seen.push(tid);
       continue;
     }
 
@@ -390,8 +403,9 @@ export function buildSessionQueue(
   return [
     ...overdue.map(o => o.id),
     ...weakened.map(w => w.id),
-    ...unseen,
     ...rest,
+    ...seen,
+    ...notSeen,
   ];
 }
 
@@ -409,6 +423,56 @@ function addDays(date: Date, days: number): string {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
   return d.toISOString().split('T')[0];
+}
+
+export async function saveSessionToDb(
+  userId: string,
+  subunitId: number,
+  session: { queueIndex: number; queue: number[]; newFlashcardCount: number; mode: string; currentTermId: number | null }
+): Promise<void> {
+  const { error } = await supabase.from('user_lesson_sessions').upsert(
+    {
+      user_id: userId,
+      subunit_id: subunitId,
+      queue_index: session.queueIndex,
+      queue: session.queue,
+      new_flashcard_count: session.newFlashcardCount,
+      current_mode: session.mode,
+      current_term_id: session.currentTermId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id,subunit_id' }
+  );
+  if (error) console.error('Failed to save session to DB:', error);
+}
+
+export async function loadSessionFromDb(
+  userId: string,
+  subunitId: number
+): Promise<{ queueIndex: number; queue: number[]; newFlashcardCount: number; mode: string; currentTermId: number | null } | null> {
+  const { data, error } = await supabase
+    .from('user_lesson_sessions')
+    .select('queue_index, queue, new_flashcard_count, current_mode, current_term_id')
+    .eq('user_id', userId)
+    .eq('subunit_id', subunitId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return {
+    queueIndex: data.queue_index,
+    queue: data.queue,
+    newFlashcardCount: data.new_flashcard_count,
+    mode: data.current_mode,
+    currentTermId: data.current_term_id,
+  };
+}
+
+export async function clearSessionFromDb(userId: string, subunitId: number): Promise<void> {
+  await supabase
+    .from('user_lesson_sessions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('subunit_id', subunitId);
 }
 
 function levenshtein(a: string, b: string): number {
