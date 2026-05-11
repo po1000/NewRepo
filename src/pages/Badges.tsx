@@ -36,7 +36,6 @@ export function Badges() {
         { data: allBadges },
         { data: userBadges },
         { data: stats },
-        { count: correctAnswerCount },
       ] = await Promise.all([
         supabase
           .from('badges')
@@ -48,15 +47,9 @@ export function Badges() {
           .eq('user_id', user.id),
         supabase
           .from('user_stats')
-          .select('lessons_completed, current_streak')
+          .select('lessons_completed, current_streak, correct_answers')
           .eq('user_id', user.id)
           .maybeSingle(),
-        supabase
-          .from('user_term_progress')
-          .select('term_id', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .in('status', ['learning', 'reinforced', 'learnt'])
-          .eq('marked_known', false),
       ]);
 
       const earnedMap = new Map<number, string>();
@@ -67,7 +60,7 @@ export function Badges() {
       const progressLookup: Record<string, number> = {
         lessons_completed: stats?.lessons_completed || 0,
         streak_days: stats?.current_streak || 0,
-        correct_answers: correctAnswerCount || 0,
+        correct_answers: stats?.correct_answers || 0,
       };
 
       const allBadgeMap = new Map<number, any>();

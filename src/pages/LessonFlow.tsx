@@ -883,7 +883,7 @@ export function LessonFlow() {
     async function completeLesson() {
       const { data: stats } = await supabase
         .from('user_stats')
-        .select('total_xp, lessons_completed, current_streak, longest_streak, updated_at')
+        .select('total_xp, lessons_completed, current_streak, longest_streak, correct_answers, updated_at')
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -891,6 +891,7 @@ export function LessonFlow() {
       const currentLessons = stats?.lessons_completed || 0;
       const currentStreak = stats?.current_streak || 0;
       const longestStreak = stats?.longest_streak || 0;
+      const currentCorrectAnswers = stats?.correct_answers || 0;
 
       const lastUpdate = stats?.updated_at ? new Date(stats.updated_at) : null;
       const now = new Date();
@@ -912,12 +913,14 @@ export function LessonFlow() {
       const newLongest = Math.max(longestStreak, updatedStreak);
       const newTotalXp = currentXp + sessionXp;
       const newLessonsCompleted = currentLessons + 1;
+      const newCorrectAnswers = currentCorrectAnswers + correctAnswersThisSession;
 
       const statsPayload = {
         total_xp: newTotalXp,
         lessons_completed: newLessonsCompleted,
         current_streak: updatedStreak,
         longest_streak: newLongest,
+        correct_answers: newCorrectAnswers,
         updated_at: new Date().toISOString(),
       };
 
@@ -944,17 +947,10 @@ export function LessonFlow() {
         if (xpErr) console.error('XP event save error:', xpErr);
       }
 
-      const { count: correctAnswerCount } = await supabase
-        .from('user_term_progress')
-        .select('term_id', { count: 'exact', head: true })
-        .eq('user_id', user!.id)
-        .in('status', ['learning', 'reinforced', 'learnt'])
-        .eq('marked_known', false);
-
       const progressLookup: Record<string, number> = {
         lessons_completed: newLessonsCompleted,
         streak_days: updatedStreak,
-        correct_answers: correctAnswerCount || 0,
+        correct_answers: newCorrectAnswers,
       };
 
       const { data: allBadges } = await supabase
@@ -982,7 +978,7 @@ export function LessonFlow() {
     }
 
     completeLesson();
-  }, [lessonComplete, user, sessionXp, state.subunitId]);
+  }, [lessonComplete, user, sessionXp, state.subunitId, correctAnswersThisSession]);
 
 
   if (loading) {
