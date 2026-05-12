@@ -38,7 +38,7 @@ export function PageLayout({ children, stats, backgroundColor = '#FFF799', navOv
         )}
       </header>
 
-      <div className={navOverrideClass || ''}>
+      <div className={`relative z-30 ${navOverrideClass || ''}`}>
         <Navigation
           onLearnLessonsClick={() => navigate('/dashboard')}
           onLearnSpeakWriteClick={() => navigate('/speak-and-write')}
